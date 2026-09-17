@@ -459,7 +459,7 @@ L_428A:
 ; SUB-ESTADO 1: espera a que 0x59C2 diga que si, y deja 40 cuadros de plazo.
 ; ----------------------------------------------------------------------
 L_4290:
-	call L_59C2		;4290
+	call avanza_la_caida		;4290
 	ret nc			;4293
 	ld a,028h		;4294   ; cuarenta cuadros
 L_4296:
@@ -4230,7 +4230,7 @@ el_panadero_cae:
 L_596B:
 	ld (0e119h),a		;596b
 	ld a,b			;596e
-	call L_59B2		;596f
+	call coloca_los_tres_sprites		;596f
 	push bc			;5972
 	push hl			;5973
 	ld a,034h		;5974
@@ -4240,7 +4240,7 @@ L_596B:
 	ld bc,00004h		;597f   ; cuatro bytes de sprite
 	ldir		;5982   ; copiados
 	ld de,0e110h		;5984
-	ld hl,0e09ah		;5987
+	ld hl,0e09ah		;5987   ; su ficha
 	call L_54D2		;598a
 	ld hl,0e098h		;598d
 	call L_52CE		;5990
@@ -4249,84 +4249,92 @@ L_596B:
 	ld de,0e080h		;5995
 	ex de,hl			;5998
 	ld a,b			;5999
-	add a,018h		;599a
+	add a,018h		;599a   ; veinticuatro de desplazamiento
 	ld (hl),a			;599c
 	inc hl			;599d
 	ld a,(de)			;599e
 	add a,c			;599f
 	ld (hl),a			;59a0
 	inc hl			;59a1
-	ld (hl),0fch		;59a2
+	ld (hl),0fch		;59a2   ; el patron de la caida
 	inc hl			;59a4
-	ld (hl),00ah		;59a5
+	ld (hl),00ah		;59a5   ; y su color
 	call L_53D4		;59a7
 L_59AA:
-	ld bc,00040h		;59aa
+	ld bc,00040h		;59aa   ; sesenta y cuatro
 	call L_707D		;59ad
 	or a			;59b0
 	ret			;59b1
-L_59B2:
-	add a,00fh		;59b2
+
+; ----------------------------------------------------------------------
+; COLOCAR LOS OTROS TRES SPRITES a partir del primero, con desplazamientos encadenados: +0x0F, luego -6 y luego +0x16. Como cada uno parte del anterior, basta con sumar y restar sin recalcular.
+; ----------------------------------------------------------------------
+coloca_los_tres_sprites:
+	add a,00fh		;59b2   ; quince mas
 	ld (0e084h),a		;59b4
-	sub 006h		;59b7
+	sub 006h		;59b7   ; seis menos
 	ld (0e088h),a		;59b9
-	add a,016h		;59bc
+	add a,016h		;59bc   ; y veintidos mas
 	ld (0e08ch),a		;59be
 	ret			;59c1
-L_59C2:
-	ld a,(0e00bh)		;59c2
-	and 003h		;59c5
+
+; ----------------------------------------------------------------------
+; EL AVANCE DE LA CAIDA, uno de cada cuatro cuadros. El paso va de 0x12 hacia atras y la tabla de 0x5A50 da el desplazamiento de cada uno; en el paso 0x11 se saca de la pantalla el sprite de 0xE090, y en el 0x0B se clavan las tres posiciones finales. Cuando el paso desborda (0xFF), se remata.
+; ----------------------------------------------------------------------
+avanza_la_caida:
+	ld a,(0e00bh)		;59c2   ; el compas de ocho
+	and 003h		;59c5   ; uno de cada cuatro
 	ret nz			;59c7
 	ld a,(0e119h)		;59c8
-	and 07fh		;59cb
-	call L_5A62		;59cd
+	and 07fh		;59cb   ; siete bits del paso
+	call suena_en_los_pasos_marcados		;59cd
 	ld hl,0e119h		;59d0
 	ld a,(hl)			;59d3
 	and 07fh		;59d4
-	cp 012h		;59d6
+	cp 012h		;59d6   ; el paso 0x12
 	jr nz,L_59E7		;59d8
 	exx			;59da
 	ld hl,0e090h		;59db
 	ld de,0e080h		;59de
-	ld bc,00004h		;59e1
+	ld bc,00004h		;59e1   ; cuatro bytes de sprite
 	ldir		;59e4
 	exx			;59e6
 L_59E7:
-	dec a			;59e7
+	dec a			;59e7   ; el paso, uno menos
 	ld b,a			;59e8
-	cp 0ffh		;59e9
+	cp 0ffh		;59e9   ; si desborda, se acabo la caida
 	jp z,L_5A33		;59eb
 	ld a,(hl)			;59ee
-	and 080h		;59ef
+	and 080h		;59ef   ; se conserva el bit 7
 	add a,b			;59f1
 	ld (hl),a			;59f2
 	ex de,hl			;59f3
 	ld hl,0e081h		;59f4
-	cpl			;59f7
+	cpl			;59f7   ; invertido: la direccion
 	rlca			;59f8
 	and 001h		;59f9
 	ld c,a			;59fb
 	call L_4BFB		;59fc
 	dec hl			;59ff
 	ld a,b			;5a00
-	cp 00bh		;5a01
+	cp 00bh		;5a01   ; el paso 0x0B
 	jr z,L_5A1F		;5a03
 	ex de,hl			;5a05
-	cp 011h		;5a06
+	cp 011h		;5a06   ; y el 0x11
 	jr nz,L_5A0F		;5a08
 	ld hl,0e090h		;5a0a
-	ld (hl),0e0h		;5a0d
+	ld (hl),0e0h		;5a0d   ; 0xE0: fuera de la pantalla
 L_5A0F:
-	ld hl,05a50h		;5a0f
+	ld hl,05a50h		;5a0f   ; la tabla de desplazamientos
 	call suma_a_a_hl		;5a12
 	ex de,hl			;5a15
 	ld a,(de)			;5a16
-	add a,(hl)			;5a17
+	add a,(hl)			;5a17   ; aplicado a la posicion
 	ld (hl),a			;5a18
-	call L_59B2		;5a19
+	call coloca_los_tres_sprites		;5a19
 	jp L_59AA		;5a1c
 L_5A1F:
-	ld (hl),089h		;5a1f
+	ld (hl),089h		;5a1f   ; las tres posiciones finales, clavadas
 	ld a,098h		;5a21
 	ld (0e084h),a		;5a23
 	ld a,092h		;5a26
@@ -4337,10 +4345,10 @@ L_5A1F:
 L_5A33:
 	ld de,0e081h		;5a33
 	ld a,(hl)			;5a36
-	rla			;5a37
-	ld c,00ah		;5a38
+	rla			;5a37   ; el bit 7 al acarreo
+	ld c,00ah		;5a38   ; diez a un lado
 	jr nc,L_5A3E		;5a3a
-	ld c,0fah		;5a3c
+	ld c,0fah		;5a3c   ; o diez hacia atras
 L_5A3E:
 	ld a,(de)			;5a3e
 	add a,c			;5a3f
@@ -4348,7 +4356,7 @@ L_5A3E:
 	ld l,083h		;5a41
 	ld (0e090h),hl		;5a43
 	ld a,0fch		;5a46
-	ld (0e092h),a		;5a48
+	ld (0e092h),a		;5a48   ; el patron de estar tumbado
 	call L_59AA		;5a4b
 	scf			;5a4e
 	ret			;5a4f
@@ -4364,46 +4372,58 @@ DATA_5A50:
 ; ======================================================================
 
 
-L_5A62:
-	cp 001h		;5a62
+
+; ----------------------------------------------------------------------
+; EL SONIDO DE LA CAIDA, solo en CUATRO pasos concretos -1, 4, 7 y 12-, con cuatro `cp` seguidos. Por eso el golpe suena a intervalos y no en cada cuadro.
+; ----------------------------------------------------------------------
+suena_en_los_pasos_marcados:
+	cp 001h		;5a62   ; el paso 1
 	jr z,L_5A71		;5a64
-	cp 004h		;5a66
+	cp 004h		;5a66   ; el 4
 	jr z,L_5A71		;5a68
-	cp 007h		;5a6a
+	cp 007h		;5a6a   ; el 7
 	jr z,L_5A71		;5a6c
-	cp 00ch		;5a6e
+	cp 00ch		;5a6e   ; y el 12
 	ret nz			;5a70
 L_5A71:
-	ld a,005h		;5a71
+	ld a,005h		;5a71   ; el sonido del golpe
 	jp L_799C		;5a73
-L_5A76:
+
+; ----------------------------------------------------------------------
+; REMATAR LA VIDA PERDIDA: limpia treinta y dos bytes de sprites propagando 0xE0 con `ldir`, espera a que no quede nada sonando y entonces hace sonar el 0x90.
+; ----------------------------------------------------------------------
+remata_la_vida_perdida:
 	call mira_si_salta		;5a76
 	ld hl,0e090h		;5a79
-	ld (hl),0e0h		;5a7c
+	ld (hl),0e0h		;5a7c   ; 0xE0: fuera de la pantalla
 	ld de,0e091h		;5a7e
-	ld bc,00020h		;5a81
-	ldir		;5a84
+	ld bc,00020h		;5a81   ; treinta y dos bytes
+	ldir		;5a84   ; y el ldir lo arrastra
 	call L_707A		;5a86
-	ld a,(0e012h)		;5a89
+	ld a,(0e012h)		;5a89   ; espera a que pare el sonido
 	or a			;5a8c
 	ret nz			;5a8d
-	ld a,090h		;5a8e
+	ld a,090h		;5a8e   ; y el sonido del final
 	call L_799C		;5a90
 	jp L_4381		;5a93
-L_5A96:
-	ld a,(0e104h)		;5a96
+
+; ----------------------------------------------------------------------
+; EL PANADERO EN EL HORNO: segun el compas de ocho -0 o 4- se mueve en un sentido o en el otro, y al pasar de 0xE8 o agotarse el plazo de 0xE11E se acaba, con 160 cuadros de remate.
+; ----------------------------------------------------------------------
+el_panadero_en_el_horno:
+	ld a,(0e104h)		;5a96   ; el estado del salto
 	or a			;5a99
 	ld a,003h		;5a9a
 	jr nz,L_5AA5		;5a9c
 	ld a,008h		;5a9e
-	ld (0e102h),a		;5aa0
+	ld (0e102h),a		;5aa0   ; el estado, a ocho
 	ld a,002h		;5aa3
 L_5AA5:
-	ld (0e056h),a		;5aa5
-	ld a,(0e00bh)		;5aa8
-	or a			;5aab
+	ld (0e056h),a		;5aa5   ; y la planta, a dos
+	ld a,(0e00bh)		;5aa8   ; el compas de ocho
+	or a			;5aab   ; el paso 0
 	jr z,L_5AB6		;5aac
-	cp 004h		;5aae
+	cp 004h		;5aae   ; y el paso 4
 	ret nz			;5ab0
 	call L_4C1A		;5ab1
 	jr L_5AB9		;5ab4
@@ -4414,16 +4434,16 @@ L_5AB9:
 	call mira_si_dispara		;5abc
 	call L_707A		;5abf
 	ld a,(0e081h)		;5ac2
-	cp 0e8h		;5ac5
+	cp 0e8h		;5ac5   ; el borde
 	jr nc,L_5ACE		;5ac7
 	ld hl,0e11eh		;5ac9
-	dec (hl)			;5acc
+	dec (hl)			;5acc   ; el plazo, uno menos
 	ret nz			;5acd
 L_5ACE:
-	ld a,0a0h		;5ace
+	ld a,0a0h		;5ace   ; ciento sesenta cuadros
 	ld (0e004h),a		;5ad0
 	jp L_4381		;5ad3
-L_5AD6:
+la_pantalla_de_recuento:
 	call baja_el_contador_y_barre		;5ad6
 	ret p			;5ad9
 	call L_711B		;5ada
@@ -4431,19 +4451,19 @@ L_5AD6:
 	call L_61C3		;5ae0
 	ld a,0eeh		;5ae3
 	call codigo_huerfano_4757		;5ae5
-	ld hl,05ef6h		;5ae8
+	ld hl,05ef6h		;5ae8   ; el bloque comprimido del recuento
 	call descomprime		;5aeb
 	ld a,(0e07bh)		;5aee
-	ld hl,0e04fh		;5af1
+	ld hl,0e04fh		;5af1   ; los panes que se llevaron
 	ld (hl),a			;5af4
 	or a			;5af5
 	jr z,L_5B1A		;5af6
 	ld de,03ad2h		;5af8
 	ld b,001h		;5afb
-	call imprime_bcd		;5afd
+	call imprime_bcd		;5afd   ; un byte, dos digitos
 	inc hl			;5b00
 	inc de			;5b01
-	ld a,(0e060h)		;5b02
+	ld a,(0e060h)		;5b02   ; el progreso
 	ld b,a			;5b05
 	cp 009h		;5b06
 	jr c,L_5B0C		;5b08

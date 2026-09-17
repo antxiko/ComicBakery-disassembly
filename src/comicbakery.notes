@@ -1368,3 +1368,74 @@ C 0x5969 con el suyo
 C 0x5976 la pose de caida
 C 0x597f cuatro bytes de sprite
 C 0x5982 copiados
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x5987 su ficha
+C 0x599a veinticuatro de desplazamiento
+C 0x59a2 el patron de la caida
+C 0x59a5 y su color
+C 0x59aa sesenta y cuatro
+L 0x59b2 coloca_los_tres_sprites
+B 0x59b2 COLOCAR LOS OTROS TRES SPRITES a partir del primero, con desplazamientos encadenados: +0x0F, luego -6 y luego +0x16. Como cada uno parte del anterior, basta con sumar y restar sin recalcular.
+C 0x59b2 quince mas
+C 0x59b7 seis menos
+C 0x59bc y veintidos mas
+L 0x59c2 avanza_la_caida
+B 0x59c2 EL AVANCE DE LA CAIDA, uno de cada cuatro cuadros. El paso va de 0x12 hacia atras y la tabla de 0x5A50 da el desplazamiento de cada uno; en el paso 0x11 se saca de la pantalla el sprite de 0xE090, y en el 0x0B se clavan las tres posiciones finales. Cuando el paso desborda (0xFF), se remata.
+C 0x59c2 el compas de ocho
+C 0x59c5 uno de cada cuatro
+C 0x59cb siete bits del paso
+C 0x59d6 el paso 0x12
+C 0x59e1 cuatro bytes de sprite
+C 0x59e7 el paso, uno menos
+C 0x59e9 si desborda, se acabo la caida
+C 0x59ef se conserva el bit 7
+C 0x59f7 invertido: la direccion
+C 0x5a01 el paso 0x0B
+C 0x5a06 y el 0x11
+C 0x5a0d 0xE0: fuera de la pantalla
+C 0x5a0f la tabla de desplazamientos
+C 0x5a17 aplicado a la posicion
+C 0x5a1f las tres posiciones finales, clavadas
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x5a37 el bit 7 al acarreo
+C 0x5a38 diez a un lado
+C 0x5a3c o diez hacia atras
+C 0x5a48 el patron de estar tumbado
+L 0x5a62 suena_en_los_pasos_marcados
+B 0x5a62 EL SONIDO DE LA CAIDA, solo en CUATRO pasos concretos -1, 4, 7 y 12-, con cuatro `cp` seguidos. Por eso el golpe suena a intervalos y no en cada cuadro.
+C 0x5a62 el paso 1
+C 0x5a66 el 4
+C 0x5a6a el 7
+C 0x5a6e y el 12
+C 0x5a71 el sonido del golpe
+L 0x5a76 remata_la_vida_perdida
+B 0x5a76 REMATAR LA VIDA PERDIDA: limpia treinta y dos bytes de sprites propagando 0xE0 con `ldir`, espera a que no quede nada sonando y entonces hace sonar el 0x90.
+C 0x5a7c 0xE0: fuera de la pantalla
+C 0x5a81 treinta y dos bytes
+C 0x5a84 y el ldir lo arrastra
+C 0x5a89 espera a que pare el sonido
+C 0x5a8e y el sonido del final
+L 0x5a96 el_panadero_en_el_horno
+B 0x5a96 EL PANADERO EN EL HORNO: segun el compas de ocho -0 o 4- se mueve en un sentido o en el otro, y al pasar de 0xE8 o agotarse el plazo de 0xE11E se acaba, con 160 cuadros de remate.
+C 0x5a96 el estado del salto
+C 0x5aa0 el estado, a ocho
+C 0x5aa5 y la planta, a dos
+C 0x5aa8 el compas de ocho
+C 0x5aab el paso 0
+C 0x5aae y el paso 4
+C 0x5ac5 el borde
+C 0x5acc el plazo, uno menos
+C 0x5ace ciento sesenta cuadros
+L 0x5ad6 la_pantalla_de_recuento
+C 0x5ae8 el bloque comprimido del recuento
+C 0x5af1 los panes que se llevaron
+C 0x5afd un byte, dos digitos
+C 0x5b02 el progreso
