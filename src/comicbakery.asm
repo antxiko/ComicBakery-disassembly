@@ -28,60 +28,72 @@ DATA_4010:
 ; ======================================================================
 
 
-L_4040:
-	call L_43A7		;4040
-	exx			;4043
-	out (c),a		;4044
+
+; ----------------------------------------------------------------------
+; ESCRIBIR Y LEER LA VRAM. Las dos rutinas que usa todo el cartucho en vez de la BIOS: preparan el puerto una vez y luego mueven los bytes con el registro C ya cargado en el juego alternativo.
+; ----------------------------------------------------------------------
+escribe_en_vram:
+	call L_43A7		;4040   ; pone el puntero de escritura y deja 0x98 en C'
+	exx			;4043   ; al juego alternativo, donde C es el puerto de datos del VDP
+	out (c),a		;4044   ; y ahi va el byte
 	exx			;4046
 	ei			;4047
 	ret			;4048
-L_4049:
-	call L_43B6		;4049
+lee_de_vram:
+	call L_43B6		;4049   ; lo mismo para leer
 	exx			;404c
-	in a,(c)		;404d
+	in a,(c)		;404d   ; el byte leido vuelve en A
 	exx			;404f
 	ei			;4050
 	ret			;4051
-L_4052:
-	add a,l			;4052
+
+; ----------------------------------------------------------------------
+; SUMAR UN INDICE DE OCHO BITS A UN PUNTERO, con el acarreo propagado a mano. Dos gemelas, una para HL y otra para DE.
+; ----------------------------------------------------------------------
+suma_a_a_hl:
+	add a,l			;4052   ; HL += A
 	ld l,a			;4053
 	ret nc			;4054
-	inc h			;4055
+	inc h			;4055   ; y el byte alto si hubo acarreo
 	ret			;4056
-L_4057:
-	add a,e			;4057
+suma_a_a_de:
+	add a,e			;4057   ; DE += A, la gemela
 	ld e,a			;4058
 	ret nc			;4059
 	inc d			;405a
 	ret			;405b
-L_405C:
+
+; ----------------------------------------------------------------------
+; EL GANCHO DE LA INTERRUPCION. Y aqui hay una diferencia con sus dos hermanos de tanda: este cartucho GUARDA LOS DOCE REGISTROS -los dos juegos completos, IX e IY incluidos- antes de hacer nada, en vez de fiarse de que el hilo principal este parado en un `jr $`. Cuesta veinticuatro bytes de pila por cuadro.
+; ----------------------------------------------------------------------
+gancho_de_interrupcion:
 	di			;405c
-	push af			;405d
+	push af			;405d   ; los seis del juego normal
 	push bc			;405e
 	push de			;405f
 	push hl			;4060
 	push ix		;4061
 	push iy		;4063
-	exx			;4065
+	exx			;4065   ; y los cuatro del alternativo
 	ex af,af'			;4066
 	push af			;4067
 	push bc			;4068
 	push de			;4069
 	push hl			;406a
-	call 0013eh		;406b   ; BIOS RDVDP - Reads VDP status register
-	call L_7A18		;406e
-	ld hl,0e005h		;4071
+	call 0013eh		;406b   ; BIOS RDVDP - Reads VDP status register | lee el estado del VDP para que baje su bandera
+	call L_7A18		;406e   ; el sonido, lo primero
+	ld hl,0e005h		;4071   ; el cerrojo de reentrada, de un bit
 	bit 0,(hl)		;4074
-	jr nz,L_4085		;4076
+	jr nz,L_4085		;4076   ; si ya hay una dentro, no se entra otra vez
 	inc (hl)			;4078
-	ei			;4079
-	call L_4775		;407a
-	call L_40F7		;407d
+	ei			;4079   ; se abren las interrupciones ESTANDO dentro
+	call L_4775		;407a   ; lee los mandos y el teclado
+	call reparte_la_escena		;407d   ; y aqui se despacha la escena
 	di			;4080
 	xor a			;4081
-	ld (0e005h),a		;4082
+	ld (0e005h),a		;4082   ; se suelta el cerrojo
 L_4085:
-	pop hl			;4085
+	pop hl			;4085   ; y se devuelven los doce registros
 	pop de			;4086
 	pop bc			;4087
 	pop af			;4088
@@ -95,91 +107,111 @@ L_4085:
 	pop af			;4092
 	ei			;4093
 	reti		;4094
-L_4096:
-	pop hl			;4096
-	add a,a			;4097
+
+; ----------------------------------------------------------------------
+; EL DESPACHADOR DE ESCENAS: la tabla va PEGADA detras del `call`, y el `pop hl` recupera su propia direccion de retorno, que es justo donde empieza.
+; ----------------------------------------------------------------------
+despacha_por_tabla:
+	pop hl			;4096   ; la direccion de retorno ES la tabla
+	add a,a			;4097   ; el numero de escena, por dos
 L_4098:
-	call L_4052		;4098
-	ld e,(hl)			;409b
+	call suma_a_a_hl		;4098   ; la entrada que toca
+	ld e,(hl)			;409b   ; y de ahi el destino
 	inc hl			;409c
 	ld d,(hl)			;409d
 	ex de,hl			;409e
-	jp (hl)			;409f
-L_40A0:
-	ld c,(hl)			;40a0
-	ld a,(de)			;40a1
-	ld (hl),a			;40a2
+	jp (hl)			;409f   ; se salta sin dejar retorno
+
+; ----------------------------------------------------------------------
+; INTERCAMBIAR DOS BLOQUES DE B BYTES sin memoria auxiliar.
+; ----------------------------------------------------------------------
+intercambia_bloques:
+	ld c,(hl)			;40a0   ; el de (HL)
+	ld a,(de)			;40a1   ; y el de (DE)
+	ld (hl),a			;40a2   ; cada uno al sitio del otro
 	ld a,c			;40a3
 	ld (de),a			;40a4
 	inc hl			;40a5
 	inc de			;40a6
-	djnz L_40A0		;40a7
+	djnz intercambia_bloques		;40a7
 	ret			;40a9
-L_40AA:
-	ld c,000h		;40aa
+
+; ----------------------------------------------------------------------
+; EL INTERPRETE DE ROTULOS, con dos puertas que solo cambian la mascara: con 0x00 se escriben ceros y el MISMO guion borra el rotulo.
+; ----------------------------------------------------------------------
+borra_rotulo:
+	ld c,000h		;40aa   ; mascara 0x00: BORRA
 	jr L_40B0		;40ac
-L_40AE:
-	ld c,0ffh		;40ae
+pinta_rotulo:
+	ld c,0ffh		;40ae   ; mascara 0xFF: pinta
 L_40B0:
-	ld e,(hl)			;40b0
+	ld e,(hl)			;40b0   ; de la cabecera sale el destino en la VRAM
 	inc hl			;40b1
 	ld d,(hl)			;40b2
 	inc hl			;40b3
 L_40B4:
-	ld a,(hl)			;40b4
+	ld a,(hl)			;40b4   ; el siguiente byte del guion
 	inc hl			;40b5
 	ld b,a			;40b6
-	inc b			;40b7
+	inc b			;40b7   ; 0xFF es el fin del rotulo
 	ret z			;40b8
-	inc b			;40b9
+	inc b			;40b9   ; 0xFE es "sigue en otro sitio"
 	jr z,L_40B0		;40ba
-	and c			;40bc
+	and c			;40bc   ; aqui muerde la mascara
 	jr nz,L_40C1		;40bd
-	ld a,001h		;40bf
+	ld a,001h		;40bf   ; y al BORRAR se escribe el patron 1, no el cero: en este cartucho la celda vacia es la 1, al reves que en sus dos hermanos
 L_40C1:
-	call L_4040		;40c1
-	inc de			;40c4
+	call escribe_en_vram		;40c1   ; y a la VRAM
+	inc de			;40c4   ; la siguiente celda
 	jr L_40B4		;40c5
-L_40C7:
+
+; ----------------------------------------------------------------------
+; INIT, la direccion que trae la cabecera. Modo 1 de interrupcion, gancho en H.KEYI, pila en 0xE400 y un kilobyte de RAM a cero. Desde el `ei` final, el juego entero corre dentro de la interrupcion.
+; ----------------------------------------------------------------------
+init:
 	di			;40c7
 	im 1		;40c8
-	ld a,0c3h		;40ca
+	ld a,0c3h		;40ca   ; un `jp` en 0xFD9A y la direccion detras: asi se engancha H.KEYI
 	ld (0fd9ah),a		;40cc
-	ld hl,L_405C		;40cf
+	ld hl,gancho_de_interrupcion		;40cf   ; el gancho es el de 0x405C
 	ld (0fd9bh),hl		;40d2
-	ld sp,0e400h		;40d5
-	ld hl,0e000h		;40d8
+	ld sp,0e400h		;40d5   ; la pila, por encima de las variables
+	ld hl,0e000h		;40d8   ; y las variables, a cero de 0xE000 a 0xE3FF
 	ld de,0e001h		;40db
 	ld bc,003ffh		;40de
 	ld (hl),000h		;40e1
 	ldir		;40e3
-	ld a,001h		;40e5
+	ld a,001h		;40e5   ; el cerrojo, tomado durante el arranque
 	ld (0e005h),a		;40e7
-	call L_471D		;40ea
+	call L_471D		;40ea   ; prepara el VDP y la pantalla
 	xor a			;40ed
-	ld (0e005h),a		;40ee
+	ld (0e005h),a		;40ee   ; y ahora si, se suelta
 	call 0013eh		;40f1   ; BIOS RDVDP - Reads VDP status register
 	ei			;40f4
-L_40F5:
-	jr L_40F5		;40f5
-L_40F7:
-	ld hl,0e003h		;40f7
+espera_para_siempre:
+	jr espera_para_siempre		;40f5   ; aqui se queda el hilo principal
+
+; ----------------------------------------------------------------------
+; EL REPARTO DE ESCENAS. Ademas del contador de cuadros, este cartucho guarda aparte sus tres bits de abajo en (0xE00B), que es el compas que usan las cosas que van a ritmo. Y como sus hermanos, APILA a mano el remate -0x46A3 o 0x4831 segun el bit 6 de (0xE002)-, salvo en la escena 8.
+; ----------------------------------------------------------------------
+reparte_la_escena:
+	ld hl,0e003h		;40f7   ; el contador de cuadros
 	inc (hl)			;40fa
 	ld a,(hl)			;40fb
-	and 007h		;40fc
-	ld (0e00bh),a		;40fe
+	and 007h		;40fc   ; tres bits: el compas de ocho
+	ld (0e00bh),a		;40fe   ; guardado aparte
 	ld a,(0e002h)		;4101
-	and 040h		;4104
+	and 040h		;4104   ; el bit 6 decide cual de los dos remates se apila
 	ld hl,046a3h		;4106
 	jr nz,L_410E		;4109
 	ld hl,04831h		;410b
 L_410E:
 	ld a,(0e000h)		;410e
-	cp 008h		;4111
+	cp 008h		;4111   ; la escena 8 no lleva remate
 	jr z,L_4116		;4113
-	push hl			;4115
+	push hl			;4115   ; aqui se fabrica el retorno
 L_4116:
-	call L_4096		;4116
+	call despacha_por_tabla		;4116   ; y la tabla de dieciseis va pegada detras
 
 ; ----------------------------------------------------------------------
 ; DATOS tabla_de_escenas: 16 entradas; la primera apunta a 0x4139, justo
@@ -194,59 +226,87 @@ DATA_tabla_de_escenas:
 ; ======================================================================
 
 
+
+; ----------------------------------------------------------------------
+; ESCENA 0: el arranque frio, que monta la pantalla del titulo.
+; ----------------------------------------------------------------------
 L_4139:
 	call L_44B6		;4139
 	ret p			;413c
 	call L_4733		;413d
 	call L_6051		;4140
-	ld a,011h		;4143
+	ld a,011h		;4143   ; el plazo de la cortinilla
 	ld (0e00ah),a		;4145
 	ld hl,00000h		;4148
 	ld (0e00eh),hl		;414b
-	jp L_4238		;414e
+	jp pasa_a_la_escena_siguiente		;414e
+
+; ----------------------------------------------------------------------
+; ESCENA 1: el letrero de "VIDEO CARTRIDGE" parpadeando, uno de cada dos cuadros.
+; ----------------------------------------------------------------------
 L_4151:
 	ld a,(0e003h)		;4151
-	rra			;4154
+	rra			;4154   ; su bit 0 al acarreo
 	ret nc			;4155
 	call L_4892		;4156
 	ret nz			;4159
-	ld hl,05e42h		;415a
-	call L_40AE		;415d
+	ld hl,05e42h		;415a   ; el rotulo
+	call pinta_rotulo		;415d
 	xor a			;4160
 	jp L_4235		;4161
+
+; ----------------------------------------------------------------------
+; ESCENA 2: la cuenta atras que lo apaga, borrandolo con el mismo guion.
+; ----------------------------------------------------------------------
 L_4164:
 	ld hl,0e004h		;4164
 	dec (hl)			;4167
 	ret nz			;4168
 	ld hl,05e42h		;4169
-	call L_40AA		;416c
+	call borra_rotulo		;416c   ; por la puerta que escribe el patron 1
 	xor a			;416f
 	ld (0e00ah),a		;4170
 L_4173:
-	jp L_4238		;4173
+	jp pasa_a_la_escena_siguiente		;4173
+
+; ----------------------------------------------------------------------
+; ESCENA 3: espera a que el jugador se decida.
+; ----------------------------------------------------------------------
 L_4176:
 	call L_46ED		;4176
 	ret c			;4179
 	xor a			;417a
 	jp L_4235		;417b
+
+; ----------------------------------------------------------------------
+; ESCENA 4: el plazo de la pantalla de seleccion.
+; ----------------------------------------------------------------------
 L_417E:
 	ld hl,0e004h		;417e
 	dec (hl)			;4181
 	jp nz,L_451A		;4182
-	jp L_4233		;4185
+	jp plazo_de_32		;4185
+
+; ----------------------------------------------------------------------
+; ESCENA 5: empieza partida. Pone el contador de fase a cero, la senal de (0xE053) a uno y monta la pantalla entera.
+; ----------------------------------------------------------------------
 L_4188:
 	call L_44B6		;4188
 	ret p			;418b
 	call L_435A		;418c
 	xor a			;418f
-	ld (0e12eh),a		;4190
+	ld (0e12eh),a		;4190   ; el contador de la fase
 	ld (0e051h),a		;4193
 	inc a			;4196
-	ld (0e053h),a		;4197
-	call L_45B3		;419a
+	ld (0e053h),a		;4197   ; la senal de partida en marcha
+	call L_45B3		;419a   ; el marcador
 	call L_494C		;419d
 	call L_7061		;41a0
-	jp L_4233		;41a3
+	jp plazo_de_32		;41a3
+
+; ----------------------------------------------------------------------
+; ESCENA 6: espera a que (0xE053) se apague.
+; ----------------------------------------------------------------------
 L_41A6:
 	call L_4240		;41a6
 	ld a,(0e053h)		;41a9
@@ -255,40 +315,48 @@ L_41A6:
 L_41AE:
 	xor a			;41ae
 	jp L_4308		;41af
+
+; ----------------------------------------------------------------------
+; ESCENA 7: arranca la vida. Baja el contador de vidas y, con dos jugadores, pinta "PLAYER 1" la primera vez -la segunda ya no, porque (0xE11B) se queda a cero-.
+; ----------------------------------------------------------------------
 L_41B2:
 	call L_44B6		;41b2
 	ret p			;41b5
-	ld hl,0e050h		;41b6
-	dec (hl)			;41b9
-	call L_45B3		;41ba
-	ld a,(0e002h)		;41bd
+	ld hl,0e050h		;41b6   ; el contador de vidas
+	dec (hl)			;41b9   ; una menos: esta se va a jugar
+	call L_45B3		;41ba   ; repinta el marcador
+	ld a,(0e002h)		;41bd   ; el bit 5 dice si hay dos jugadores
 	and 020h		;41c0
 	jr z,L_41D6		;41c2
-	ld hl,0e11bh		;41c4
+	ld hl,0e11bh		;41c4   ; la marca de "ya se enseno"
 	ld a,(hl)			;41c7
 	or a			;41c8
 	ld a,000h		;41c9
 	ld (hl),a			;41cb
 	jr nz,L_41D6		;41cc
-	ld hl,05e37h		;41ce
+	ld hl,05e37h		;41ce   ; el rotulo "PLAYER 1"
 	call L_453C		;41d1
-	ld a,02fh		;41d4
+	ld a,02fh		;41d4   ; el plazo, 47 cuadros
 L_41D6:
-	inc a			;41d6
+	inc a			;41d6   ; y 48 si no hay rotulo
 	jr L_4235		;41d7
-L_41D9:
-	ld a,(0e001h)		;41d9
+
+; ----------------------------------------------------------------------
+; ESCENA 8: el arranque de verdad, la que NO lleva remate apilado. (0xE001) elige entre tres caminos, y el sonido del final depende del bit 0 de (0xE051): el 0x89 o el 0x8B.
+; ----------------------------------------------------------------------
+escena_8_arranca:
+	ld a,(0e001h)		;41d9   ; el sub-estado
 	dec a			;41dc
 	jr z,L_41FC		;41dd
 	dec a			;41df
 	jr z,L_4211		;41e0
-	ld hl,0e004h		;41e2
+	ld hl,0e004h		;41e2   ; el plazo del rotulo
 	dec (hl)			;41e5
 	ret nz			;41e6
-	ld hl,05e37h		;41e7
-	call L_40AA		;41ea
+	ld hl,05e37h		;41e7   ; el mismo guion de "PLAYER 1"
+	call borra_rotulo		;41ea   ; por la puerta que lo borra
 	call L_494C		;41ed
-	ld a,(0e11ah)		;41f0
+	ld a,(0e11ah)		;41f0   ; la bandera de 0xE11A
 	or a			;41f3
 	jr z,L_41F9		;41f4
 	call L_4D82		;41f6
@@ -309,60 +377,68 @@ L_4211:
 	ld a,(0e11ah)		;4211
 	or a			;4214
 	jr z,L_4221		;4215
-	ld a,(0e012h)		;4217
+	ld a,(0e012h)		;4217   ; espera a que pare el 0x8D
 	cp 08dh		;421a
 	ret z			;421c
 	xor a			;421d
-	ld (0e11ah),a		;421e
+	ld (0e11ah),a		;421e   ; y se apaga la bandera
 L_4221:
 	ld hl,0e053h		;4221
-	ld (hl),001h		;4224
-	ld a,(0e051h)		;4226
-	rra			;4229
-	ld a,089h		;422a
+	ld (hl),001h		;4224   ; la senal de partida en marcha
+	ld a,(0e051h)		;4226   ; el contador de fase
+	rra			;4229   ; su bit 0
+	ld a,089h		;422a   ; un sonido
 	jr c,L_4230		;422c
-	ld a,08bh		;422e
+	ld a,08bh		;422e   ; o el otro
 L_4230:
 	call L_799C		;4230
-L_4233:
-	ld a,020h		;4233
+plazo_de_32:
+	ld a,020h		;4233   ; 32 cuadros de plazo
 L_4235:
 	ld (0e004h),a		;4235
-L_4238:
-	ld hl,0e000h		;4238
-	inc (hl)			;423b
+pasa_a_la_escena_siguiente:
+	ld hl,0e000h		;4238   ; el numero de escena
+	inc (hl)			;423b   ; la siguiente
 	inc hl			;423c
-	ld (hl),000h		;423d
+	ld (hl),000h		;423d   ; y el sub-estado, a cero
 	ret			;423f
+
+; ----------------------------------------------------------------------
+; ESCENA 9: el compas de la partida. Si (0xE00D) esta a cero se espera; si no, se pasa a la escena 15 preparando el fin de fase.
+; ----------------------------------------------------------------------
 L_4240:
 	call L_48CE		;4240
-	ld a,(0e00dh)		;4243
+	ld a,(0e00dh)		;4243   ; la senal de fin
 	or a			;4246
 	jr nz,L_4250		;4247
 	ld a,(0e053h)		;4249
 	or a			;424c
 	ret nz			;424d
-	jr L_4238		;424e
+	jr pasa_a_la_escena_siguiente		;424e
 L_4250:
-	ld hl,0000fh		;4250
+	ld hl,0000fh		;4250   ; escena 15
 	ld (0e000h),hl		;4253
 	xor a			;4256
 	ld (0e057h),a		;4257
 	ld (0e097h),a		;425a
-	ld a,01ch		;425d
+	ld a,01ch		;425d   ; el plazo largo
 	ld (0e11eh),a		;425f
-	ld a,(0e101h)		;4262
+	ld a,(0e101h)		;4262   ; la posicion, guardada
 	ld (0e102h),a		;4265
 	call L_5897		;4268
 	call L_4940		;426b
 	ld hl,04e63h		;426e
 	call L_4E51		;4271
-	ld a,096h		;4274
+	ld a,096h		;4274   ; y el sonido del fin de fase
 	call L_799C		;4276
 	jp L_4314		;4279
-L_427C:
-	ld a,(0e001h)		;427c
-	call L_4096		;427f
+
+; ----------------------------------------------------------------------
+; EL REPARTO POR SUB-ESTADO: (0xE001) elige, y la tabla de cuatro va pegada detras del `call`, igual que la de escenas.
+; ----------------------------------------------------------------------
+despacha_el_sub_estado:
+	ld a,(0e001h)		;427c   ; el sub-estado
+	call despacha_por_tabla		;427f   ; y su tabla de cuatro, pegada detras
 
 ; ----------------------------------------------------------------------
 ; DATOS tabla_4282: 4 entradas; cierra en 0x428A
@@ -378,63 +454,79 @@ DATA_tabla_4282:
 L_428A:
 	call L_5952		;428a
 	jp L_4381		;428d
+
+; ----------------------------------------------------------------------
+; SUB-ESTADO 1: espera a que 0x59C2 diga que si, y deja 40 cuadros de plazo.
+; ----------------------------------------------------------------------
 L_4290:
 	call L_59C2		;4290
 	ret nc			;4293
-	ld a,028h		;4294
+	ld a,028h		;4294   ; cuarenta cuadros
 L_4296:
 	ld (0e004h),a		;4296
 	jp L_4381		;4299
+
+; ----------------------------------------------------------------------
+; SUB-ESTADO 2: el plazo, y luego 160 cuadros mas.
+; ----------------------------------------------------------------------
 L_429C:
 	ld hl,0e004h		;429c
 	dec (hl)			;429f
 	ret nz			;42a0
-	ld a,0a0h		;42a1
+	ld a,0a0h		;42a1   ; ciento sesenta cuadros
 	ld (0e004h),a		;42a3
 	jp L_4381		;42a6
+
+; ----------------------------------------------------------------------
+; SUB-ESTADO 3: si no quedan vidas, suena el 0x93, se pinta el cartel y se pasa a la escena 13; si quedan, se mira si el otro jugador tiene partida.
+; ----------------------------------------------------------------------
 L_42A9:
-	ld a,(0e050h)		;42a9
+	ld a,(0e050h)		;42a9   ; las vidas
 	or a			;42ac
 	jp nz,L_42C9		;42ad
 	call L_44B6		;42b0
 	ret p			;42b3
-	ld a,093h		;42b4
+	ld a,093h		;42b4   ; el sonido del final
 	call L_799C		;42b6
-	ld hl,05e2ah		;42b9
+	ld hl,05e2ah		;42b9   ; el cartel
 	call L_453C		;42bc
-	ld a,00dh		;42bf
+	ld a,00dh		;42bf   ; escena 13
 	ld (0e000h),a		;42c1
 	ld a,080h		;42c4
 	jp L_4235		;42c6
 L_42C9:
-	ld a,(0e0c0h)		;42c9
+	ld a,(0e0c0h)		;42c9   ; el estado del otro jugador
 	or a			;42cc
-	jp nz,L_4238		;42cd
+	jp nz,pasa_a_la_escena_siguiente		;42cd
 L_42D0:
 	ld a,009h		;42d0
 	jr L_4304		;42d2
-L_42D4:
-	ld hl,0e050h		;42d4
-	ld de,0e0c0h		;42d7
-	ld b,030h		;42da
-	call L_40A0		;42dc
+
+; ----------------------------------------------------------------------
+; EL CAMBIO DE JUGADOR, otra vez en una sola instruccion, pero aqui el bloque es de CUARENTA Y OCHO bytes -0x30-, no de treinta y dos como en sus dos hermanos: este cartucho lleva mas estado por jugador.
+; ----------------------------------------------------------------------
+cambia_de_jugador:
+	ld hl,0e050h		;42d4   ; el estado del que juega
+	ld de,0e0c0h		;42d7   ; y el del que espera
+	ld b,030h		;42da   ; cuarenta y ocho bytes cada uno
+	call intercambia_bloques		;42dc   ; y se cambian de sitio
 	ld hl,0e002h		;42df
 	ld a,(hl)			;42e2
-	xor 080h		;42e3
+	xor 080h		;42e3   ; el bit 7 dice de quien es el turno
 	ld (hl),a			;42e5
 	jr L_42D0		;42e6
-L_42E8:
-	ld a,(0e012h)		;42e8
+el_relevo:
+	ld a,(0e012h)		;42e8   ; espera a que pare el sonido
 	or a			;42eb
 	ret nz			;42ec
-	ld a,(0e0c0h)		;42ed
+	ld a,(0e0c0h)		;42ed   ; el estado del otro jugador
 	or a			;42f0
 	jr nz,L_4302		;42f1
 	ld hl,0e002h		;42f3
 	ld a,(hl)			;42f6
-	and 0bfh		;42f7
+	and 0bfh		;42f7   ; apaga el bit 6 de (0xE002)
 	ld (hl),a			;42f9
-	ld a,002h		;42fa
+	ld a,002h		;42fa   ; dos vidas para el que entra
 	ld (0e050h),a		;42fc
 	jp L_41AE		;42ff
 L_4302:
@@ -464,7 +556,7 @@ L_4314:
 L_4324:
 	inc hl			;4324
 	ld a,(0e001h)		;4325
-	call L_4096		;4328
+	call despacha_por_tabla		;4328
 
 ; ----------------------------------------------------------------------
 ; DATOS tabla_432B: 8 entradas; cierra en 0x433B
@@ -532,7 +624,7 @@ L_439C:
 	call L_447B		;439c
 	ld a,001h		;439f
 	ld (0e11ah),a		;43a1
-	jp L_4233		;43a4
+	jp plazo_de_32		;43a4
 L_43A7:
 	ex af,af'			;43a7
 	ex de,hl			;43a8
@@ -640,7 +732,7 @@ L_4418:
 L_441D:
 	call L_443F		;441d
 	ld a,020h		;4420
-	call L_4057		;4422
+	call suma_a_a_de		;4422
 	dec c			;4425
 	jr nz,L_441D		;4426
 	ret			;4428
@@ -654,7 +746,7 @@ L_4429:
 L_4433:
 	call L_443F		;4433
 	ld a,060h		;4436
-	call L_4057		;4438
+	call suma_a_a_de		;4438
 	dec c			;443b
 	jr nz,L_4429		;443c
 	ret			;443e
@@ -664,10 +756,10 @@ L_4440:
 	ld b,010h		;4440
 L_4442:
 	ex de,hl			;4442
-	call L_4049		;4443
+	call lee_de_vram		;4443
 	ex de,hl			;4446
 	call L_445E		;4447
-	call L_4040		;444a
+	call escribe_en_vram		;444a
 	inc e			;444d
 	inc hl			;444e
 	djnz L_4442		;444f
@@ -774,9 +866,9 @@ L_44DB:
 	ld e,a			;44db
 L_44DC:
 	ld a,001h		;44dc
-	call L_4040		;44de
+	call escribe_en_vram		;44de
 	ld a,020h		;44e1
-	call L_4057		;44e3
+	call suma_a_a_de		;44e3
 	djnz L_44DC		;44e6
 L_44E8:
 	ld b,010h		;44e8
@@ -784,7 +876,7 @@ L_44E8:
 L_44ED:
 	ld (hl),0e0h		;44ed
 	ld a,004h		;44ef
-	call L_4052		;44f1
+	call suma_a_a_hl		;44f1
 	djnz L_44ED		;44f4
 	call L_707A		;44f6
 	xor a			;44f9
@@ -793,7 +885,7 @@ L_44FB:
 	ld (hl),000h		;44fb
 	ld a,0d0h		;44fd
 	ld de,03b00h		;44ff
-	call L_4040		;4502
+	call escribe_en_vram		;4502
 	ld a,0e0h		;4505
 	call L_4757		;4507
 	ld de,03840h		;450a
@@ -812,10 +904,10 @@ L_4521:
 L_4524:
 	call L_4531		;4524
 	ld a,b			;4527
-	call L_4040		;4528
+	call escribe_en_vram		;4528
 	ld a,c			;452b
 	inc de			;452c
-	call L_4040		;452d
+	call escribe_en_vram		;452d
 	ret			;4530
 L_4531:
 	ld a,(0e042h)		;4531
@@ -826,13 +918,13 @@ L_4531:
 	ld d,07ah		;4539
 	ret			;453b
 L_453C:
-	call L_40AE		;453c
+	call pinta_rotulo		;453c
 	ld a,(0e002h)		;453f
 	or a			;4542
 	ret p			;4543
 	ld a,012h		;4544
 	dec de			;4546
-	call L_4040		;4547
+	call escribe_en_vram		;4547
 	ret			;454a
 L_454B:
 	ld a,(0e002h)		;454b
@@ -899,12 +991,12 @@ L_45A9:
 	jr L_45D4		;45b1
 L_45B3:
 	ld hl,05d8eh		;45b3
-	call L_40AE		;45b6
+	call pinta_rotulo		;45b6
 	ld a,(0e002h)		;45b9
 	bit 5,a		;45bc
 	jr z,L_45CE		;45be
 	ld hl,05dabh		;45c0
-	call L_40AE		;45c3
+	call pinta_rotulo		;45c3
 	ld a,(0e002h)		;45c6
 	xor 080h		;45c9
 	call L_45E0		;45cb
@@ -941,12 +1033,12 @@ L_45FC:
 	rra			;4601
 	rra			;4602
 	or c			;4603
-	call L_4040		;4604
+	call escribe_en_vram		;4604
 	inc de			;4607
 	ld a,(hl)			;4608
 	and 00fh		;4609
 	or c			;460b
-	call L_4040		;460c
+	call escribe_en_vram		;460c
 	inc de			;460f
 	dec hl			;4610
 	djnz L_45FC		;4611
@@ -1016,7 +1108,7 @@ L_4655:
 	add a,a			;466f
 	add a,(hl)			;4670
 	ld hl,0468ah		;4671
-	call L_4052		;4674
+	call suma_a_a_hl		;4674
 	ld bc,00003h		;4677
 	lddr		;467a
 	ex de,hl			;467c
@@ -1065,7 +1157,7 @@ L_46C8:
 	jp p,L_46CE		;46c9
 	ld a,001h		;46cc
 L_46CE:
-	call L_4040		;46ce
+	call escribe_en_vram		;46ce
 	inc de			;46d1
 	djnz L_46C8		;46d2
 	ret			;46d4
@@ -1102,9 +1194,9 @@ L_46ED:
 	ld b,003h		;4701
 	xor a			;4703
 L_4704:
-	call L_4040		;4704
+	call escribe_en_vram		;4704
 	ld a,020h		;4707
-	call L_4057		;4709
+	call suma_a_a_de		;4709
 	ld a,c			;470c
 	inc c			;470d
 	djnz L_4704		;470e
@@ -1113,7 +1205,7 @@ L_4704:
 L_4712:
 	push af			;4712
 	ld hl,05db1h		;4713
-	call z,L_40AE		;4716
+	call z,pinta_rotulo		;4716
 	pop af			;4719
 	cp 034h		;471a
 	ret			;471c
@@ -1215,7 +1307,7 @@ L_47B3:
 	ld (hl),000h		;47bb
 L_47BD:
 	ld hl,06001h		;47bd
-	call L_4052		;47c0
+	call suma_a_a_hl		;47c0
 	ld a,(hl)			;47c3
 	ret			;47c4
 L_47C5:
@@ -1330,7 +1422,7 @@ L_4831:
 	jr c,L_4878		;485e
 	ld hl,0488eh		;4860
 	ld a,(0e042h)		;4863
-	call L_4052		;4866
+	call suma_a_a_hl		;4866
 	ld a,(hl)			;4869
 	ld (0e002h),a		;486a
 	ld hl,00008h		;486d
@@ -1383,7 +1475,7 @@ L_4892:
 L_48A9:
 	push de			;48a9
 L_48AA:
-	call L_4040		;48aa
+	call escribe_en_vram		;48aa
 	inc de			;48ad
 	inc a			;48ae
 	djnz L_48AA		;48af
@@ -1921,7 +2013,7 @@ L_4C4D:
 	ret			;4c50
 L_4C51:
 	ld hl,07124h		;4c51
-	call L_4052		;4c54
+	call suma_a_a_hl		;4c54
 	ld de,0e082h		;4c57
 	ld b,004h		;4c5a
 L_4C5C:
@@ -1929,7 +2021,7 @@ L_4C5C:
 	ld (de),a			;4c5d
 	inc hl			;4c5e
 	ld a,004h		;4c5f
-	call L_4057		;4c61
+	call suma_a_a_de		;4c61
 	djnz L_4C5C		;4c64
 	ret			;4c66
 L_4C67:
@@ -1972,7 +2064,7 @@ L_4CA1:
 	ld hl,04cc3h		;4ca1
 	ld a,(0e104h)		;4ca4
 	ld c,a			;4ca7
-	call L_4052		;4ca8
+	call suma_a_a_hl		;4ca8
 	ld a,(hl)			;4cab
 	ld hl,0e080h		;4cac
 	add a,(hl)			;4caf
@@ -2044,7 +2136,7 @@ L_4D1B:
 	ld (de),a			;4d1c
 	inc hl			;4d1d
 	ld a,020h		;4d1e
-	call L_4057		;4d20
+	call suma_a_a_de		;4d20
 	djnz L_4D1B		;4d23
 	jp L_5897		;4d25
 L_4D28:
@@ -2266,7 +2358,7 @@ L_4E90:
 	xor 001h		;4e99
 	ld (hl),a			;4e9b
 	ld de,038b9h		;4e9c
-	call L_4040		;4e9f
+	call escribe_en_vram		;4e9f
 	ret			;4ea2
 L_4EA3:
 	ld hl,06975h		;4ea3
@@ -2284,7 +2376,7 @@ L_4EA3:
 	ld a,c			;4ebb
 	and 003h		;4ebc
 	ld hl,04ef8h		;4ebe
-	call L_4052		;4ec1
+	call suma_a_a_hl		;4ec1
 	ld c,(hl)			;4ec4
 	ld hl,0e160h		;4ec5
 L_4EC8:
@@ -2522,10 +2614,10 @@ L_500F:
 	djnz L_500F		;5013
 	ld a,003h		;5015
 	sub c			;5017
-	call L_4052		;5018
+	call suma_a_a_hl		;5018
 	ld a,020h		;501b
 	sub c			;501d
-	call L_4057		;501e
+	call suma_a_a_de		;501e
 	ld b,c			;5021
 L_5022:
 	ld a,(hl)			;5022
@@ -2541,7 +2633,7 @@ L_5029:
 	ld de,0510fh		;502c
 	ld a,(hl)			;502f
 	and 007h		;5030
-	call L_4057		;5032
+	call suma_a_a_de		;5032
 	dec hl			;5035
 	ld a,(de)			;5036
 	ld (hl),a			;5037
@@ -2619,7 +2711,7 @@ L_5088:
 	add a,(hl)			;509b
 	ex de,hl			;509c
 	ld hl,0e062h		;509d
-	call L_4052		;50a0
+	call suma_a_a_hl		;50a0
 	ld (0e126h),hl		;50a3
 	bit 7,(hl)		;50a6
 	ex de,hl			;50a8
@@ -2655,10 +2747,10 @@ L_50BF:
 	add a,a			;50d3
 	add a,(hl)			;50d4
 	ld hl,05103h		;50d5
-	call L_4052		;50d8
+	call suma_a_a_hl		;50d8
 	ld d,039h		;50db
 	ld a,(hl)			;50dd
-	call L_4040		;50de
+	call escribe_en_vram		;50de
 	ld d,0e1h		;50e1
 	ld (de),a			;50e3
 	ld d,039h		;50e4
@@ -3545,10 +3637,10 @@ L_5791:
 L_5799:
 	ld a,(hl)			;5799
 	ld hl,057c2h		;579a
-	call L_4052		;579d
+	call suma_a_a_hl		;579d
 	ld a,(hl)			;57a0
 	ld hl,057bch		;57a1
-	call L_4052		;57a4
+	call suma_a_a_hl		;57a4
 	ld c,(hl)			;57a7
 	ld a,b			;57a8
 	and c			;57a9
@@ -3922,7 +4014,7 @@ L_59E7:
 	ld (hl),0e0h		;5a0d
 L_5A0F:
 	ld hl,05a50h		;5a0f
-	call L_4052		;5a12
+	call suma_a_a_hl		;5a12
 	ex de,hl			;5a15
 	ld a,(de)			;5a16
 	add a,(hl)			;5a17
@@ -4123,7 +4215,7 @@ L_5B82:
 	add a,a			;5b8c
 	add a,c			;5b8d
 	ld hl,0e135h		;5b8e
-	call L_4052		;5b91
+	call suma_a_a_hl		;5b91
 	ld a,b			;5b94
 	dec a			;5b95
 	rra			;5b96
@@ -4131,7 +4223,7 @@ L_5B82:
 	and 003h		;5b98
 	sub 003h		;5b9a
 	neg		;5b9c
-	call L_4052		;5b9e
+	call suma_a_a_hl		;5b9e
 	ld (hl),07dh		;5ba1
 	djnz L_5B82		;5ba3
 	ret			;5ba5
@@ -4187,10 +4279,10 @@ L_5BF8:
 	push de			;5bfa
 L_5BFB:
 	ld a,(hl)			;5bfb
-	call L_4040		;5bfc
+	call escribe_en_vram		;5bfc
 	inc hl			;5bff
 	ld a,020h		;5c00
-	call L_4057		;5c02
+	call suma_a_a_de		;5c02
 	djnz L_5BFB		;5c05
 	pop de			;5c07
 	dec de			;5c08
@@ -4282,25 +4374,25 @@ L_5C6F:
 L_5CA1:
 	pop de			;5ca1
 	ld a,c			;5ca2
-	call L_4040		;5ca3
+	call escribe_en_vram		;5ca3
 	ld a,020h		;5ca6
-	call L_4057		;5ca8
+	call suma_a_a_de		;5ca8
 	ld a,c			;5cab
 	inc a			;5cac
-	call L_4040		;5cad
+	call escribe_en_vram		;5cad
 	ret			;5cb0
 L_5CB1:
 	ld hl,05fefh		;5cb1
 	call L_43EE		;5cb4
 	ld a,(0e19bh)		;5cb7
 	ld hl,05d22h		;5cba
-	call L_4052		;5cbd
+	call suma_a_a_hl		;5cbd
 	ld a,(hl)			;5cc0
 	ld de,03867h		;5cc1
-	call L_4040		;5cc4
+	call escribe_en_vram		;5cc4
 	inc de			;5cc7
 	inc a			;5cc8
-	call L_4040		;5cc9
+	call escribe_en_vram		;5cc9
 	jp L_4381		;5ccc
 L_5CCF:
 	ld a,(0e04fh)		;5ccf
@@ -4319,7 +4411,7 @@ L_5CDB:
 	jp nc,L_5CB1		;5ce9
 	call L_5D17		;5cec
 	ld hl,05d2ch		;5cef
-	call L_40AE		;5cf2
+	call pinta_rotulo		;5cf2
 	ld hl,05fd3h		;5cf5
 	call L_43EE		;5cf8
 	ld hl,0e07bh		;5cfb
@@ -4327,7 +4419,7 @@ L_5CDB:
 	sub (hl)			;5d00
 	add a,0a0h		;5d01
 	ld de,0386dh		;5d03
-	call L_4040		;5d06
+	call escribe_en_vram		;5d06
 	ld a,050h		;5d09
 	call L_4349		;5d0b
 	ld hl,0010ch		;5d0e
@@ -4376,10 +4468,10 @@ L_5D3E:
 L_5D54:
 	ld de,03a2eh		;5d54
 	ld hl,05d72h		;5d57
-	call L_4052		;5d5a
+	call suma_a_a_hl		;5d5a
 	ld a,(hl)			;5d5d
 	ld hl,05d82h		;5d5e
-	call L_4052		;5d61
+	call suma_a_a_hl		;5d61
 L_5D64:
 	push hl			;5d64
 	push bc			;5d65
@@ -4512,7 +4604,7 @@ L_608C:
 	ld bc,00010h		;6090
 	call L_43DF		;6093
 	ld a,010h		;6096
-	call L_4057		;6098
+	call suma_a_a_de		;6098
 	pop bc			;609b
 	djnz L_608C		;609c
 	ld hl,06495h		;609e
@@ -4543,7 +4635,7 @@ L_60C7:
 L_60CB:
 	ld b,008h		;60cb
 L_60CD:
-	call L_4040		;60cd
+	call escribe_en_vram		;60cd
 	inc de			;60d0
 	djnz L_60CD		;60d1
 	inc a			;60d3
@@ -5220,7 +5312,7 @@ L_79D6:
 	and 03fh		;79d7
 	add a,a			;79d9
 	ld de,07b68h		;79da
-	call L_4057		;79dd
+	call suma_a_a_de		;79dd
 	dec hl			;79e0
 	dec hl			;79e1
 L_79E2:
@@ -5436,7 +5528,7 @@ L_7B3B:
 	call L_7AA2		;7b3b
 	ld a,b			;7b3e
 	ld hl,07b5eh		;7b3f
-	call L_4052		;7b42
+	call suma_a_a_hl		;7b42
 	ld l,(hl)			;7b45
 	ld h,000h		;7b46
 	ld a,(ix+005h)		;7b48

@@ -56,3 +56,170 @@ F 0x7b6a w
 D 0x7ba2 0x7ef4 partituras  los sonidos a los que apunta la tabla
 D 0x7ef4 0x8000 relleno_final  268 bytes de 0xFF hasta el final del cartucho
 F 0x7ef4 16
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x4040 escribe_en_vram
+B 0x4040 ESCRIBIR Y LEER LA VRAM. Las dos rutinas que usa todo el cartucho en vez de la BIOS: preparan el puerto una vez y luego mueven los bytes con el registro C ya cargado en el juego alternativo.
+C 0x4040 pone el puntero de escritura y deja 0x98 en C'
+C 0x4043 al juego alternativo, donde C es el puerto de datos del VDP
+C 0x4044 y ahi va el byte
+L 0x4049 lee_de_vram
+C 0x4049 lo mismo para leer
+C 0x404d el byte leido vuelve en A
+L 0x4052 suma_a_a_hl
+B 0x4052 SUMAR UN INDICE DE OCHO BITS A UN PUNTERO, con el acarreo propagado a mano. Dos gemelas, una para HL y otra para DE.
+C 0x4052 HL += A
+C 0x4055 y el byte alto si hubo acarreo
+L 0x4057 suma_a_a_de
+C 0x4057 DE += A, la gemela
+L 0x405c gancho_de_interrupcion
+B 0x405c EL GANCHO DE LA INTERRUPCION. Y aqui hay una diferencia con sus dos hermanos de tanda: este cartucho GUARDA LOS DOCE REGISTROS -los dos juegos completos, IX e IY incluidos- antes de hacer nada, en vez de fiarse de que el hilo principal este parado en un `jr $`. Cuesta veinticuatro bytes de pila por cuadro.
+C 0x405d los seis del juego normal
+C 0x4065 y los cuatro del alternativo
+C 0x406b lee el estado del VDP para que baje su bandera
+C 0x406e el sonido, lo primero
+C 0x4071 el cerrojo de reentrada, de un bit
+C 0x4076 si ya hay una dentro, no se entra otra vez
+C 0x4079 se abren las interrupciones ESTANDO dentro
+C 0x407a lee los mandos y el teclado
+C 0x407d y aqui se despacha la escena
+C 0x4082 se suelta el cerrojo
+C 0x4085 y se devuelven los doce registros
+L 0x4096 despacha_por_tabla
+B 0x4096 EL DESPACHADOR DE ESCENAS: la tabla va PEGADA detras del `call`, y el `pop hl` recupera su propia direccion de retorno, que es justo donde empieza.
+C 0x4096 la direccion de retorno ES la tabla
+C 0x4097 el numero de escena, por dos
+C 0x4098 la entrada que toca
+C 0x409b y de ahi el destino
+C 0x409f se salta sin dejar retorno
+L 0x40a0 intercambia_bloques
+B 0x40a0 INTERCAMBIAR DOS BLOQUES DE B BYTES sin memoria auxiliar.
+C 0x40a0 el de (HL)
+C 0x40a1 y el de (DE)
+C 0x40a2 cada uno al sitio del otro
+L 0x40aa borra_rotulo
+B 0x40aa EL INTERPRETE DE ROTULOS, con dos puertas que solo cambian la mascara: con 0x00 se escriben ceros y el MISMO guion borra el rotulo.
+C 0x40aa mascara 0x00: BORRA
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x40ae pinta_rotulo
+C 0x40ae mascara 0xFF: pinta
+C 0x40b0 de la cabecera sale el destino en la VRAM
+C 0x40b4 el siguiente byte del guion
+C 0x40b7 0xFF es el fin del rotulo
+C 0x40b9 0xFE es "sigue en otro sitio"
+C 0x40bc aqui muerde la mascara
+C 0x40bf y al BORRAR se escribe el patron 1, no el cero: en este cartucho la celda vacia es la 1, al reves que en sus dos hermanos
+C 0x40c1 y a la VRAM
+C 0x40c4 la siguiente celda
+L 0x40c7 init
+B 0x40c7 INIT, la direccion que trae la cabecera. Modo 1 de interrupcion, gancho en H.KEYI, pila en 0xE400 y un kilobyte de RAM a cero. Desde el `ei` final, el juego entero corre dentro de la interrupcion.
+C 0x40ca un `jp` en 0xFD9A y la direccion detras: asi se engancha H.KEYI
+C 0x40cf el gancho es el de 0x405C
+C 0x40d5 la pila, por encima de las variables
+C 0x40d8 y las variables, a cero de 0xE000 a 0xE3FF
+C 0x40e5 el cerrojo, tomado durante el arranque
+C 0x40ea prepara el VDP y la pantalla
+C 0x40ee y ahora si, se suelta
+L 0x40f5 espera_para_siempre
+C 0x40f5 aqui se queda el hilo principal
+L 0x40f7 reparte_la_escena
+B 0x40f7 EL REPARTO DE ESCENAS. Ademas del contador de cuadros, este cartucho guarda aparte sus tres bits de abajo en (0xE00B), que es el compas que usan las cosas que van a ritmo. Y como sus hermanos, APILA a mano el remate -0x46A3 o 0x4831 segun el bit 6 de (0xE002)-, salvo en la escena 8.
+C 0x40f7 el contador de cuadros
+C 0x40fc tres bits: el compas de ocho
+C 0x40fe guardado aparte
+C 0x4104 el bit 6 decide cual de los dos remates se apila
+C 0x4111 la escena 8 no lleva remate
+C 0x4115 aqui se fabrica el retorno
+C 0x4116 y la tabla de dieciseis va pegada detras
+B 0x4139 ESCENA 0: el arranque frio, que monta la pantalla del titulo.
+C 0x4143 el plazo de la cortinilla
+B 0x4151 ESCENA 1: el letrero de "VIDEO CARTRIDGE" parpadeando, uno de cada dos cuadros.
+C 0x4154 su bit 0 al acarreo
+C 0x415a el rotulo
+B 0x4164 ESCENA 2: la cuenta atras que lo apaga, borrandolo con el mismo guion.
+C 0x416c por la puerta que escribe el patron 1
+B 0x4176 ESCENA 3: espera a que el jugador se decida.
+B 0x417e ESCENA 4: el plazo de la pantalla de seleccion.
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+B 0x4188 ESCENA 5: empieza partida. Pone el contador de fase a cero, la senal de (0xE053) a uno y monta la pantalla entera.
+C 0x4190 el contador de la fase
+C 0x4197 la senal de partida en marcha
+C 0x419a el marcador
+B 0x41a6 ESCENA 6: espera a que (0xE053) se apague.
+B 0x41b2 ESCENA 7: arranca la vida. Baja el contador de vidas y, con dos jugadores, pinta "PLAYER 1" la primera vez -la segunda ya no, porque (0xE11B) se queda a cero-.
+C 0x41b6 el contador de vidas
+C 0x41b9 una menos: esta se va a jugar
+C 0x41ba repinta el marcador
+C 0x41bd el bit 5 dice si hay dos jugadores
+C 0x41c4 la marca de "ya se enseno"
+C 0x41ce el rotulo "PLAYER 1"
+C 0x41d4 el plazo, 47 cuadros
+C 0x41d6 y 48 si no hay rotulo
+L 0x41d9 escena_8_arranca
+B 0x41d9 ESCENA 8: el arranque de verdad, la que NO lleva remate apilado. (0xE001) elige entre tres caminos, y el sonido del final depende del bit 0 de (0xE051): el 0x89 o el 0x8B.
+C 0x41d9 el sub-estado
+C 0x41e2 el plazo del rotulo
+C 0x41e7 el mismo guion de "PLAYER 1"
+C 0x41ea por la puerta que lo borra
+C 0x41f0 la bandera de 0xE11A
+C 0x4217 espera a que pare el 0x8D
+C 0x421e y se apaga la bandera
+C 0x4224 la senal de partida en marcha
+C 0x4226 el contador de fase
+C 0x4229 su bit 0
+C 0x422a un sonido
+C 0x422e o el otro
+L 0x4233 plazo_de_32
+C 0x4233 32 cuadros de plazo
+L 0x4238 pasa_a_la_escena_siguiente
+C 0x4238 el numero de escena
+C 0x423b la siguiente
+C 0x423d y el sub-estado, a cero
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+B 0x4240 ESCENA 9: el compas de la partida. Si (0xE00D) esta a cero se espera; si no, se pasa a la escena 15 preparando el fin de fase.
+C 0x4243 la senal de fin
+C 0x4250 escena 15
+C 0x425d el plazo largo
+C 0x4262 la posicion, guardada
+C 0x4274 y el sonido del fin de fase
+L 0x427c despacha_el_sub_estado
+B 0x427c EL REPARTO POR SUB-ESTADO: (0xE001) elige, y la tabla de cuatro va pegada detras del `call`, igual que la de escenas.
+C 0x427c el sub-estado
+C 0x427f y su tabla de cuatro, pegada detras
+B 0x4290 SUB-ESTADO 1: espera a que 0x59C2 diga que si, y deja 40 cuadros de plazo.
+C 0x4294 cuarenta cuadros
+B 0x429c SUB-ESTADO 2: el plazo, y luego 160 cuadros mas.
+C 0x42a1 ciento sesenta cuadros
+B 0x42a9 SUB-ESTADO 3: si no quedan vidas, suena el 0x93, se pinta el cartel y se pasa a la escena 13; si quedan, se mira si el otro jugador tiene partida.
+C 0x42a9 las vidas
+C 0x42b4 el sonido del final
+C 0x42b9 el cartel
+C 0x42bf escena 13
+C 0x42c9 el estado del otro jugador
+L 0x42d4 cambia_de_jugador
+B 0x42d4 EL CAMBIO DE JUGADOR, otra vez en una sola instruccion, pero aqui el bloque es de CUARENTA Y OCHO bytes -0x30-, no de treinta y dos como en sus dos hermanos: este cartucho lleva mas estado por jugador.
+C 0x42d4 el estado del que juega
+C 0x42d7 y el del que espera
+C 0x42da cuarenta y ocho bytes cada uno
+C 0x42dc y se cambian de sitio
+C 0x42e3 el bit 7 dice de quien es el turno
+L 0x42e8 el_relevo
+C 0x42e8 espera a que pare el sonido
+C 0x42ed el estado del otro jugador
+C 0x42f7 apaga el bit 6 de (0xE002)
+C 0x42fa dos vidas para el que entra
