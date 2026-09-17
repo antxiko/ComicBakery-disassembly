@@ -506,3 +506,92 @@ C 0x4729 la VRAM entera
 C 0x472c los dieciseis kilobytes
 C 0x4733 los ocho registros del VDP
 C 0x4739 ocho bytes
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x473e la copia en RAM de los registros
+C 0x4741 ocho escrituras
+C 0x4745 el valor
+C 0x4746 WRTVDP: C lleva el numero de registro
+L 0x4757 codigo_huerfano_4757
+C 0x4757 pegado detras de los registros del VDP
+L 0x475c lee_el_mando
+B 0x475c LEER EL MANDO. El bit 6 del registro 15 del PSG elige el puerto y lo decide el bit 7 de (0xE002): cada jugador el suyo. Los bits se invierten con `cpl` porque pulsado se lee como cero.
+C 0x475c la seleccion de puerto
+C 0x4761 el turno
+C 0x4765 el segundo jugador usa el otro puerto
+C 0x4767 registro 15 del PSG
+C 0x476c y el 14, que es donde se lee
+C 0x4771 pulsado es cero, se invierte
+L 0x4775 lee_los_mandos
+B 0x4775 LA LECTURA DE CADA CUADRO, y aqui esta lo bueno: si el bit 6 de (0xE002) esta a CERO -o sea, mientras estamos en el menu- la entrada no viene del mando sino de un GUION grabado en 0x6001. El cartucho se juega solo en la pantalla de atraccion, leyendo movimientos de una lista en vez de del jugador.
+C 0x4775 el mando
+C 0x4778 el bit 4: se juega con teclado
+C 0x4780 el bit 6: si esta a cero, manda la demostracion
+C 0x4785 la lectura de este cuadro
+C 0x4788 y la de antes se guarda al lado
+C 0x4795 dos bits de la lectura
+C 0x479b el estado de 0xE105
+L 0x47a9 lee_el_guion_de_la_demostracion
+B 0x47a9 EL GUION DE LA DEMOSTRACION: (0xE12E) avanza un paso cada vez que el compas de ocho da la vuelta, y ese paso indexa la lista de 0x6001, de donde sale lo que "pulsa" el jugador de mentira. Al llegar al paso 0x4F se apaga la senal de partida.
+C 0x47a9 el paso de la demostracion
+C 0x47ac el compas de ocho
+C 0x47b2 y solo entonces avanza
+C 0x47b4 el paso 79
+C 0x47bb apaga la senal de partida
+C 0x47bd la lista de movimientos grabados
+C 0x47c3 y de ahi sale lo que se "pulsa"
+L 0x47c5 filtra_la_direccion
+B 0x47c5 FILTRAR LA DIRECCION: las dos a la vez (0x0C) no valen, y si se estaba yendo a un lado y se pide el contrario, el `xor 08Ch` le da la vuelta al sentido de golpe.
+C 0x47c9 el estado de 0xE104
+C 0x47d0 los dos bits de direccion
+C 0x47d4 las dos a la vez
+C 0x47db el bit 7: ya esta girando
+C 0x47e3 y el xor le da la vuelta al sentido
+L 0x47e8 lee_el_teclado
+C 0x47e8 una fila del teclado
+C 0x47ed pulsado es cero, se invierte
+C 0x47f2 y otra fila
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x47fb las dos teclas de esta fila
+C 0x4803 y las dos que quedan
+L 0x480d flanco_del_boton_10
+L 0x4811 flanco_de_los_dos_botones
+B 0x480d EL FLANCO DE UN BOTON, con la mascara en C -0x10 para uno solo, 0x21 para los dos-. Invierte la lectura anterior y la cruza con la de ahora: solo queda a uno lo que estaba suelto y ahora esta pulsado. Y si estamos en el menu -bit 6 a cero- solo responde la escena 11.
+C 0x4816 el bit 6: en el menu no se atiende
+C 0x481d solo la escena 11
+C 0x4821 la lectura de ahora
+C 0x4825 y la de antes
+C 0x4829 invertida
+C 0x482d cruzadas: el flanco
+L 0x4831 atiende_el_menu
+B 0x4831 EL MENU DE SELECCION, que es el remate que 0x40F7 apila cuando el bit 6 de (0xE002) esta a cero. Junta las TRES entradas -los dos puertos y el teclado- con un `or`, de modo que vale cualquiera, y se queda con el FLANCO.
+C 0x4831 el primer puerto de mando
+C 0x4837 y el segundo
+C 0x483c se juntan
+C 0x483e mas el teclado
+C 0x4842 lo de ahora en (0xE040)
+C 0x4848 y lo de antes justo detras
+C 0x484a los bits que han cambiado
+C 0x484b y de esos, los que ahora estan pulsados
+C 0x484c nada nuevo, nada que hacer
+C 0x4850 se reinicia el plazo de la pantalla
+C 0x4853 solo la escena 5 responde al menu
+C 0x485c de 0x10 para arriba son botones
+C 0x4860 los cuatro modos de juego
+C 0x4863 indexados por la opcion elegida
+C 0x486a y el modo queda en (0xE002)
+C 0x486d a la escena 8, la que arranca sin remate apilado
+L 0x4878 mueve_el_cursor
+C 0x4879 borra el cursor de donde estaba
+C 0x487d la opcion elegida
+C 0x4881 el bit 0: arriba
+C 0x4884 una menos
+C 0x4885 el bit 1: abajo
+C 0x4888 una mas

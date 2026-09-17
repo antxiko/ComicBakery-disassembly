@@ -87,7 +87,7 @@ gancho_de_interrupcion:
 	jr nz,L_4085		;4076   ; si ya hay una dentro, no se entra otra vez
 	inc (hl)			;4078
 	ei			;4079   ; se abren las interrupciones ESTANDO dentro
-	call L_4775		;407a   ; lee los mandos y el teclado
+	call lee_los_mandos		;407a   ; lee los mandos y el teclado
 	call reparte_la_escena		;407d   ; y aqui se despacha la escena
 	di			;4080
 	xor a			;4081
@@ -931,7 +931,7 @@ prepara_la_pantalla_de_fin:
 	ld de,03b00h		;44ff
 	call escribe_en_vram		;4502
 	ld a,0e0h		;4505
-	call L_4757		;4507
+	call codigo_huerfano_4757		;4507
 	ld de,03840h		;450a
 	ld bc,002c0h		;450d   ; 704 celdas
 	ld a,001h		;4510   ; con el patron 1
@@ -1301,12 +1301,12 @@ L_4733:
 	ld bc,00008h		;4739   ; ocho bytes
 	ldir		;473c
 L_473E:
-	ld hl,0e038h		;473e
-	ld d,008h		;4741
+	ld hl,0e038h		;473e   ; la copia en RAM de los registros
+	ld d,008h		;4741   ; ocho escrituras
 	ld c,000h		;4743
 L_4745:
-	ld b,(hl)			;4745
-	call 00047h		;4746   ; BIOS WRTVDP - Writes data in the VDP-register
+	ld b,(hl)			;4745   ; el valor
+	call 00047h		;4746   ; BIOS WRTVDP - Writes data in the VDP-register | WRTVDP: C lleva el numero de registro
 	inc hl			;4749
 	inc c			;474a
 	dec d			;474b
@@ -1323,45 +1323,53 @@ DATA_474F:
 ; ======================================================================
 
 
-L_4757:
-	ld (0e03fh),a		;4757
+codigo_huerfano_4757:
+	ld (0e03fh),a		;4757   ; pegado detras de los registros del VDP
 	jr $-28		;475a
-L_475C:
-	ld e,08fh		;475c
+
+; ----------------------------------------------------------------------
+; LEER EL MANDO. El bit 6 del registro 15 del PSG elige el puerto y lo decide el bit 7 de (0xE002): cada jugador el suyo. Los bits se invierten con `cpl` porque pulsado se lee como cero.
+; ----------------------------------------------------------------------
+lee_el_mando:
+	ld e,08fh		;475c   ; la seleccion de puerto
 	ld hl,0e002h		;475e
-	bit 7,(hl)		;4761
+	bit 7,(hl)		;4761   ; el turno
 	jr z,L_4767		;4763
-	set 6,e		;4765
+	set 6,e		;4765   ; el segundo jugador usa el otro puerto
 L_4767:
-	ld a,00fh		;4767
+	ld a,00fh		;4767   ; registro 15 del PSG
 	call 00093h		;4769   ; BIOS WRTPSG - Writes data to PSG-register
-	ld a,00eh		;476c
+	ld a,00eh		;476c   ; y el 14, que es donde se lee
 	call 00096h		;476e   ; BIOS RDPSG - Reads value from PSG-register
-	cpl			;4771
+	cpl			;4771   ; pulsado es cero, se invierte
 	and 03fh		;4772
 	ret			;4774
-L_4775:
-	call L_475C		;4775
-	bit 4,(hl)		;4778
-	call nz,L_47E8		;477a
+
+; ----------------------------------------------------------------------
+; LA LECTURA DE CADA CUADRO, y aqui esta lo bueno: si el bit 6 de (0xE002) esta a CERO -o sea, mientras estamos en el menu- la entrada no viene del mando sino de un GUION grabado en 0x6001. El cartucho se juega solo en la pantalla de atraccion, leyendo movimientos de una lista en vez de del jugador.
+; ----------------------------------------------------------------------
+lee_los_mandos:
+	call lee_el_mando		;4775   ; el mando
+	bit 4,(hl)		;4778   ; el bit 4: se juega con teclado
+	call nz,lee_el_teclado		;477a
 	ld hl,0e002h		;477d
-	bit 6,(hl)		;4780
-	call z,L_47A9		;4782
-	ld hl,0e009h		;4785
-	ld c,(hl)			;4788
+	bit 6,(hl)		;4780   ; el bit 6: si esta a cero, manda la demostracion
+	call z,lee_el_guion_de_la_demostracion		;4782
+	ld hl,0e009h		;4785   ; la lectura de este cuadro
+	ld c,(hl)			;4788   ; y la de antes se guarda al lado
 	ld (hl),a			;4789
 	dec hl			;478a
 	ld (hl),c			;478b
-	call L_47C5		;478c
+	call filtra_la_direccion		;478c
 	xor a			;478f
 	dec e			;4790
 	jp p,L_47A5		;4791
 	ld a,(hl)			;4794
-	rrca			;4795
+	rrca			;4795   ; dos bits de la lectura
 	rrca			;4796
 	and 003h		;4797
 	jr nz,L_47A5		;4799
-	ld a,(0e105h)		;479b
+	ld a,(0e105h)		;479b   ; el estado de 0xE105
 	or a			;479e
 	ld a,001h		;479f
 	jr z,L_47A5		;47a1
@@ -1369,71 +1377,79 @@ L_4775:
 L_47A5:
 	ld (0e122h),a		;47a5
 	ret			;47a8
-L_47A9:
-	ld hl,0e12eh		;47a9
-	ld a,(0e00bh)		;47ac
+
+; ----------------------------------------------------------------------
+; EL GUION DE LA DEMOSTRACION: (0xE12E) avanza un paso cada vez que el compas de ocho da la vuelta, y ese paso indexa la lista de 0x6001, de donde sale lo que "pulsa" el jugador de mentira. Al llegar al paso 0x4F se apaga la senal de partida.
+; ----------------------------------------------------------------------
+lee_el_guion_de_la_demostracion:
+	ld hl,0e12eh		;47a9   ; el paso de la demostracion
+	ld a,(0e00bh)		;47ac   ; el compas de ocho
 	or a			;47af
 	jr nz,L_47B3		;47b0
-	inc (hl)			;47b2
+	inc (hl)			;47b2   ; y solo entonces avanza
 L_47B3:
 	ld a,(hl)			;47b3
-	cp 04fh		;47b4
+	cp 04fh		;47b4   ; el paso 79
 	jr nz,L_47BD		;47b6
 	ld hl,0e053h		;47b8
-	ld (hl),000h		;47bb
+	ld (hl),000h		;47bb   ; apaga la senal de partida
 L_47BD:
-	ld hl,06001h		;47bd
+	ld hl,06001h		;47bd   ; la lista de movimientos grabados
 	call suma_a_a_hl		;47c0
-	ld a,(hl)			;47c3
+	ld a,(hl)			;47c3   ; y de ahi sale lo que se "pulsa"
 	ret			;47c4
-L_47C5:
+
+; ----------------------------------------------------------------------
+; FILTRAR LA DIRECCION: las dos a la vez (0x0C) no valen, y si se estaba yendo a un lado y se pide el contrario, el `xor 08Ch` le da la vuelta al sentido de golpe.
+; ----------------------------------------------------------------------
+filtra_la_direccion:
 	ld hl,0e101h		;47c5
 	ld c,a			;47c8
-	ld a,(0e104h)		;47c9
+	ld a,(0e104h)		;47c9   ; el estado de 0xE104
 	ld e,a			;47cc
 	or a			;47cd
 	ret nz			;47ce
 	ld a,c			;47cf
-	and 00ch		;47d0
+	and 00ch		;47d0   ; los dos bits de direccion
 	jr z,L_47D8		;47d2
-	cp 00ch		;47d4
+	cp 00ch		;47d4   ; las dos a la vez
 	jr z,L_47DA		;47d6
 L_47D8:
 	ld (hl),a			;47d8
 	ret			;47d9
 L_47DA:
 	ld a,(hl)			;47da
-	bit 7,a		;47db
+	bit 7,a		;47db   ; el bit 7: ya esta girando
 	ret nz			;47dd
 	ld b,088h		;47de
 	or a			;47e0
 	jr z,L_47E6		;47e1
-	xor 08ch		;47e3
+	xor 08ch		;47e3   ; y el xor le da la vuelta al sentido
 	ld b,a			;47e5
 L_47E6:
 	ld (hl),b			;47e6
 	ret			;47e7
-L_47E8:
-	ld a,007h		;47e8
+lee_el_teclado:
+	ld a,007h		;47e8   ; una fila del teclado
 	call 00141h		;47ea   ; BIOS SNSMAT - Returns the value of the specified line from the keyboard matrix
-	cpl			;47ed
+	cpl			;47ed   ; pulsado es cero, se invierte
 	rrca			;47ee
 	and 020h		;47ef
 	ld e,a			;47f1
-	ld a,008h		;47f2
+	ld a,008h		;47f2   ; y otra fila
 	call 00141h		;47f4   ; BIOS SNSMAT - Returns the value of the specified line from the keyboard matrix
 	cpl			;47f7
 	rrca			;47f8
 	rrca			;47f9
 	ld b,a			;47fa
-	and 004h		;47fb
+	and 004h		;47fb   ; las dos teclas de esta fila
 	or e			;47fd
 	ld c,a			;47fe
 	ld a,b			;47ff
 	rrca			;4800
 	rrca			;4801
 	ld b,a			;4802
-	and 018h		;4803
+	and 018h		;4803   ; y las dos que quedan
 	or c			;4805
 	ld c,a			;4806
 	ld a,b			;4807
@@ -1441,85 +1457,93 @@ L_47E8:
 	and 003h		;4809
 	or c			;480b
 	ret			;480c
-L_480D:
+
+; ----------------------------------------------------------------------
+; EL FLANCO DE UN BOTON, con la mascara en C -0x10 para uno solo, 0x21 para los dos-. Invierte la lectura anterior y la cruza con la de ahora: solo queda a uno lo que estaba suelto y ahora esta pulsado. Y si estamos en el menu -bit 6 a cero- solo responde la escena 11.
+; ----------------------------------------------------------------------
+flanco_del_boton_10:
 	ld c,010h		;480d
 	jr L_4813		;480f
-L_4811:
+flanco_de_los_dos_botones:
 	ld c,021h		;4811
 L_4813:
 	ld a,(0e002h)		;4813
-	bit 6,a		;4816
+	bit 6,a		;4816   ; el bit 6: en el menu no se atiende
 	jr z,L_4821		;4818
 	ld a,(0e000h)		;481a
-	cp 00bh		;481d
+	cp 00bh		;481d   ; solo la escena 11
 	jr nz,L_482F		;481f
 L_4821:
-	ld a,(0e009h)		;4821
+	ld a,(0e009h)		;4821   ; la lectura de ahora
 	ld b,a			;4824
-	ld a,(0e008h)		;4825
+	ld a,(0e008h)		;4825   ; y la de antes
 	and c			;4828
-	cpl			;4829
+	cpl			;4829   ; invertida
 	ld e,a			;482a
 	ld a,b			;482b
 	and c			;482c
-	and e			;482d
+	and e			;482d   ; cruzadas: el flanco
 	ret			;482e
 L_482F:
 	xor a			;482f
 	ret			;4830
-L_4831:
-	ld e,08fh		;4831
+
+; ----------------------------------------------------------------------
+; EL MENU DE SELECCION, que es el remate que 0x40F7 apila cuando el bit 6 de (0xE002) esta a cero. Junta las TRES entradas -los dos puertos y el teclado- con un `or`, de modo que vale cualquiera, y se queda con el FLANCO.
+; ----------------------------------------------------------------------
+atiende_el_menu:
+	ld e,08fh		;4831   ; el primer puerto de mando
 	call L_4767		;4833
 	ld d,a			;4836
-	ld e,0cfh		;4837
+	ld e,0cfh		;4837   ; y el segundo
 	call L_4767		;4839
-	or d			;483c
+	or d			;483c   ; se juntan
 	ld d,a			;483d
-	call L_47E8		;483e
+	call lee_el_teclado		;483e   ; mas el teclado
 	or d			;4841
-	ld hl,0e040h		;4842
+	ld hl,0e040h		;4842   ; lo de ahora en (0xE040)
 	ld c,(hl)			;4845
 	ld (hl),a			;4846
 	inc hl			;4847
-	ld (hl),c			;4848
+	ld (hl),c			;4848   ; y lo de antes justo detras
 	ld b,a			;4849
-	xor c			;484a
-	and b			;484b
-	ret z			;484c
+	xor c			;484a   ; los bits que han cambiado
+	and b			;484b   ; y de esos, los que ahora estan pulsados
+	ret z			;484c   ; nada nuevo, nada que hacer
 	ld b,a			;484d
 	ld a,000h		;484e
-	ld (0e004h),a		;4850
-	ld a,005h		;4853
+	ld (0e004h),a		;4850   ; se reinicia el plazo de la pantalla
+	ld a,005h		;4853   ; solo la escena 5 responde al menu
 	ld hl,0e000h		;4855
 	cp (hl)			;4858
 	jr nz,L_4874		;4859
 	ld a,b			;485b
-	cp 010h		;485c
-	jr c,L_4878		;485e
-	ld hl,0488eh		;4860
-	ld a,(0e042h)		;4863
+	cp 010h		;485c   ; de 0x10 para arriba son botones
+	jr c,mueve_el_cursor		;485e
+	ld hl,0488eh		;4860   ; los cuatro modos de juego
+	ld a,(0e042h)		;4863   ; indexados por la opcion elegida
 	call suma_a_a_hl		;4866
 	ld a,(hl)			;4869
-	ld (0e002h),a		;486a
-	ld hl,00008h		;486d
+	ld (0e002h),a		;486a   ; y el modo queda en (0xE002)
+	ld hl,00008h		;486d   ; a la escena 8, la que arranca sin remate apilado
 	ld (0e000h),hl		;4870
 	ret			;4873
 L_4874:
 	ld (hl),a			;4874
 	jp L_4378		;4875
-L_4878:
+mueve_el_cursor:
 	push bc			;4878
-	call L_4521		;4879
+	call L_4521		;4879   ; borra el cursor de donde estaba
 	pop af			;487c
-	ld hl,0e042h		;487d
+	ld hl,0e042h		;487d   ; la opcion elegida
 	ld b,(hl)			;4880
-	rra			;4881
+	rra			;4881   ; el bit 0: arriba
 	jr nc,L_4885		;4882
-	dec b			;4884
+	dec b			;4884   ; una menos
 L_4885:
-	rra			;4885
+	rra			;4885   ; el bit 1: abajo
 	jr nc,L_4889		;4886
-	inc b			;4888
+	inc b			;4888   ; una mas
 L_4889:
 	ld a,b			;4889
 	and 003h		;488a
@@ -1738,7 +1762,7 @@ L_4A28:
 	ld a,(0e124h)		;4a33
 	or a			;4a36
 	ret nz			;4a37
-	call L_480D		;4a38
+	call flanco_del_boton_10		;4a38
 	ret z			;4a3b
 	dec (hl)			;4a3c
 	inc hl			;4a3d
@@ -2108,7 +2132,7 @@ L_4C67:
 	ld a,(0e121h)		;4c6e
 	cp 00eh		;4c71
 	ret nc			;4c73
-	call L_4811		;4c74
+	call flanco_de_los_dos_botones		;4c74
 	ret z			;4c77
 	ld a,001h		;4c78
 	call L_799C		;4c7a
@@ -4202,7 +4226,7 @@ L_5AD6:
 	call L_5B5E		;5add
 	call L_61C3		;5ae0
 	ld a,0eeh		;5ae3
-	call L_4757		;5ae5
+	call codigo_huerfano_4757		;5ae5
 	ld hl,05ef6h		;5ae8
 	call descomprime		;5aeb
 	ld a,(0e07bh)		;5aee
