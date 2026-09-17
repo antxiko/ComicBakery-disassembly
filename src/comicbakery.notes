@@ -1614,3 +1614,201 @@ C 0x79fc las vueltas dadas
 C 0x79ff una mas
 C 0x7a00 contra las que pide la partitura
 C 0x7a0e y vuelve a arrancar el mismo sonido
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x53b7 dieciseis menos
+C 0x53bc el patron 0x98
+C 0x53c3 dieciseis mas: el segundo sprite
+C 0x53c7 y su patron
+L 0x7a8b lee_la_nota_de_la_partitura
+C 0x7a8b el nibble alto es la DURACION
+C 0x7a8e y el bajo, cruzado, la nota
+C 0x7a91 el byte siguiente completa
+C 0x7a93 la partitura queda apuntada
+C 0x7a9a y se convierte en periodo
+C 0x7a9e cuatro giros: la duracion a su sitio
+L 0x7b1c fija_la_duracion
+B 0x7b1c LA DURACION Y EL APAGADO: el nibble alto del byte es la duracion y, restandole 12, sale el punto en el que la nota empieza a apagarse. Si da cero, no hay apagado.
+C 0x7b1c la duracion
+C 0x7b21 y por donde va la partitura
+C 0x7b27 el nibble alto
+C 0x7b29 cuatro giros
+C 0x7b2e menos doce: el punto de apagado
+L 0x7a53 avanza_la_voz
+C 0x7a53 por donde va la partitura
+C 0x7a5a 0xFE: volver al principio
+C 0x7a60 el bit 7 del estado
+C 0x7a67 el nibble alto manda
+C 0x7a69 0x2n cambia el instrumento
+C 0x7a6e el nibble bajo es el numero
+L 0x70f9 copia_las_franjas_del_decorado
+B 0x70f9 COPIAR TROZOS DE VRAM SOBRE VRAM para montar el decorado: doce franjas de 0x18C0 a 0x1A50, cinco alternas de 0x1BC0 a 0x1DD0 y cuatro de 0x1D00 a 0x1EF0. El dibujo se repite sin volver a descomprimirlo.
+C 0x70ff doce franjas
+C 0x710a cinco, alternas
+C 0x7115 y cuatro mas
+L 0x61c3 monta_los_tres_decorados
+C 0x61c3 el primer destino
+C 0x61c9 el segundo
+C 0x61cf y el tercero
+L 0x70d6 monta_el_decorado_de_la_fase
+C 0x70d9 el destino en la VRAM
+C 0x70eb el tercer bloque
+C 0x70f4 una franja
+L 0x5411 mueve_los_carros_a_su_ritmo
+B 0x5411 EL AVANCE DE LOS CARROS: un pixel en general, pero OCHO cuando el compas de ocho vale 7 y el estado no es 4. O sea que cada ocho cuadros pegan un tiron.
+C 0x5412 el bit 7: esta activo
+C 0x5416 cinco bits del estado
+C 0x5418 un pixel
+C 0x541a el estado 4
+C 0x5421 el paso 7 del compas
+C 0x5425 ocho pixeles de tiron
+L 0x5431 corre_los_dos_sprites_del_carro
+C 0x5433 aplicado al primer sprite
+C 0x5436 cuatro bytes: el segundo
+C 0x543a y al segundo, igual
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x53db cinco bits del estado
+C 0x53dd el estado 0x12
+C 0x53e1 el patron de fuera de sitio
+C 0x54bb ocho bytes por carro
+C 0x54bf y dos de estado
+C 0x7a32 el estado de esta voz
+C 0x7a39 dos registros por canal
+C 0x7b3f la escala de doce notas
+C 0x7b45 el periodo de esa nota
+C 0x7b48 las octavas a bajar
+C 0x53f3 menos 0x98
+C 0x53f5 dos giros
+C 0x53f9 +0x10: el hueco que le toca
+C 0x53ff la planta
+C 0x5404 la direccion guardada
+C 0x7ac0 lo que le queda a la nota
+C 0x7ac6 y la cuenta del apagado
+C 0x7acc cuando se juntan, baja el volumen
+C 0x6184 el destino en la VRAM
+C 0x618a el numero de fase elige el bloque
+C 0x61e8 el primer bloque
+C 0x61ec y su color, 0x2000 mas alla
+C 0x706b un cero
+C 0x7072 sesenta y cuatro bytes
+C 0x7a41 el bit 6 del estado
+C 0x7a4f lo que le queda a la nota
+C 0x7ab1 las vueltas, a cero
+C 0x7aba y el estado de la voz: se calla
+C 0x7aeb el nibble alto
+C 0x7aed 0xDn: el paso del arpegio
+C 0x4524 donde va el cursor
+C 0x4528 los dos patrones
+C 0x4df3 el contador de 0xE094
+C 0x4df7 por debajo de seis, dos mas
+C 0x543f ocho bytes por carro
+C 0x6138 un bloque
+C 0x613b el numero de fase elige
+C 0x6145 o el otro
+C 0x79d7 seis bits
+C 0x79da la tabla de sonidos
+C 0x4c40 el estado del salto
+C 0x4c46 la direccion
+C 0x4fff la cuenta
+C 0x5002 una menos
+C 0x7aa3 la duracion que toca
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x4086 los cuatro del juego alternativo
+C 0x408b IX e IY, que casi ningun cartucho se molesta en salvar
+C 0x408f y los cuatro del normal
+C 0x4b72 la lista de posiciones
+C 0x4b76 la mascara, en el juego alternativo
+C 0x4b81 el mapa de ocupacion
+C 0x7a75 el nibble alto
+C 0x7a77 0x1n toca el envolvente
+C 0x7a7c los cinco bits de abajo, su forma
+C 0x50f1 el estado
+C 0x50fa los tres bytes de su ficha
+C 0x614b un bloque
+C 0x614e el numero de fase elige
+C 0x6158 o el otro
+C 0x615e un bloque
+C 0x6161 el numero de fase elige
+C 0x616b o el otro
+C 0x6171 un bloque
+C 0x6174 el numero de fase elige
+C 0x617e o el otro
+C 0x61ad el destino en la VRAM
+C 0x61b0 el numero de fase
+C 0x61b6 un bloque
+C 0x61bd o el otro
+C 0x7af9 0xFn: el vibrato
+C 0x7afd el nibble bajo
+C 0x7b04 0xEn: el volumen de la voz
+C 0x7b08 el nibble bajo
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x4098 despacha_con_hl
+L 0x40b4 pinta_guion_con_mascara
+L 0x4240 espera_a_que_se_apague
+L 0x4349 rellena_la_franja_de_abajo
+L 0x43d2 rellena_vram_con_espera
+L 0x43f2 descomprime_en_de
+L 0x43f5 descomprime_a_los_tres_tercios
+L 0x44e8 saca_los_sprites_de_pantalla
+L 0x4521 pinta_el_cursor
+L 0x45e0 pinta_el_tanteo_del_turno
+L 0x45ee imprime_tres_bytes_bcd
+L 0x4733 vuelca_los_registros_del_vdp
+L 0x4767 lee_un_puerto_del_psg
+L 0x4940 vuelca_los_sprites
+L 0x4bfb mueve_al_panadero_un_paso
+L 0x4c1a salto_sin_desplazamiento
+L 0x4c1e salto_con_desplazamiento
+L 0x4e51 monta_el_bloque_del_decorado
+L 0x4f89 libera_el_bit_del_bicho
+L 0x51d2 marca_el_estado
+L 0x52ce pon_el_segundo_sprite_del_carro
+L 0x53b6 coloca_el_carro_volcado
+L 0x53d4 repinta_el_carro
+L 0x53f2 hueco_del_carro
+L 0x53ff mira_el_carro_contra_el_panadero
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x54cb arranca_el_carro_en_el_estado_2
+L 0x54d2 pone_los_dos_patrones_del_carro
+L 0x59aa remata_la_caida
+L 0x60a4 rellena_con_el_patron
+L 0x60a6 rellena_la_franja_del_titulo
+L 0x6138 carga_el_bloque_a
+L 0x6145 carga_el_bloque_b
+L 0x614b carga_el_bloque_c
+L 0x615e carga_el_bloque_d
+L 0x6171 carga_el_bloque_e
+L 0x6184 carga_el_bloque_f
+L 0x619a descomprime_y_repite
+L 0x61a1 descomprime_dos_veces
+L 0x61ad carga_el_bloque_g
+L 0x61e0 monta_un_decorado
+L 0x7061 prepara_los_sprites_de_la_fase
+L 0x707a vuelca_los_atributos
+L 0x707d vuelca_bc_atributos
+L 0x7086 pon_los_patrones_del_panadero
+L 0x711b monta_el_fondo_del_recuento
+L 0x7a17 abre_o_cierra_el_canal
+L 0x7a18 suena_un_cuadro
+L 0x7a41 avanza_una_voz
+L 0x7aa2 fija_la_duracion_de_la_nota
+L 0x7b52 escribe_la_nota

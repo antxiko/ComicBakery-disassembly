@@ -81,7 +81,7 @@ gancho_de_interrupcion:
 	push de			;4069
 	push hl			;406a
 	call 0013eh		;406b   ; BIOS RDVDP - Reads VDP status register | lee el estado del VDP para que baje su bandera
-	call L_7A18		;406e   ; el sonido, lo primero
+	call suena_un_cuadro		;406e   ; el sonido, lo primero
 	ld hl,0e005h		;4071   ; el cerrojo de reentrada, de un bit
 	bit 0,(hl)		;4074
 	jr nz,L_4085		;4076   ; si ya hay una dentro, no se entra otra vez
@@ -94,14 +94,14 @@ gancho_de_interrupcion:
 	ld (0e005h),a		;4082   ; se suelta el cerrojo
 L_4085:
 	pop hl			;4085   ; y se devuelven los doce registros
-	pop de			;4086
+	pop de			;4086   ; los cuatro del juego alternativo
 	pop bc			;4087
 	pop af			;4088
 	ex af,af'			;4089
 	exx			;408a
-	pop iy		;408b
+	pop iy		;408b   ; IX e IY, que casi ningun cartucho se molesta en salvar
 	pop ix		;408d
-	pop hl			;408f
+	pop hl			;408f   ; y los cuatro del normal
 	pop de			;4090
 	pop bc			;4091
 	pop af			;4092
@@ -114,7 +114,7 @@ L_4085:
 despacha_por_tabla:
 	pop hl			;4096   ; la direccion de retorno ES la tabla
 	add a,a			;4097   ; el numero de escena, por dos
-L_4098:
+despacha_con_hl:
 	call suma_a_a_hl		;4098   ; la entrada que toca
 	ld e,(hl)			;409b   ; y de ahi el destino
 	inc hl			;409c
@@ -149,7 +149,7 @@ L_40B0:
 	inc hl			;40b1
 	ld d,(hl)			;40b2
 	inc hl			;40b3
-L_40B4:
+pinta_guion_con_mascara:
 	ld a,(hl)			;40b4   ; el siguiente byte del guion
 	inc hl			;40b5
 	ld b,a			;40b6
@@ -163,7 +163,7 @@ L_40B4:
 L_40C1:
 	call escribe_en_vram		;40c1   ; y a la VRAM
 	inc de			;40c4   ; la siguiente celda
-	jr L_40B4		;40c5
+	jr pinta_guion_con_mascara		;40c5
 
 ; ----------------------------------------------------------------------
 ; INIT, la direccion que trae la cabecera. Modo 1 de interrupcion, gancho en H.KEYI, pila en 0xE400 y un kilobyte de RAM a cero. Desde el `ei` final, el juego entero corre dentro de la interrupcion.
@@ -233,7 +233,7 @@ DATA_tabla_de_escenas:
 L_4139:
 	call baja_el_contador_y_barre		;4139
 	ret p			;413c
-	call L_4733		;413d
+	call vuelca_los_registros_del_vdp		;413d
 	call monta_la_pantalla_entera		;4140
 	ld a,011h		;4143   ; el plazo de la cortinilla
 	ld (0e00ah),a		;4145
@@ -301,14 +301,14 @@ L_4188:
 	ld (0e053h),a		;4197   ; la senal de partida en marcha
 	call pinta_el_marcador		;419a   ; el marcador
 	call prepara_la_fase		;419d
-	call L_7061		;41a0
+	call prepara_los_sprites_de_la_fase		;41a0
 	jp plazo_de_32		;41a3
 
 ; ----------------------------------------------------------------------
 ; ESCENA 6: espera a que (0xE053) se apague.
 ; ----------------------------------------------------------------------
 L_41A6:
-	call L_4240		;41a6
+	call espera_a_que_se_apague		;41a6
 	ld a,(0e053h)		;41a9
 	or a			;41ac
 	ret nz			;41ad
@@ -369,7 +369,7 @@ L_41FC:
 	call el_panadero_alcanzado		;4202
 	ret nc			;4205
 L_4206:
-	call L_7061		;4206
+	call prepara_los_sprites_de_la_fase		;4206
 	ld a,018h		;4209
 	ld (0e105h),a		;420b
 	jp L_4381		;420e
@@ -406,7 +406,7 @@ pasa_a_la_escena_siguiente:
 ; ----------------------------------------------------------------------
 ; ESCENA 9: el compas de la partida. Si (0xE00D) esta a cero se espera; si no, se pasa a la escena 15 preparando el fin de fase.
 ; ----------------------------------------------------------------------
-L_4240:
+espera_a_que_se_apague:
 	call el_cuadro_de_la_partida		;4240
 	ld a,(0e00dh)		;4243   ; la senal de fin
 	or a			;4246
@@ -426,9 +426,9 @@ L_4250:
 	ld a,(0e101h)		;4262   ; la posicion, guardada
 	ld (0e102h),a		;4265
 	call pinta_las_puertas		;4268
-	call L_4940		;426b
+	call vuelca_los_sprites		;426b
 	ld hl,04e63h		;426e
-	call L_4E51		;4271
+	call monta_el_bloque_del_decorado		;4271
 	ld a,096h		;4274   ; y el sonido del fin de fase
 	call pide_un_sonido		;4276
 	jp escena_15_fin_de_fase		;4279
@@ -581,7 +581,7 @@ remata_la_fase:
 	ld (0e11bh),a		;4342   ; la marca de "ya se enseno PLAYER 1"
 	ld hl,0e050h		;4345
 	inc (hl)			;4348   ; una vida mas
-L_4349:
+rellena_la_franja_de_abajo:
 	ld hl,0e051h		;4349
 	ld a,(hl)			;434c
 	add a,001h		;434d   ; la fase siguiente, en BCD
@@ -616,7 +616,7 @@ pierde_una_vida:
 	ld (0e004h),a		;4375
 L_4378:
 	call limpia_la_pantalla		;4378
-	call L_60A4		;437b
+	call rellena_con_el_patron		;437b
 	call barre_la_pantalla_entera		;437e
 L_4381:
 	ld hl,0e001h		;4381
@@ -664,7 +664,7 @@ prepara_lectura_vram:
 	exx			;43c1
 	ret			;43c2
 limpia_la_pantalla:
-	call L_44E8		;43c3
+	call saca_los_sprites_de_pantalla		;43c3
 	ld de,07800h		;43c6   ; la tabla de nombres
 	ld bc,00300h		;43c9   ; sus 768 celdas
 	xor a			;43cc
@@ -673,7 +673,7 @@ rellena_vram:
 	ex af,af'			;43d0
 L_43D1:
 	ex af,af'			;43d1
-L_43D2:
+rellena_vram_con_espera:
 	exx			;43d2
 	out (c),a		;43d3   ; el byte, tal cual
 	exx			;43d5
@@ -720,9 +720,9 @@ descomprime:
 	inc hl			;43ef
 	ld d,(hl)			;43f0
 	inc hl			;43f1
-L_43F2:
+descomprime_en_de:
 	call prepara_escritura_vram		;43f2   ; aqui entran los que ya lo traen en DE
-L_43F5:
+descomprime_a_los_tres_tercios:
 	ld a,(hl)			;43f5   ; el byte de control
 	and 07fh		;43f6   ; los siete bits de abajo son la cuenta
 	ld b,a			;43f8
@@ -737,7 +737,7 @@ L_4400:
 	out (c),a		;4404
 	exx			;4406
 	djnz L_4400		;4407
-	jr L_43F5		;4409
+	jr descomprime_a_los_tres_tercios		;4409
 L_440B:
 	call lee_byte_y_avanza		;440b   ; bit 7 a cero: UN byte repetido n veces
 L_440E:
@@ -747,7 +747,7 @@ L_440E:
 	push hl			;4412   ; la espera que el VDP necesita entre byte y byte
 	pop hl			;4413
 	djnz L_440E		;4414
-	jr L_43F5		;4416
+	jr descomprime_a_los_tres_tercios		;4416
 L_4418:
 	cp b			;4418   ; cuenta cero y byte 0x80: detras viene otro destino
 	jr nz,descomprime		;4419
@@ -914,7 +914,7 @@ L_44DC:
 	ld a,020h		;44e1   ; la fila de abajo, 32 celdas
 	call suma_a_a_de		;44e3
 	djnz L_44DC		;44e6
-L_44E8:
+saca_los_sprites_de_pantalla:
 	ld b,010h		;44e8   ; dieciseis sprites
 	ld hl,0e080h		;44ea
 L_44ED:
@@ -922,7 +922,7 @@ L_44ED:
 	ld a,004h		;44ef
 	call suma_a_a_hl		;44f1   ; cuatro bytes por sprite
 	djnz L_44ED		;44f4
-	call L_707A		;44f6
+	call vuelca_los_atributos		;44f6
 	xor a			;44f9
 	ret			;44fa
 prepara_la_pantalla_de_fin:
@@ -936,19 +936,19 @@ prepara_la_pantalla_de_fin:
 	ld bc,002c0h		;450d   ; 704 celdas
 	ld a,001h		;4510   ; con el patron 1
 	call rellena_vram		;4512
-	call L_44E8		;4515
+	call saca_los_sprites_de_pantalla		;4515
 	dec a			;4518
 	ret			;4519
 parpadea_el_cursor:
 	ld bc,03e3fh		;451a   ; el par de patrones del cursor
 	bit 3,(hl)		;451d   ; el bit 3 del plazo: parpadea de ocho en ocho cuadros
 	jr nz,L_4524		;451f
-L_4521:
+pinta_el_cursor:
 	ld bc,00000h		;4521   ; y en la otra mitad, celdas vacias
 L_4524:
-	call donde_va_el_cursor		;4524
+	call donde_va_el_cursor		;4524   ; donde va el cursor
 	ld a,b			;4527
-	call escribe_en_vram		;4528
+	call escribe_en_vram		;4528   ; los dos patrones
 	ld a,c			;452b
 	inc de			;452c
 	call escribe_en_vram		;452d
@@ -1055,24 +1055,24 @@ pinta_el_marcador:
 	call pinta_rotulo		;45c3
 	ld a,(0e002h)		;45c6
 	xor 080h		;45c9   ; se finge el otro turno
-	call L_45E0		;45cb
+	call pinta_el_tanteo_del_turno		;45cb
 L_45CE:
 	call pinta_las_vidas		;45ce   ; el contador de vidas
 	call pinta_la_fase		;45d1
 L_45D4:
 	ld hl,0e045h		;45d4   ; el record
 	ld de,0380fh		;45d7   ; en la fila de arriba, columna 15
-	call L_45EE		;45da
+	call imprime_tres_bytes_bcd		;45da
 pinta_el_tanteo:
 	ld a,(0e002h)		;45dd
-L_45E0:
+pinta_el_tanteo_del_turno:
 	ld de,03805h		;45e0   ; la celda del primer tanteo
 	ld hl,0e04bh		;45e3
 	add a,a			;45e6   ; el bit 7 al acarreo
-	jr nc,L_45EE		;45e7
+	jr nc,imprime_tres_bytes_bcd		;45e7
 	ld e,025h		;45e9   ; la columna del segundo
 	ld hl,0e048h		;45eb
-L_45EE:
+imprime_tres_bytes_bcd:
 	ld b,003h		;45ee
 	jr imprime_bcd		;45f0
 pinta_la_fase:
@@ -1295,7 +1295,7 @@ arranca_el_hardware:
 	ld bc,04000h		;472c   ; los dieciseis kilobytes
 	xor a			;472f
 	call rellena_vram		;4730
-L_4733:
+vuelca_los_registros_del_vdp:
 	ld hl,0474fh		;4733   ; los ocho registros del VDP
 	ld de,0e038h		;4736
 	ld bc,00008h		;4739   ; ocho bytes
@@ -1334,9 +1334,9 @@ lee_el_mando:
 	ld e,08fh		;475c   ; la seleccion de puerto
 	ld hl,0e002h		;475e
 	bit 7,(hl)		;4761   ; el turno
-	jr z,L_4767		;4763
+	jr z,lee_un_puerto_del_psg		;4763
 	set 6,e		;4765   ; el segundo jugador usa el otro puerto
-L_4767:
+lee_un_puerto_del_psg:
 	ld a,00fh		;4767   ; registro 15 del PSG
 	call 00093h		;4769   ; BIOS WRTPSG - Writes data to PSG-register
 	ld a,00eh		;476c   ; y el 14, que es donde se lee
@@ -1493,10 +1493,10 @@ L_482F:
 ; ----------------------------------------------------------------------
 atiende_el_menu:
 	ld e,08fh		;4831   ; el primer puerto de mando
-	call L_4767		;4833
+	call lee_un_puerto_del_psg		;4833
 	ld d,a			;4836
 	ld e,0cfh		;4837   ; y el segundo
-	call L_4767		;4839
+	call lee_un_puerto_del_psg		;4839
 	or d			;483c   ; se juntan
 	ld d,a			;483d
 	call lee_el_teclado		;483e   ; mas el teclado
@@ -1533,7 +1533,7 @@ L_4874:
 	jp L_4378		;4875
 mueve_el_cursor:
 	push bc			;4878
-	call L_4521		;4879   ; borra el cursor de donde estaba
+	call pinta_el_cursor		;4879   ; borra el cursor de donde estaba
 	pop af			;487c
 	ld hl,0e042h		;487d   ; la opcion elegida
 	ld b,(hl)			;4880
@@ -1629,7 +1629,7 @@ el_cuadro_de_la_partida:
 	call mueve_las_tres_cosas		;490a
 	call mueve_el_gato		;490d
 	call mira_si_dispara		;4910
-	call L_53FF		;4913
+	call mira_el_carro_contra_el_panadero		;4913
 	call retira_el_carro_que_se_sale		;4916
 	call anima_la_cosa_que_sube		;4919
 	call busca_el_carro_en_el_estado_10		;491c
@@ -1644,12 +1644,12 @@ el_cuadro_de_la_partida:
 	ld (hl),a			;4930
 L_4931:
 	call avanza_el_estado_del_disparo		;4931
-	call L_707A		;4934
+	call vuelca_los_atributos		;4934
 	ld a,(0e00bh)		;4937   ; otra vez el compas
 	cp 007h		;493a
 	ret nz			;493c
 	call pinta_los_panes_en_la_cinta		;493d
-L_4940:
+vuelca_los_sprites:
 	ld hl,0e1a0h		;4940
 	ld de,079a0h		;4943   ; el destino en la VRAM
 	ld bc,00140h		;4946   ; 320 bytes de un tiron
@@ -1718,21 +1718,21 @@ monta_la_fase:
 	inc hl			;49b8
 	ld (hl),003h		;49b9
 	ld de,00b98h		;49bb
-	call L_6138		;49be
+	call carga_el_bloque_a		;49be
 	ld de,013e8h		;49c1
-	call L_614B		;49c4
+	call carga_el_bloque_c		;49c4
 	ld de,00c00h		;49c7
-	call L_619A		;49ca
+	call descomprime_y_repite		;49ca
 	ld de,01400h		;49cd
-	call L_619A		;49d0
-	call L_61AD		;49d3
+	call descomprime_y_repite		;49d0
+	call carga_el_bloque_g		;49d3
 	ld a,0f1h		;49d6
-	call L_60A6		;49d8
-	call L_6184		;49db
+	call rellena_la_franja_del_titulo		;49d8
+	call carga_el_bloque_f		;49db
 	ld de,02b98h		;49de
-	call L_615E		;49e1
+	call carga_el_bloque_d		;49e1
 	ld de,033e8h		;49e4
-	call L_6171		;49e7
+	call carga_el_bloque_e		;49e7
 	call pinta_las_puertas		;49ea   ; el marcador
 	call pinta_los_panes		;49ed   ; el contador de panes
 	xor a			;49f0
@@ -1750,14 +1750,14 @@ L_49FA:
 	pop bc			;4a02
 	inc c			;4a03   ; el numero de hueco
 	djnz L_49FA		;4a04
-	call L_4940		;4a06
+	call vuelca_los_sprites		;4a06
 	call pinta_los_panes_del_otro_lado		;4a09
 	call pinta_los_panes_en_la_cinta		;4a0c
 	ld hl,05e68h		;4a0f   ; el bloque comprimido del decorado
 	call descomprime		;4a12
 	call pinta_la_barra_de_progreso		;4a15
 	call pinta_el_reloj		;4a18   ; y el reloj a cero
-	call L_70D6		;4a1b
+	call monta_el_decorado_de_la_fase		;4a1b
 	ret			;4a1e
 
 ; ----------------------------------------------------------------------
@@ -1999,14 +1999,14 @@ pinta_el_marcador_de_arriba:
 	jr nz,L_4B72		;4b6e
 	ld c,05fh		;4b70   ; o el otro
 L_4B72:
-	ld de,04bb3h		;4b72
+	ld de,04bb3h		;4b72   ; la lista de posiciones
 	exx			;4b75
-	ld de,020ffh		;4b76
+	ld de,020ffh		;4b76   ; la mascara, en el juego alternativo
 	ld hl,0e055h		;4b79   ; la posicion
 	exx			;4b7c
 	call pinta_una_marca_del_marcador		;4b7d
 	exx			;4b80
-	ld a,(0e057h)		;4b81
+	ld a,(0e057h)		;4b81   ; el mapa de ocupacion
 	ld e,a			;4b84
 	ld d,000h		;4b85
 	exx			;4b87
@@ -2076,9 +2076,9 @@ L_4BC6:
 	ret z			;4bca
 	ld a,(0e00bh)		;4bcb   ; el compas de ocho
 	or a			;4bce   ; el paso 0
-	jr z,L_4C1E		;4bcf
+	jr z,salto_con_desplazamiento		;4bcf
 	cp 004h		;4bd1   ; el paso 4
-	jp z,L_4C1A		;4bd3
+	jp z,salto_sin_desplazamiento		;4bd3
 	cp 007h		;4bd6   ; y el paso 7
 	jp z,mueve_el_horno		;4bd8
 	ret			;4bdb
@@ -2098,14 +2098,14 @@ sube_o_baja_el_panadero:
 	rrca			;4bec
 	cp c			;4bed
 	ld c,a			;4bee
-	jr nz,L_4BFB		;4bef
+	jr nz,mueve_al_panadero_un_paso		;4bef
 	ld a,(hl)			;4bf1
 	cp 078h		;4bf2   ; la posicion de enganche
-	jr nz,L_4BFB		;4bf4
+	jr nz,mueve_al_panadero_un_paso		;4bf4
 	xor a			;4bf6
 	ld (0e056h),a		;4bf7   ; y la planta queda cambiada
 	ret			;4bfa
-L_4BFB:
+mueve_al_panadero_un_paso:
 	ld a,(hl)			;4bfb
 	dec c			;4bfc
 	jr z,L_4C06		;4bfd
@@ -2125,10 +2125,10 @@ corre_los_cuatro_sprites:
 	ld (0e089h),a		;4c13
 	ld (0e08dh),a		;4c16
 	ret			;4c19
-L_4C1A:
+salto_sin_desplazamiento:
 	ld b,000h		;4c1a
 	jr L_4C40		;4c1c
-L_4C1E:
+salto_con_desplazamiento:
 	ld a,(0e102h)		;4c1e
 	bit 3,a		;4c21
 	ld a,000h		;4c23
@@ -2150,10 +2150,10 @@ L_4C3B:
 	jr nc,L_4C40		;4c3c
 	ld b,008h		;4c3e   ; ocho de desplazamiento
 L_4C40:
-	ld a,(0e104h)		;4c40
+	ld a,(0e104h)		;4c40   ; el estado del salto
 	or a			;4c43
 	jr nz,L_4C4D		;4c44
-	ld a,(0e105h)		;4c46
+	ld a,(0e105h)		;4c46   ; la direccion
 	add a,b			;4c49
 	call pinta_la_pose_del_panadero		;4c4a
 L_4C4D:
@@ -2341,11 +2341,11 @@ L_4D4E:
 	call pinta_la_pose_del_panadero		;4d4e
 	ld c,001h		;4d51   ; un pixel hacia abajo
 	ld hl,0e081h		;4d53
-	call L_4BFB		;4d56
+	call mueve_al_panadero_un_paso		;4d56
 	cp 098h		;4d59   ; hasta llegar a 0x98
 	jr z,L_4D65		;4d5b
 	push af			;4d5d
-	call L_707A		;4d5e
+	call vuelca_los_atributos		;4d5e
 	pop af			;4d61
 	cp 040h		;4d62
 	ret			;4d64
@@ -2358,9 +2358,9 @@ L_4D65:
 	ld a,030h		;4d72
 	call pinta_la_pose_del_panadero		;4d74   ; y la pose de estar tumbado
 	call pinta_las_puertas		;4d77
-	call L_4940		;4d7a
+	call vuelca_los_sprites		;4d7a
 L_4D7D:
-	call L_707A		;4d7d
+	call vuelca_los_atributos		;4d7d
 	or a			;4d80
 	ret			;4d81
 
@@ -2376,7 +2376,7 @@ pone_en_pie_al_panadero:
 	ld de,0e0b4h		;4d90
 	ld bc,0000ch		;4d93
 	ldir		;4d96
-	call L_7086		;4d98
+	call pon_los_patrones_del_panadero		;4d98
 	ld a,000h		;4d9b
 	ld (0e105h),a		;4d9d
 	call pinta_la_pose_del_panadero		;4da0
@@ -2432,9 +2432,9 @@ L_4DEE:
 	ret			;4df1
 L_4DF2:
 	ld a,c			;4df2
-	ld hl,0e094h		;4df3
+	ld hl,0e094h		;4df3   ; el contador de 0xE094
 	dec (hl)			;4df6
-	cp 006h		;4df7
+	cp 006h		;4df7   ; por debajo de seis, dos mas
 	jr nc,L_4DFD		;4df9
 	inc (hl)			;4dfb
 	inc (hl)			;4dfc
@@ -2495,7 +2495,7 @@ mueve_las_tres_cosas:
 	ld a,(hl)			;4e4d
 	and 003h		;4e4e   ; uno de cada cuatro cuadros
 	ret nz			;4e50
-L_4E51:
+monta_el_bloque_del_decorado:
 	ld a,(0e057h)		;4e51
 	ld c,a			;4e54
 	ld de,0e0b7h		;4e55
@@ -2699,7 +2699,7 @@ L_4F5C:
 	jr pinta_el_bicho		;4f86
 borra_la_ficha_del_bicho:
 	dec hl			;4f88
-L_4F89:
+libera_el_bit_del_bicho:
 	xor a			;4f89   ; los tres bytes, a cero
 	ld (hl),a			;4f8a
 	inc hl			;4f8b
@@ -2791,9 +2791,9 @@ elige_cuantos_tiles_pinta:
 	jr c,L_4FFF		;4ffc
 	xor a			;4ffe   ; o ninguna
 L_4FFF:
-	dec c			;4fff
+	dec c			;4fff   ; la cuenta
 	jr nz,L_5007		;5000
-	sub 001h		;5002
+	sub 001h		;5002   ; una menos
 	ret c			;5004
 	inc de			;5005
 	inc hl			;5006
@@ -2852,7 +2852,7 @@ el_bicho_completa_su_recorrido:
 	ld a,(hl)			;503b
 	sub 001h		;503c
 	ret nz			;503e
-	call L_4F89		;503f
+	call libera_el_bit_del_bicho		;503f
 	ld hl,0e060h		;5042
 	inc (hl)			;5045   ; el progreso, uno mas
 	ld a,(hl)			;5046
@@ -2977,13 +2977,13 @@ L_50BF:
 	call vuelca_y_guarda_copia		;50eb   ; a la VRAM y a la copia a la vez
 L_50EE:
 	ld a,(0e109h)		;50ee
-	or a			;50f1
+	or a			;50f1   ; el estado
 	ret nz			;50f2
 	ld hl,(0e126h)		;50f3
 	dec hl			;50f6
 	ld (hl),004h		;50f7   ; los tres bytes de su ficha
 	inc hl			;50f9
-	ld (hl),080h		;50fa
+	ld (hl),080h		;50fa   ; los tres bytes de su ficha
 	inc hl			;50fc
 	ld (hl),004h		;50fd
 	ret			;50ff
@@ -3019,7 +3019,7 @@ L_511F:
 	and 03eh		;5123   ; cinco bits del estado
 	exx			;5125
 	ld hl,05138h		;5126   ; la tabla de despacho de los carros
-	call L_4098		;5129   ; y se salta al que toque
+	call despacha_con_hl		;5129   ; y se salta al que toque
 	pop de			;512c
 	pop hl			;512d
 	pop bc			;512e
@@ -3052,7 +3052,7 @@ DATA_5138:
 
 marca_el_estado_del_carro:
 	dec hl			;51d1
-L_51D2:
+marca_el_estado:
 	ld a,(hl)			;51d2
 	and 0c1h		;51d3   ; se dejan los bits 0, 6 y 7
 	or c			;51d5   ; y se mete el estado nuevo
@@ -3089,7 +3089,7 @@ DATA_51D9:
 ; ----------------------------------------------------------------------
 ; PONER EL SEGUNDO SPRITE DE UN CARRO, dieciseis pixeles mas alla: se copian la fila, la columna corrida y el color al hueco siguiente. Un carro son dos sprites.
 ; ----------------------------------------------------------------------
-L_52CE:
+pon_el_segundo_sprite_del_carro:
 	ld d,(hl)			;52ce
 	inc hl			;52cf
 	ld a,(hl)			;52d0
@@ -3153,7 +3153,7 @@ L_5366:
 	ld (hl),a			;5373
 	add a,010h		;5374
 	ld c,a			;5376
-	call L_53F2		;5377
+	call hueco_del_carro		;5377
 	ld a,(de)			;537a
 	and 0feh		;537b
 	ld (de),a			;537d
@@ -3166,7 +3166,7 @@ L_5366:
 	dec hl			;5385
 	dec hl			;5386
 	dec hl			;5387
-	call L_54CB		;5388
+	call arranca_el_carro_en_el_estado_2		;5388
 	ret			;538b
 
 ; ----------------------------------------------------------------------
@@ -3181,22 +3181,22 @@ DATA_538C:
 ; ======================================================================
 
 
-L_53B6:
+coloca_el_carro_volcado:
 	ld a,b			;53b6
-	sub 010h		;53b7
+	sub 010h		;53b7   ; dieciseis menos
 	ld b,a			;53b9
 	ld (hl),a			;53ba
 	inc hl			;53bb
-	ld (hl),098h		;53bc
+	ld (hl),098h		;53bc   ; el patron 0x98
 	inc hl			;53be
 	inc hl			;53bf
 	ld (hl),c			;53c0
 	inc hl			;53c1
 	ld a,b			;53c2
-	add a,010h		;53c3
+	add a,010h		;53c3   ; dieciseis mas: el segundo sprite
 	ld (hl),a			;53c5
 	inc hl			;53c6
-	ld (hl),09ch		;53c7
+	ld (hl),09ch		;53c7   ; y su patron
 	ret			;53c9
 
 ; ----------------------------------------------------------------------
@@ -3209,19 +3209,19 @@ DATA_53CA:
 ; ======================================================================
 
 
-L_53D4:
+repinta_el_carro:
 	ld de,0e112h		;53d4
 	ld hl,0e0a0h		;53d7
 L_53DA:
 	ld a,(de)			;53da
-	and 03eh		;53db
-	cp 012h		;53dd
+	and 03eh		;53db   ; cinco bits del estado
+	cp 012h		;53dd   ; el estado 0x12
 	jr nz,L_53EA		;53df
-	ld c,047h		;53e1
+	ld c,047h		;53e1   ; el patron de fuera de sitio
 	ld (hl),c			;53e3
 	inc hl			;53e4
 	ld b,(hl)			;53e5
-	call L_53B6		;53e6
+	call coloca_el_carro_volcado		;53e6
 	ret			;53e9
 L_53EA:
 	inc de			;53ea
@@ -3229,63 +3229,67 @@ L_53EA:
 	ld hl,0e0a8h		;53ec
 	djnz L_53DA		;53ef
 	ret			;53f1
-L_53F2:
+hueco_del_carro:
 	ld a,l			;53f2
-	sub 098h		;53f3
-	rrca			;53f5
+	sub 098h		;53f3   ; menos 0x98
+	rrca			;53f5   ; dos giros
 	rrca			;53f6
 	and 00eh		;53f7
-	add a,010h		;53f9
+	add a,010h		;53f9   ; +0x10: el hueco que le toca
 	ld e,a			;53fb
 	ld d,0e1h		;53fc
 	ret			;53fe
-L_53FF:
-	ld a,(0e056h)		;53ff
+mira_el_carro_contra_el_panadero:
+	ld a,(0e056h)		;53ff   ; la planta
 	or a			;5402
 	ret nz			;5403
-	ld a,(0e102h)		;5404
+	ld a,(0e102h)		;5404   ; la direccion guardada
 	or a			;5407
 	ret z			;5408
 	ld hl,0e099h		;5409
 	ld de,0e110h		;540c
 	ld b,003h		;540f
-L_5411:
+
+; ----------------------------------------------------------------------
+; EL AVANCE DE LOS CARROS: un pixel en general, pero OCHO cuando el compas de ocho vale 7 y el estado no es 4. O sea que cada ocho cuadros pegan un tiron.
+; ----------------------------------------------------------------------
+mueve_los_carros_a_su_ritmo:
 	ld a,(de)			;5411
-	bit 7,a		;5412
+	bit 7,a		;5412   ; el bit 7: esta activo
 	jr z,L_543D		;5414
-	and 03eh		;5416
-	ld c,001h		;5418
-	cp 004h		;541a
+	and 03eh		;5416   ; cinco bits del estado
+	ld c,001h		;5418   ; un pixel
+	cp 004h		;541a   ; el estado 4
 	jr z,L_5427		;541c
 	ld a,(0e00bh)		;541e
-	cp 007h		;5421
+	cp 007h		;5421   ; el paso 7 del compas
 	jr nz,L_543D		;5423
-	ld c,008h		;5425
+	ld c,008h		;5425   ; ocho pixeles de tiron
 L_5427:
 	ld a,(0e102h)		;5427
 	cp 008h		;542a
 	ld a,c			;542c
-	jr nz,L_5431		;542d
+	jr nz,corre_los_dos_sprites_del_carro		;542d
 	neg		;542f
-L_5431:
+corre_los_dos_sprites_del_carro:
 	push hl			;5431
 	ld c,a			;5432
-	add a,(hl)			;5433
+	add a,(hl)			;5433   ; aplicado al primer sprite
 	ld (hl),a			;5434
 	ld a,l			;5435
-	add a,004h		;5436
+	add a,004h		;5436   ; cuatro bytes: el segundo
 	ld l,a			;5438
 	ld a,(hl)			;5439
-	add a,c			;543a
+	add a,c			;543a   ; y al segundo, igual
 	ld (hl),a			;543b
 	pop hl			;543c
 L_543D:
 	inc de			;543d
 	inc de			;543e
-	ld a,l			;543f
+	ld a,l			;543f   ; ocho bytes por carro
 	add a,008h		;5440
 	ld l,a			;5442
-	djnz L_5411		;5443
+	djnz mueve_los_carros_a_su_ritmo		;5443
 	ret			;5445
 
 ; ----------------------------------------------------------------------
@@ -3381,10 +3385,10 @@ L_54AF:
 L_54B9:
 	pop hl			;54b9
 	ld a,l			;54ba
-	add a,008h		;54bb
+	add a,008h		;54bb   ; ocho bytes por carro
 	ld l,a			;54bd
 	pop de			;54be
-	inc de			;54bf
+	inc de			;54bf   ; y dos de estado
 	inc de			;54c0
 	pop bc			;54c1
 	djnz L_54AF		;54c2
@@ -3394,12 +3398,12 @@ arranca_un_carro:
 	and 03eh		;54c6   ; cinco bits del estado
 	cp 004h		;54c8   ; el estado 4
 	ret nz			;54ca
-L_54CB:
+arranca_el_carro_en_el_estado_2:
 	ex de,hl			;54cb
 	ld c,002h		;54cc   ; el estado nuevo, 2
-	call L_51D2		;54ce
+	call marca_el_estado		;54ce
 	ex de,hl			;54d1
-L_54D2:
+pone_los_dos_patrones_del_carro:
 	ld a,(de)			;54d2
 	ld bc,09094h		;54d3   ; una pareja de patrones
 	rra			;54d6
@@ -3451,9 +3455,9 @@ L_550F:
 	ret nz			;5517
 L_5518:
 	ld c,006h		;5518   ; y pasa al 6
-	call L_51D2		;551a
+	call marca_el_estado		;551a
 	ex de,hl			;551d
-	jr L_54D2		;551e
+	jr pone_los_dos_patrones_del_carro		;551e
 
 ; ----------------------------------------------------------------------
 ; EL DISPARO CONTRA UN CARRO, de la fase 2 en adelante. La caja no se compara con dos `cp`: se RESTA el margen dos veces -0x10 y luego 0x18- y basta con mirar el acarreo, que es mas corto. Si acierta, el carro pasa al estado 8 con un plazo de 30.
@@ -3505,10 +3509,10 @@ L_555A:
 	sub 018h		;555d   ; y veinticuatro mas: la caja, en dos restas
 	ret nc			;555f
 	ld c,008h		;5560   ; el estado nuevo, 8
-	call L_51D2		;5562
+	call marca_el_estado		;5562
 	ex de,hl			;5565
 	inc hl			;5566
-	call L_54D2		;5567
+	call pone_los_dos_patrones_del_carro		;5567
 	ld (hl),01eh		;556a   ; y treinta cuadros de plazo
 	ret			;556c
 
@@ -3633,7 +3637,7 @@ mira_el_carro_contra_la_cinta:
 	exx			;5618
 	ex de,hl			;5619
 	inc hl			;561a
-	call L_54D2		;561b
+	call pone_los_dos_patrones_del_carro		;561b
 	ld (hl),006h		;561e   ; el plazo, a seis
 	ld c,00ch		;5620   ; y el estado nuevo, 12
 	jp marca_el_estado_del_carro		;5622
@@ -3647,7 +3651,7 @@ el_carro_llega_al_final:
 	ld c,00eh		;5628   ; el estado nuevo, 14
 	cp c			;562a
 	ret z			;562b
-	call L_51D2		;562c
+	call marca_el_estado		;562c
 	ld a,(0e105h)		;562f   ; la direccion del panadero
 	or a			;5632
 	jr z,L_5637		;5633
@@ -4216,7 +4220,7 @@ DATA_5946:
 ; ----------------------------------------------------------------------
 el_panadero_cae:
 	ld hl,04e63h		;5952
-	call L_4E51		;5955
+	call monta_el_bloque_del_decorado		;5955
 	ld hl,0e080h		;5958   ; su posicion
 	ld b,(hl)			;595b
 	inc hl			;595c
@@ -4241,9 +4245,9 @@ L_596B:
 	ldir		;5982   ; copiados
 	ld de,0e110h		;5984
 	ld hl,0e09ah		;5987   ; su ficha
-	call L_54D2		;598a
+	call pone_los_dos_patrones_del_carro		;598a
 	ld hl,0e098h		;598d
-	call L_52CE		;5990
+	call pon_el_segundo_sprite_del_carro		;5990
 	pop hl			;5993
 	pop bc			;5994
 	ld de,0e080h		;5995
@@ -4259,10 +4263,10 @@ L_596B:
 	ld (hl),0fch		;59a2   ; el patron de la caida
 	inc hl			;59a4
 	ld (hl),00ah		;59a5   ; y su color
-	call L_53D4		;59a7
-L_59AA:
+	call repinta_el_carro		;59a7
+remata_la_caida:
 	ld bc,00040h		;59aa   ; sesenta y cuatro
-	call L_707D		;59ad
+	call vuelca_bc_atributos		;59ad
 	or a			;59b0
 	ret			;59b1
 
@@ -4314,7 +4318,7 @@ L_59E7:
 	rlca			;59f8
 	and 001h		;59f9
 	ld c,a			;59fb
-	call L_4BFB		;59fc
+	call mueve_al_panadero_un_paso		;59fc
 	dec hl			;59ff
 	ld a,b			;5a00
 	cp 00bh		;5a01   ; el paso 0x0B
@@ -4332,7 +4336,7 @@ L_5A0F:
 	add a,(hl)			;5a17   ; aplicado a la posicion
 	ld (hl),a			;5a18
 	call coloca_los_tres_sprites		;5a19
-	jp L_59AA		;5a1c
+	jp remata_la_caida		;5a1c
 L_5A1F:
 	ld (hl),089h		;5a1f   ; las tres posiciones finales, clavadas
 	ld a,098h		;5a21
@@ -4341,7 +4345,7 @@ L_5A1F:
 	ld (0e088h),a		;5a28
 	ld a,0a8h		;5a2b
 	ld (0e08ch),a		;5a2d
-	jp L_59AA		;5a30
+	jp remata_la_caida		;5a30
 L_5A33:
 	ld de,0e081h		;5a33
 	ld a,(hl)			;5a36
@@ -4357,7 +4361,7 @@ L_5A3E:
 	ld (0e090h),hl		;5a43
 	ld a,0fch		;5a46
 	ld (0e092h),a		;5a48   ; el patron de estar tumbado
-	call L_59AA		;5a4b
+	call remata_la_caida		;5a4b
 	scf			;5a4e
 	ret			;5a4f
 
@@ -4399,7 +4403,7 @@ remata_la_vida_perdida:
 	ld de,0e091h		;5a7e
 	ld bc,00020h		;5a81   ; treinta y dos bytes
 	ldir		;5a84   ; y el ldir lo arrastra
-	call L_707A		;5a86
+	call vuelca_los_atributos		;5a86
 	ld a,(0e012h)		;5a89   ; espera a que pare el sonido
 	or a			;5a8c
 	ret nz			;5a8d
@@ -4425,14 +4429,14 @@ L_5AA5:
 	jr z,L_5AB6		;5aac
 	cp 004h		;5aae   ; y el paso 4
 	ret nz			;5ab0
-	call L_4C1A		;5ab1
+	call salto_sin_desplazamiento		;5ab1
 	jr L_5AB9		;5ab4
 L_5AB6:
-	call L_4C1E		;5ab6
+	call salto_con_desplazamiento		;5ab6
 L_5AB9:
 	call mira_si_salta		;5ab9
 	call mira_si_dispara		;5abc
-	call L_707A		;5abf
+	call vuelca_los_atributos		;5abf
 	ld a,(0e081h)		;5ac2
 	cp 0e8h		;5ac5   ; el borde
 	jr nc,L_5ACE		;5ac7
@@ -4446,9 +4450,9 @@ L_5ACE:
 la_pantalla_de_recuento:
 	call baja_el_contador_y_barre		;5ad6
 	ret p			;5ad9
-	call L_711B		;5ada
+	call monta_el_fondo_del_recuento		;5ada
 	call monta_la_tabla_del_recuento		;5add
-	call L_61C3		;5ae0
+	call monta_los_tres_decorados		;5ae0
 	ld a,0eeh		;5ae3
 	call codigo_huerfano_4757		;5ae5
 	ld hl,05ef6h		;5ae8   ; el bloque comprimido del recuento
@@ -4487,7 +4491,7 @@ L_5B1A:
 	ld de,0e080h		;5b1d
 	ld bc,00020h		;5b20   ; treinta y dos bytes de sprites
 	ldir		;5b23
-	call L_7086		;5b25
+	call pon_los_patrones_del_panadero		;5b25
 	set 7,(hl)		;5b28
 	ld hl,0e090h		;5b2a
 	ld de,03b10h		;5b2d
@@ -4594,7 +4598,7 @@ L_5BD4:
 	ld a,(0e11eh)		;5bd7
 	sub 007h		;5bda   ; siete menos el paso
 	cp c			;5bdc
-	call c,L_707A		;5bdd
+	call c,vuelca_los_atributos		;5bdd
 	ret			;5be0
 L_5BE1:
 	ld a,(0e003h)		;5be1   ; el contador de cuadros
@@ -4632,7 +4636,7 @@ L_5BFB:
 remata_el_recuento:
 	ld a,00ch		;5c0d   ; doce cuadros
 	ld (0e11eh),a		;5c0f
-	call L_707A		;5c12
+	call vuelca_los_atributos		;5c12
 	jp L_4381		;5c15
 el_panadero_entra_a_la_panaderia:
 	call remata_el_recuento		;5c18
@@ -4660,16 +4664,16 @@ L_5C2C:
 	jr z,L_5C48		;5c3e
 	cp 004h		;5c40
 	ret nz			;5c42
-	call L_4C1A		;5c43
+	call salto_sin_desplazamiento		;5c43
 	jr L_5C4B		;5c46
 L_5C48:
-	call L_4C1E		;5c48
+	call salto_con_desplazamiento		;5c48
 L_5C4B:
 	ld hl,0e11eh		;5c4b
 	dec (hl)			;5c4e   ; el plazo, uno menos
 	ld a,018h		;5c4f
 	call z,pinta_la_pose_del_panadero		;5c51
-	jp L_707A		;5c54
+	jp vuelca_los_atributos		;5c54
 el_panadero_sale:
 	call remata_el_recuento		;5c57
 L_5C5A:
@@ -4769,7 +4773,7 @@ L_5CDB:
 	ld de,0386dh		;5d03
 	call escribe_en_vram		;5d06
 	ld a,050h		;5d09
-	call L_4349		;5d0b
+	call rellena_la_franja_de_abajo		;5d0b
 	ld hl,0010ch		;5d0e   ; escena 12
 	ld (0e000h),hl		;5d11
 	jp L_4296		;5d14
@@ -4778,7 +4782,7 @@ coloca_los_dos_sprites_del_remate:
 	ld (0e0a0h),hl		;5d1a
 	ld hl,00ffch		;5d1d   ; y el segundo
 	ld (0e0a2h),hl		;5d20
-	jp L_707A		;5d23
+	jp vuelca_los_atributos		;5d23
 
 ; ----------------------------------------------------------------------
 ; DATOS sin identificar  0x5d26..0x5d2c  (6 bytes)
@@ -4828,7 +4832,7 @@ L_5D64:
 	push hl			;5d64
 	push bc			;5d65
 	ld c,0ffh		;5d66   ; mascara 0xFF: se pinta
-	call L_40B4		;5d68
+	call pinta_guion_con_mascara		;5d68
 	pop bc			;5d6b
 	inc de			;5d6c
 	inc de			;5d6d
@@ -4949,7 +4953,7 @@ monta_la_pantalla_entera:
 	ld bc,00050h		;6075   ; ochenta bytes
 	call vuelca_bloque		;6078
 	ld hl,06853h		;607b
-	call L_43F5		;607e
+	call descomprime_a_los_tres_tercios		;607e
 	ld hl,06c99h		;6081
 	call descomprime		;6084
 	ld de,006d0h		;6087
@@ -4965,9 +4969,9 @@ L_608C:
 	djnz L_608C		;609c
 	ld hl,06495h		;609e
 	call descomprime		;60a1
-L_60A4:
+rellena_con_el_patron:
 	ld a,071h		;60a4
-L_60A6:
+rellena_la_franja_del_titulo:
 	ld bc,00170h		;60a6   ; 368 celdas
 	ld de,01080h		;60a9   ; rellenas con el patron 0x71
 	call rellena_vram		;60ac
@@ -5003,108 +5007,108 @@ L_60CD:
 	jr nz,L_60CB		;60d5
 	ld bc,00250h		;60d7   ; 592 celdas
 	ld a,0f1h		;60da
-	call L_43D2		;60dc
+	call rellena_vram_con_espera		;60dc
 	ld hl,06a7ch		;60df
-	call L_43F5		;60e2
+	call descomprime_a_los_tres_tercios		;60e2
 	pop de			;60e5
 	push de			;60e6
 	ld hl,00400h		;60e7   ; 0x400 mas alla
 	add hl,de			;60ea
 	ex de,hl			;60eb
 	xor a			;60ec
-	call L_61A1		;60ed
+	call descomprime_dos_veces		;60ed
 	pop de			;60f0
 	push de			;60f1
 	ld hl,00680h		;60f2   ; 0x680
 	add hl,de			;60f5
 	ex de,hl			;60f6
 	ld hl,06f7dh		;60f7
-	call L_43F2		;60fa
+	call descomprime_en_de		;60fa
 	pop de			;60fd
 	push de			;60fe
 	ld hl,00398h		;60ff   ; 0x398
 	add hl,de			;6102
 	ex de,hl			;6103
 	xor a			;6104
-	call L_6145		;6105
+	call carga_el_bloque_b		;6105
 	pop de			;6108
 	ld hl,06000h		;6109   ; y 0x6000, que es la tabla de color
 	add hl,de			;610c
 	ex de,hl			;610d
 	push de			;610e
 	ld hl,061f5h		;610f
-	call L_43F2		;6112
+	call descomprime_en_de		;6112
 	pop de			;6115
 	push de			;6116
 	ld hl,00400h		;6117
 	add hl,de			;611a
 	ex de,hl			;611b
 	ld hl,066a5h		;611c
-	call L_43F2		;611f
+	call descomprime_en_de		;611f
 	pop de			;6122
 	push de			;6123
 	ld hl,00680h		;6124
 	add hl,de			;6127
 	ex de,hl			;6128
 	ld hl,06d26h		;6129
-	call L_43F2		;612c
+	call descomprime_en_de		;612c
 	pop de			;612f
 	ld hl,00398h		;6130
 	add hl,de			;6133
 	ex de,hl			;6134
 	jp L_616B		;6135
-L_6138:
-	ld hl,06ac7h		;6138
-	ld a,(0e051h)		;613b
+carga_el_bloque_a:
+	ld hl,06ac7h		;6138   ; un bloque
+	ld a,(0e051h)		;613b   ; el numero de fase elige
 	or a			;613e
-	jr z,L_6145		;613f
+	jr z,carga_el_bloque_b		;613f
 	dec a			;6141
 	rra			;6142
 	jr c,L_6148		;6143
-L_6145:
-	ld hl,06ab4h		;6145
+carga_el_bloque_b:
+	ld hl,06ab4h		;6145   ; o el otro
 L_6148:
-	jp L_43F2		;6148
-L_614B:
-	ld hl,06addh		;614b
-	ld a,(0e051h)		;614e
+	jp descomprime_en_de		;6148
+carga_el_bloque_c:
+	ld hl,06addh		;614b   ; un bloque
+	ld a,(0e051h)		;614e   ; el numero de fase elige
 	or a			;6151
 	jr z,L_6158		;6152
 	dec a			;6154
 	rra			;6155
 	jr c,L_615B		;6156
 L_6158:
-	ld hl,06abah		;6158
+	ld hl,06abah		;6158   ; o el otro
 L_615B:
-	jp L_43F2		;615b
-L_615E:
-	ld hl,0657bh		;615e
-	ld a,(0e051h)		;6161
+	jp descomprime_en_de		;615b
+carga_el_bloque_d:
+	ld hl,0657bh		;615e   ; un bloque
+	ld a,(0e051h)		;6161   ; el numero de fase elige
 	or a			;6164
 	jr z,L_616B		;6165
 	dec a			;6167
 	rra			;6168
 	jr c,L_616E		;6169
 L_616B:
-	ld hl,06521h		;616b
+	ld hl,06521h		;616b   ; o el otro
 L_616E:
-	jp L_43F2		;616e
-L_6171:
-	ld hl,065cbh		;6171
-	ld a,(0e051h)		;6174
+	jp descomprime_en_de		;616e
+carga_el_bloque_e:
+	ld hl,065cbh		;6171   ; un bloque
+	ld a,(0e051h)		;6174   ; el numero de fase elige
 	or a			;6177
 	jr z,L_617E		;6178
 	dec a			;617a
 	rra			;617b
 	jr c,L_6181		;617c
 L_617E:
-	ld hl,06566h		;617e
+	ld hl,06566h		;617e   ; o el otro
 L_6181:
-	jp L_43F2		;6181
-L_6184:
-	ld de,013d0h		;6184
+	jp descomprime_en_de		;6181
+carga_el_bloque_f:
+	ld de,013d0h		;6184   ; el destino en la VRAM
 	ld hl,06517h		;6187
-	ld a,(0e051h)		;618a
+	ld a,(0e051h)		;618a   ; el numero de fase elige el bloque
 	or a			;618d
 	jr z,L_6194		;618e
 	dec a			;6190
@@ -5113,57 +5117,57 @@ L_6184:
 L_6194:
 	ld hl,0650dh		;6194
 L_6197:
-	jp L_43F2		;6197
-L_619A:
+	jp descomprime_en_de		;6197
+descomprime_y_repite:
 	ld a,(0e051h)		;619a
 	or a			;619d
 	jr z,L_61A7		;619e
 	dec a			;61a0
-L_61A1:
+descomprime_dos_veces:
 	rra			;61a1
 	ld hl,06be6h		;61a2
 	jr c,L_61AA		;61a5
 L_61A7:
 	ld hl,06b34h		;61a7
 L_61AA:
-	jp L_43F2		;61aa
-L_61AD:
-	ld de,004b0h		;61ad
-	ld a,(0e051h)		;61b0
+	jp descomprime_en_de		;61aa
+carga_el_bloque_g:
+	ld de,004b0h		;61ad   ; el destino en la VRAM
+	ld a,(0e051h)		;61b0   ; el numero de fase
 	or a			;61b3
 	jr z,L_61BD		;61b4
-	ld hl,06b14h		;61b6
+	ld hl,06b14h		;61b6   ; un bloque
 	rra			;61b9
-	jp nc,L_43F2		;61ba
+	jp nc,descomprime_en_de		;61ba
 L_61BD:
-	ld hl,06af4h		;61bd
-	jp L_43F2		;61c0
-L_61C3:
-	ld de,00a00h		;61c3
-	call L_61E0		;61c6
-	ld de,01200h		;61c9
-	call L_61E0		;61cc
-	ld de,00200h		;61cf
+	ld hl,06af4h		;61bd   ; o el otro
+	jp descomprime_en_de		;61c0
+monta_los_tres_decorados:
+	ld de,00a00h		;61c3   ; el primer destino
+	call monta_un_decorado		;61c6
+	ld de,01200h		;61c9   ; el segundo
+	call monta_un_decorado		;61cc
+	ld de,00200h		;61cf   ; y el tercero
 	push de			;61d2
-	call L_61E0		;61d3
+	call monta_un_decorado		;61d3
 	pop de			;61d6
 	ld hl,06eb9h		;61d7
 	push hl			;61da
 	ld hl,0702bh		;61db
 	jr L_61E7		;61de
-L_61E0:
+monta_un_decorado:
 	ld hl,06e56h		;61e0
 	push hl			;61e3
 	ld hl,06ffah		;61e4
 L_61E7:
 	push de			;61e7
-	call L_43F2		;61e8
+	call descomprime_en_de		;61e8   ; el primer bloque
 	pop de			;61eb
-	ld hl,02000h		;61ec
+	ld hl,02000h		;61ec   ; y su color, 0x2000 mas alla
 	add hl,de			;61ef
 	ex de,hl			;61f0
 	pop hl			;61f1
-	jp L_43F2		;61f2
+	jp descomprime_en_de		;61f2
 
 ; ----------------------------------------------------------------------
 ; DATOS bloque_0x61F5: 672 bytes comprimidos -> 904 en VRAM (1 tramos: ?); lo
@@ -5519,28 +5523,28 @@ DATA_702B:
 ; ======================================================================
 
 
-L_7061:
+prepara_los_sprites_de_la_fase:
 	ld hl,07096h		;7061
 	push hl			;7064
 	ld hl,0e080h		;7065
 	push hl			;7068
 	ld b,040h		;7069
 L_706B:
-	ld (hl),000h		;706b
+	ld (hl),000h		;706b   ; un cero
 	inc hl			;706d
 	djnz L_706B		;706e
 	pop de			;7070
 	pop hl			;7071
-	ld bc,00040h		;7072
+	ld bc,00040h		;7072   ; sesenta y cuatro bytes
 	ldir		;7075
-	call L_7086		;7077
-L_707A:
+	call pon_los_patrones_del_panadero		;7077
+vuelca_los_atributos:
 	ld bc,00040h		;707a
-L_707D:
+vuelca_bc_atributos:
 	ld hl,0e080h		;707d
 	ld de,07b00h		;7080
 	jp vuelca_bloque		;7083
-L_7086:
+pon_los_patrones_del_panadero:
 	ld a,(0e002h)		;7086
 	bit 7,a		;7089
 	ld a,007h		;708b
@@ -5564,37 +5568,41 @@ DATA_7096:
 ; ======================================================================
 
 
-L_70D6:
+monta_el_decorado_de_la_fase:
 	ld hl,0715ch		;70d6
-	ld de,05800h		;70d9
-	call L_43F2		;70dc
+	ld de,05800h		;70d9   ; el destino en la VRAM
+	call descomprime_en_de		;70dc
 	ld hl,071d1h		;70df
 	ld de,058a0h		;70e2
-	call L_43F2		;70e5
+	call descomprime_en_de		;70e5
 	ld hl,072f3h		;70e8
-	call descomprime		;70eb
+	call descomprime		;70eb   ; el tercer bloque
 	ld hl,01860h		;70ee
 	ld de,01890h		;70f1
-	ld c,001h		;70f4
+	ld c,001h		;70f4   ; una franja
 	call copia_c_franjas		;70f6
-L_70F9:
+
+; ----------------------------------------------------------------------
+; COPIAR TROZOS DE VRAM SOBRE VRAM para montar el decorado: doce franjas de 0x18C0 a 0x1A50, cinco alternas de 0x1BC0 a 0x1DD0 y cuatro de 0x1D00 a 0x1EF0. El dibujo se repite sin volver a descomprimirlo.
+; ----------------------------------------------------------------------
+copia_las_franjas_del_decorado:
 	ld hl,018c0h		;70f9
 	ld de,01a50h		;70fc
-	ld c,00ch		;70ff
+	ld c,00ch		;70ff   ; doce franjas
 	call copia_c_franjas		;7101
 	ld hl,01bc0h		;7104
 	ld de,01dd0h		;7107
-	ld c,005h		;710a
+	ld c,005h		;710a   ; cinco, alternas
 	call copia_c_franjas_alternas		;710c
 	ld hl,01d00h		;710f
 	ld de,01ef0h		;7112
-	ld c,004h		;7115
+	ld c,004h		;7115   ; y cuatro mas
 	call copia_c_franjas		;7117
 	ret			;711a
-L_711B:
+monta_el_fondo_del_recuento:
 	ld hl,0753bh		;711b
 	call descomprime		;711e
-	jp L_70F9		;7121
+	jp copia_las_franjas_del_decorado		;7121
 
 ; ----------------------------------------------------------------------
 ; DATOS sin identificar  0x7124..0x715c  (56 bytes)
@@ -5809,9 +5817,9 @@ L_79CA:
 	and 07fh		;79d4
 L_79D6:
 	ld c,a			;79d6
-	and 03fh		;79d7
+	and 03fh		;79d7   ; seis bits
 	add a,a			;79d9
-	ld de,07b68h		;79da
+	ld de,07b68h		;79da   ; la tabla de sonidos
 	call suma_a_a_de		;79dd
 	dec hl			;79e0
 	dec hl			;79e1
@@ -5858,9 +5866,9 @@ L_7A07:
 	ex af,af'			;7a12
 	ld (ix+009h),a		;7a13
 	ret			;7a16
-L_7A17:
+abre_o_cierra_el_canal:
 	ret			;7a17
-L_7A18:
+suena_un_cuadro:
 	ld a,007h		;7a18
 	call 00096h		;7a1a   ; BIOS RDPSG - Reads value from PSG-register
 	and 0b8h		;7a1d
@@ -5874,93 +5882,93 @@ L_7A18:
 	ld de,0000bh		;7a2e
 L_7A31:
 	exx			;7a31
-	ld a,(ix+002h)		;7a32
+	ld a,(ix+002h)		;7a32   ; el estado de esta voz
 	or a			;7a35
-	call nz,L_7A41		;7a36
-	inc c			;7a39
+	call nz,avanza_una_voz		;7a36
+	inc c			;7a39   ; dos registros por canal
 	inc c			;7a3a
 	exx			;7a3b
 	add ix,de		;7a3c
 	djnz L_7A31		;7a3e
 	ret			;7a40
-L_7A41:
-	bit 6,a		;7a41
+avanza_una_voz:
+	bit 6,a		;7a41   ; el bit 6 del estado
 	ld d,001h		;7a43
-	call z,L_7A17		;7a45
+	call z,abre_o_cierra_el_canal		;7a45
 	ld a,(ix+002h)		;7a48
 	or a			;7a4b
 	jp m,L_7AC0		;7a4c
-	dec (ix+000h)		;7a4f
+	dec (ix+000h)		;7a4f   ; lo que le queda a la nota
 	ret nz			;7a52
-L_7A53:
-	ld l,(ix+003h)		;7a53
+avanza_la_voz:
+	ld l,(ix+003h)		;7a53   ; por donde va la partitura
 	ld h,(ix+004h)		;7a56
 	ld a,(hl)			;7a59
-	cp 0feh		;7a5a
+	cp 0feh		;7a5a   ; 0xFE: volver al principio
 	jr z,repite_o_encadena		;7a5c
 	jr nc,L_7AB0		;7a5e
-	bit 7,(ix+002h)		;7a60
+	bit 7,(ix+002h)		;7a60   ; el bit 7 del estado
 	jp nz,L_7AEB		;7a64
-	and 0f0h		;7a67
-	cp 020h		;7a69
+	and 0f0h		;7a67   ; el nibble alto manda
+	cp 020h		;7a69   ; 0x2n cambia el instrumento
 	jr nz,L_7A74		;7a6b
 	ld a,(hl)			;7a6d
-	and 00fh		;7a6e
+	and 00fh		;7a6e   ; el nibble bajo es el numero
 	ld (ix+001h),a		;7a70
 	inc hl			;7a73
 L_7A74:
 	ld a,(hl)			;7a74
-	and 0f0h		;7a75
-	cp 010h		;7a77
-	jr nz,L_7A8B		;7a79
+	and 0f0h		;7a75   ; el nibble alto
+	cp 010h		;7a77   ; 0x1n toca el envolvente
+	jr nz,lee_la_nota_de_la_partitura		;7a79
 	ld a,(hl)			;7a7b
-	and 01fh		;7a7c
+	and 01fh		;7a7c   ; los cinco bits de abajo, su forma
 	ld e,a			;7a7e
 	ld a,006h		;7a7f
 	call 00093h		;7a81   ; BIOS WRTPSG - Writes data to PSG-register
 	ld d,000h		;7a84
-	call L_7A17		;7a86
+	call abre_o_cierra_el_canal		;7a86
 	inc hl			;7a89
 	ld a,(hl)			;7a8a
-L_7A8B:
-	and 0f0h		;7a8b
+lee_la_nota_de_la_partitura:
+	and 0f0h		;7a8b   ; el nibble alto es la DURACION
 	ld b,a			;7a8d
-	xor (hl)			;7a8e
+	xor (hl)			;7a8e   ; y el bajo, cruzado, la nota
 	ld d,a			;7a8f
 	inc hl			;7a90
-	ld e,(hl)			;7a91
+	ld e,(hl)			;7a91   ; el byte siguiente completa
 	inc hl			;7a92
-	ld (ix+003h),l		;7a93
+	ld (ix+003h),l		;7a93   ; la partitura queda apuntada
 	ld (ix+004h),h		;7a96
 	ex de,hl			;7a99
-	call L_7B52		;7a9a
+	call escribe_la_nota		;7a9a   ; y se convierte en periodo
 	ld a,b			;7a9d
-	rrca			;7a9e
+	rrca			;7a9e   ; cuatro giros: la duracion a su sitio
 	rrca			;7a9f
 	rrca			;7aa0
 	rrca			;7aa1
-L_7AA2:
+fija_la_duracion_de_la_nota:
 	ld h,a			;7aa2
-	ld a,(ix+001h)		;7aa3
+	ld a,(ix+001h)		;7aa3   ; la duracion que toca
 	ld (ix+000h),a		;7aa6
 	add a,004h		;7aa9
 	ld (ix+008h),a		;7aab
 	jr L_7AE2		;7aae
 L_7AB0:
 	xor a			;7ab0
-	ld (ix+009h),a		;7ab1
+	ld (ix+009h),a		;7ab1   ; las vueltas, a cero
 	ld d,001h		;7ab4
-	call L_7A17		;7ab6
+	call abre_o_cierra_el_canal		;7ab6
 	xor a			;7ab9
-	ld (ix+002h),a		;7aba
+	ld (ix+002h),a		;7aba   ; y el estado de la voz: se calla
 	ld h,a			;7abd
 	jr L_7AE2		;7abe
 L_7AC0:
-	dec (ix+000h)		;7ac0
-	jp z,L_7A53		;7ac3
-	dec (ix+008h)		;7ac6
+	dec (ix+000h)		;7ac0   ; lo que le queda a la nota
+	jp z,avanza_la_voz		;7ac3
+	dec (ix+008h)		;7ac6   ; y la cuenta del apagado
 	ld a,(ix+008h)		;7ac9
-	cp (ix+000h)		;7acc
+	cp (ix+000h)		;7acc   ; cuando se juntan, baja el volumen
 	jr nz,L_7AD6		;7acf
 	cp 004h		;7ad1
 	jr c,L_7AD9		;7ad3
@@ -5981,8 +5989,8 @@ L_7AE2:
 	call 00093h		;7ae7   ; BIOS WRTPSG - Writes data to PSG-register
 	ret			;7aea
 L_7AEB:
-	and 0f0h		;7aeb
-	cp 0d0h		;7aed
+	and 0f0h		;7aeb   ; el nibble alto
+	cp 0d0h		;7aed   ; 0xDn: el paso del arpegio
 	ld a,(hl)			;7aef
 	jr nz,L_7AF9		;7af0
 	and 00fh		;7af2
@@ -5990,16 +5998,16 @@ L_7AEB:
 	inc hl			;7af7
 	ld a,(hl)			;7af8
 L_7AF9:
-	cp 0f0h		;7af9
+	cp 0f0h		;7af9   ; 0xFn: el vibrato
 	jr c,L_7B04		;7afb
-	and 00fh		;7afd
+	and 00fh		;7afd   ; el nibble bajo
 	ld (ix+006h),a		;7aff
 	inc hl			;7b02
 	ld a,(hl)			;7b03
 L_7B04:
-	cp 0e0h		;7b04
+	cp 0e0h		;7b04   ; 0xEn: el volumen de la voz
 	jr c,L_7B0F		;7b06
-	and 00fh		;7b08
+	and 00fh		;7b08   ; el nibble bajo
 	ld (ix+005h),a		;7b0a
 	inc hl			;7b0d
 	ld a,(hl)			;7b0e
@@ -6007,42 +6015,46 @@ L_7B0F:
 	and 00fh		;7b0f
 	ld b,a			;7b11
 	ld a,(ix+00ah)		;7b12
-	jr z,L_7B1C		;7b15
+	jr z,fija_la_duracion		;7b15
 L_7B17:
 	add a,(ix+00ah)		;7b17
 	djnz L_7B17		;7b1a
-L_7B1C:
-	ld (ix+001h),a		;7b1c
+
+; ----------------------------------------------------------------------
+; LA DURACION Y EL APAGADO: el nibble alto del byte es la duracion y, restandole 12, sale el punto en el que la nota empieza a apagarse. Si da cero, no hay apagado.
+; ----------------------------------------------------------------------
+fija_la_duracion:
+	ld (ix+001h),a		;7b1c   ; la duracion
 	ld a,(hl)			;7b1f
 	inc hl			;7b20
-	ld (ix+003h),l		;7b21
+	ld (ix+003h),l		;7b21   ; y por donde va la partitura
 	ld (ix+004h),h		;7b24
-	and 0f0h		;7b27
-	rrca			;7b29
+	and 0f0h		;7b27   ; el nibble alto
+	rrca			;7b29   ; cuatro giros
 	rrca			;7b2a
 	rrca			;7b2b
 	rrca			;7b2c
 	ld b,a			;7b2d
-	sub 00ch		;7b2e
+	sub 00ch		;7b2e   ; menos doce: el punto de apagado
 	ld (ix+007h),a		;7b30
 	jr z,L_7B3B		;7b33
 	ld a,(ix+006h)		;7b35
 	ld (ix+007h),a		;7b38
 L_7B3B:
-	call L_7AA2		;7b3b
+	call fija_la_duracion_de_la_nota		;7b3b
 	ld a,b			;7b3e
-	ld hl,07b5eh		;7b3f
+	ld hl,07b5eh		;7b3f   ; la escala de doce notas
 	call suma_a_a_hl		;7b42
-	ld l,(hl)			;7b45
+	ld l,(hl)			;7b45   ; el periodo de esa nota
 	ld h,000h		;7b46
-	ld a,(ix+005h)		;7b48
+	ld a,(ix+005h)		;7b48   ; las octavas a bajar
 	or a			;7b4b
-	jr z,L_7B52		;7b4c
+	jr z,escribe_la_nota		;7b4c
 	ld b,a			;7b4e
 L_7B4F:
 	add hl,hl			;7b4f
 	djnz L_7B4F		;7b50
-L_7B52:
+escribe_la_nota:
 	ld a,c			;7b52
 	ld e,h			;7b53
 	call 00093h		;7b54   ; BIOS WRTPSG - Writes data to PSG-register
