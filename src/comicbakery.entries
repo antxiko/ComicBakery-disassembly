@@ -1,0 +1,28 @@
+# Puntos de entrada que el trazado NO puede deducir solo.
+#
+# Cada uno lleva escrito POR QUE hace falta. Una entrada sin justificar es una
+# direccion metida a mano para que la cobertura cuadre.
+
+# El arranque: la cabecera del cartucho da INIT en 0x40C7.
+0x40C7   # INIT, la direccion que trae la cabecera del cartucho
+
+# ======================================================================
+# EL GANCHO DE LA INTERRUPCION
+# ======================================================================
+# INIT escribe un `jp` (0xC3) en 0xFD9A y la direccion 0x405C en 0xFD9B, que
+# es H.KEYI, y se queda en el `jr $` de 0x40F5. Todo el juego cuelga de la
+# interrupcion, una vez por cuadro, como en los otros dos cartuchos de esta
+# tanda.
+0x405C   # H.KEYI, enganchado por INIT en 0x40CF
+
+# ======================================================================
+# LAS TABLAS PEGADAS DETRAS DEL `call`
+# ======================================================================
+# El despachador de 0x4096 hace `add a,a / pop hl / ... / ld e,(hl) / inc hl /
+# ld d,(hl) / ex de,hl / jp (hl)`: el `pop hl` recupera su propia direccion de
+# retorno, que es donde empieza la tabla, porque va PEGADA detras del `call`.
+# Cuantas entradas tiene lo fija el encaje -la tabla acaba justo donde empieza
+# su primera entrada-, medido con tools/encaja_tablas.py.
+!tabla 0x4119  16   # desde 0x4116; cierra en 0x4139, su entrada mas baja
+!tabla 0x4282   4   # desde 0x427F; cierra en 0x428A
+!tabla 0x432b   8   # desde 0x4328; cierra en 0x433B
