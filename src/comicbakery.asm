@@ -248,7 +248,7 @@ L_4151:
 	ld a,(0e003h)		;4151
 	rra			;4154   ; su bit 0 al acarreo
 	ret nc			;4155
-	call L_4892		;4156
+	call baja_la_cortinilla		;4156
 	ret nz			;4159
 	ld hl,05e42h		;415a   ; el rotulo
 	call pinta_rotulo		;415d
@@ -300,7 +300,7 @@ L_4188:
 	inc a			;4196
 	ld (0e053h),a		;4197   ; la senal de partida en marcha
 	call pinta_el_marcador		;419a   ; el marcador
-	call L_494C		;419d
+	call prepara_la_fase		;419d
 	call L_7061		;41a0
 	jp plazo_de_32		;41a3
 
@@ -355,7 +355,7 @@ escena_8_arranca:
 	ret nz			;41e6
 	ld hl,05e37h		;41e7   ; el mismo guion de "PLAYER 1"
 	call borra_rotulo		;41ea   ; por la puerta que lo borra
-	call L_494C		;41ed
+	call prepara_la_fase		;41ed
 	ld a,(0e11ah)		;41f0   ; la bandera de 0xE11A
 	or a			;41f3
 	jr z,L_41F9		;41f4
@@ -407,7 +407,7 @@ pasa_a_la_escena_siguiente:
 ; ESCENA 9: el compas de la partida. Si (0xE00D) esta a cero se espera; si no, se pasa a la escena 15 preparando el fin de fase.
 ; ----------------------------------------------------------------------
 L_4240:
-	call L_48CE		;4240
+	call el_cuadro_de_la_partida		;4240
 	ld a,(0e00dh)		;4243   ; la senal de fin
 	or a			;4246
 	jr nz,L_4250		;4247
@@ -1560,48 +1560,56 @@ DATA_488E:
 ; ======================================================================
 
 
-L_4892:
-	ld hl,(0e00eh)		;4892
-	ld de,00020h		;4895
+
+; ----------------------------------------------------------------------
+; UN PASO DE CORTINILLA. Avanza 32 celdas -una fila- y pinta la franja en DOS sitios a la vez: en la posicion que toca y en su reflejo respecto de 0x3AAA, con `sbc hl,de`. Se cierra desde arriba y desde abajo al mismo tiempo.
+; ----------------------------------------------------------------------
+baja_la_cortinilla:
+	ld hl,(0e00eh)		;4892   ; por donde va
+	ld de,00020h		;4895   ; una fila, 32 celdas
 	add hl,de			;4898
 	ld (0e00eh),hl		;4899
 	ex de,hl			;489c
 	or a			;489d
-	ld hl,03aaah		;489e
-	sbc hl,de		;48a1
+	ld hl,03aaah		;489e   ; el punto de reflejo
+	sbc hl,de		;48a1   ; restando sale la franja de abajo
 	ex de,hl			;48a3
-	ld a,040h		;48a4
-	ld bc,00303h		;48a6
+	ld a,040h		;48a4   ; el primer patron
+	ld bc,00303h		;48a6   ; tres por tres
 L_48A9:
 	push de			;48a9
 L_48AA:
-	call escribe_en_vram		;48aa
+	call escribe_en_vram		;48aa   ; el patron
 	inc de			;48ad
-	inc a			;48ae
+	inc a			;48ae   ; el siguiente, uno mas
 	djnz L_48AA		;48af
 	pop de			;48b1
-	ld hl,00020h		;48b2
+	ld hl,00020h		;48b2   ; la fila de abajo
 	add hl,de			;48b5
 	ex de,hl			;48b6
 	ld h,a			;48b7
-	ld a,00eh		;48b8
+	ld a,00eh		;48b8   ; catorce menos lo que se lleva pintado
 	sub c			;48ba
 	ld b,a			;48bb
 	ld a,h			;48bc
 	dec c			;48bd
 	jr nz,L_48A9		;48be
-	ld bc,0000ch		;48c0
+	ld bc,0000ch		;48c0   ; doce celdas de relleno
 	xor a			;48c3
 	set 6,d		;48c4
 	call rellena_vram		;48c6
 	ld hl,0e00ah		;48c9
-	dec (hl)			;48cc
+	dec (hl)			;48cc   ; un paso menos
 	ret			;48cd
-L_48CE:
+
+; ----------------------------------------------------------------------
+; EL CUADRO DE LA PARTIDA, y es el indice del cartucho: VEINTISIETE llamadas seguidas, una por cada cosa que se mueve o se pinta, y al final el reloj. Lo que va primero se pinta antes, asi que el orden ES la profundidad.
+; ----------------------------------------------------------------------
+el_cuadro_de_la_partida:
 	call L_5446		;48ce
 	call L_56DC		;48d1
 	call L_5735		;48d4
-	call pinta_los_panes		;48d7
+	call pinta_los_panes		;48d7   ; el contador de panes
 	call L_4B0E		;48da
 	call L_4BBB		;48dd
 	call L_4C67		;48e0
@@ -1620,39 +1628,43 @@ L_48CE:
 	call L_4E7F		;4907
 	call L_4E4A		;490a
 	call L_5088		;490d
-	call L_4A28		;4910
+	call mira_si_dispara		;4910
 	call L_53FF		;4913
 	call L_5464		;4916
 	call L_58FC		;4919
 	call L_534F		;491c
-	call el_reloj_de_la_jornada		;491f
-	ld a,(0e00bh)		;4922
-	cp 007h		;4925
+	call el_reloj_de_la_jornada		;491f   ; y el reloj, lo ultimo
+	ld a,(0e00bh)		;4922   ; el compas de ocho
+	cp 007h		;4925   ; solo cuando vale 7
 	jr nz,L_4931		;4927
 	ld hl,0e103h		;4929
-	ld a,(hl)			;492c
+	ld a,(hl)			;492c   ; dos bytes de estado, intercambiados
 	ld (hl),000h		;492d
 	dec hl			;492f
 	ld (hl),a			;4930
 L_4931:
 	call L_4B1D		;4931
 	call L_707A		;4934
-	ld a,(0e00bh)		;4937
+	ld a,(0e00bh)		;4937   ; otra vez el compas
 	cp 007h		;493a
 	ret nz			;493c
 	call L_5051		;493d
 L_4940:
 	ld hl,0e1a0h		;4940
-	ld de,079a0h		;4943
-	ld bc,00140h		;4946
+	ld de,079a0h		;4943   ; el destino en la VRAM
+	ld bc,00140h		;4946   ; 320 bytes de un tiron
 	jp vuelca_bloque		;4949
-L_494C:
-	ld hl,04a1fh		;494c
+
+; ----------------------------------------------------------------------
+; PREPARAR LA FASE: copia los nueve valores iniciales a 0xE110 y pone a cero siete variables sueltas, una por una.
+; ----------------------------------------------------------------------
+prepara_la_fase:
+	ld hl,04a1fh		;494c   ; los nueve valores iniciales
 	ld de,0e110h		;494f
-	ld bc,00009h		;4952
+	ld bc,00009h		;4952   ; nueve bytes
 	ldir		;4955
 	ld a,000h		;4957
-	ld (0e104h),a		;4959
+	ld (0e104h),a		;4959   ; y siete variables a cero
 	ld (0e121h),a		;495c
 	ld (0e103h),a		;495f
 	ld (0e102h),a		;4962
@@ -1670,31 +1682,39 @@ L_494C:
 	ld (0e199h),a		;4982
 	ld a,0aeh		;4985
 	ld (0e125h),a		;4987
-	ld a,(0e051h)		;498a
+
+; ----------------------------------------------------------------------
+; Y AQUI TAMBIEN SALE EL AZAR DEL REGISTRO R, como en Magical Tree: dos bits del contador de refresco se suman al numero de fase, se dobla el resultado y se recorta a 0x17. Si sale cero se fuerza a uno. De ahi sale la variante con la que arranca la fase, sin semilla ni tabla.
+; ----------------------------------------------------------------------
+	ld a,(0e051h)		;498a   ; el numero de fase
 	ld c,a			;498d
-	ld a,r		;498e
-	and 003h		;4990
-	add a,c			;4992
+	ld a,r		;498e   ; el contador de refresco del Z80: el azar
+	and 003h		;4990   ; dos bits
+	add a,c			;4992   ; sumados a la fase
 	add a,a			;4993
-	and 017h		;4994
+	and 017h		;4994   ; y recortado
 	jr nz,L_499A		;4996
-	ld a,001h		;4998
+	ld a,001h		;4998   ; si sale cero, se fuerza uno
 L_499A:
 	ld (0e19ah),a		;499a
 	ld a,c			;499d
-	dec a			;499e
-	jr z,L_49A6		;499f
+	dec a			;499e   ; la fase 1 no lleva desplazamiento
+	jr z,monta_la_fase		;499f
 	ld a,070h		;49a1
 	ld (0e057h),a		;49a3
-L_49A6:
+
+; ----------------------------------------------------------------------
+; EL MONTAJE DE LA FASE. La lista de 0xE160 se rellena con `ldir` propagando un UNO -no un cero- desde la propia celda, y luego se cierra a mano con un 2 y un 3. Detras vienen ocho llamadas con parejas de coordenadas: es el decorado de la panaderia, montado por trozos.
+; ----------------------------------------------------------------------
+monta_la_fase:
 	ld hl,0e160h		;49a6
-	ld (hl),000h		;49a9
+	ld (hl),000h		;49a9   ; el primer hueco, a cero
 	inc hl			;49ab
 	ld de,0e162h		;49ac
-	ld (hl),001h		;49af
-	ld bc,0001eh		;49b1
-	ldir		;49b4
-	ld (hl),002h		;49b6
+	ld (hl),001h		;49af   ; un uno
+	ld bc,0001eh		;49b1   ; treinta bytes
+	ldir		;49b4   ; y el ldir lo arrastra
+	ld (hl),002h		;49b6   ; los dos ultimos, a mano
 	inc hl			;49b8
 	ld (hl),003h		;49b9
 	ld de,00b98h		;49bb
@@ -1713,13 +1733,13 @@ L_49A6:
 	call L_615E		;49e1
 	ld de,033e8h		;49e4
 	call L_6171		;49e7
-	call L_5897		;49ea
-	call pinta_los_panes		;49ed
+	call L_5897		;49ea   ; el marcador
+	call pinta_los_panes		;49ed   ; el contador de panes
 	xor a			;49f0
 	ld (0e055h),a		;49f1
 	ld c,a			;49f4
-	ld b,020h		;49f5
-	ld de,0e1a0h		;49f7
+	ld b,020h		;49f5   ; treinta y dos huecos
+	ld de,0e1a0h		;49f7   ; el bufer de 0xE1A0
 L_49FA:
 	push bc			;49fa
 	push de			;49fb
@@ -1728,15 +1748,15 @@ L_49FA:
 	pop de			;4a00
 	inc de			;4a01
 	pop bc			;4a02
-	inc c			;4a03
+	inc c			;4a03   ; el numero de hueco
 	djnz L_49FA		;4a04
 	call L_4940		;4a06
 	call L_5082		;4a09
 	call L_5051		;4a0c
-	ld hl,05e68h		;4a0f
+	ld hl,05e68h		;4a0f   ; el bloque comprimido del decorado
 	call descomprime		;4a12
 	call L_4EA3		;4a15
-	call pinta_el_reloj		;4a18
+	call pinta_el_reloj		;4a18   ; y el reloj a cero
 	call L_70D6		;4a1b
 	ret			;4a1e
 
@@ -1750,57 +1770,61 @@ DATA_4A1F:
 ; ======================================================================
 
 
-L_4A28:
+mira_si_dispara:
 	ld hl,0e121h		;4a28
-	ld a,(hl)			;4a2b
+	ld a,(hl)			;4a2b   ; la bandera de 0xE121
 	or a			;4a2c
 	jr nz,L_4A41		;4a2d
 	dec hl			;4a2f
 	ld a,(hl)			;4a30
 	or a			;4a31
 	ret z			;4a32
-	ld a,(0e124h)		;4a33
+	ld a,(0e124h)		;4a33   ; el plazo de recarga
 	or a			;4a36
 	ret nz			;4a37
-	call flanco_del_boton_10		;4a38
+	call flanco_del_boton_10		;4a38   ; y que se acabe de pulsar el boton
 	ret z			;4a3b
-	dec (hl)			;4a3c
+	dec (hl)			;4a3c   ; la recarga, uno menos
 	inc hl			;4a3d
-	call L_4A4A		;4a3e
+	call arranca_el_disparo		;4a3e
 L_4A41:
-	ld a,(0e00bh)		;4a41
-	rra			;4a44
+	ld a,(0e00bh)		;4a41   ; el compas de ocho
+	rra			;4a44   ; uno de cada dos
 	ret c			;4a45
-	call L_4AD2		;4a46
+	call avanza_el_disparo		;4a46
 	ret			;4a49
-L_4A4A:
-	ld a,(0e051h)		;4a4a
-	ld (hl),00eh		;4a4d
-	cp 004h		;4a4f
+
+; ----------------------------------------------------------------------
+; ARRANCAR EL DISPARO. Su duracion depende de la fase -14 cuadros hasta la cuarta, 18 desde ella-, y la direccion elige uno de tres juegos de desplazamientos: (0x18, 0xF2), (0x18, 0x0E) o ninguno. Los tres sprites se colocan a partir de la posicion del panadero.
+; ----------------------------------------------------------------------
+arranca_el_disparo:
+	ld a,(0e051h)		;4a4a   ; el numero de fase
+	ld (hl),00eh		;4a4d   ; catorce cuadros
+	cp 004h		;4a4f   ; de la cuarta en adelante
 	jr c,L_4A55		;4a51
-	ld (hl),012h		;4a53
+	ld (hl),012h		;4a53   ; dieciocho
 L_4A55:
 	inc hl			;4a55
 	ld a,(hl)			;4a56
 	inc hl			;4a57
-	ld (hl),a			;4a58
+	ld (hl),a			;4a58   ; la direccion, guardada
 	or a			;4a59
 	jr z,L_4A6D		;4a5a
 	dec a			;4a5c
 	jr nz,L_4A66		;4a5d
-	ld a,00ch		;4a5f
+	ld a,00ch		;4a5f   ; un juego de desplazamientos
 	ld bc,018f2h		;4a61
 	jr L_4A72		;4a64
 L_4A66:
-	ld a,010h		;4a66
+	ld a,010h		;4a66   ; otro
 	ld bc,0180eh		;4a68
 	jr L_4A72		;4a6b
 L_4A6D:
-	ld a,008h		;4a6d
+	ld a,008h		;4a6d   ; y el tercero, sin desplazar
 	ld bc,00000h		;4a6f
 L_4A72:
-	ld de,0e092h		;4a72
-	ld hl,0e081h		;4a75
+	ld de,0e092h		;4a72   ; el hueco del sprite
+	ld hl,0e081h		;4a75   ; y la posicion del panadero
 	ld (de),a			;4a78
 	dec de			;4a79
 	ld a,(hl)			;4a7a
@@ -1811,16 +1835,16 @@ L_4A72:
 	ld a,(hl)			;4a7f
 	add a,b			;4a80
 	ld (de),a			;4a81
-	ld a,(0e123h)		;4a82
+	ld a,(0e123h)		;4a82   ; la variante de 0xE123
 	ld c,a			;4a85
-	ld b,010h		;4a86
+	ld b,010h		;4a86   ; dieciseis
 	or a			;4a88
 	jr nz,L_4A8D		;4a89
-	ld b,014h		;4a8b
+	ld b,014h		;4a8b   ; o veinte
 L_4A8D:
 	ld hl,0e105h		;4a8d
 	ld a,(0e101h)		;4a90
-	and 00ch		;4a93
+	and 00ch		;4a93   ; los dos bits de direccion
 	jr z,L_4A9E		;4a95
 	sub 004h		;4a97
 	jr z,L_4A9D		;4a99
@@ -1831,38 +1855,38 @@ L_4A9E:
 	ld a,(hl)			;4a9e
 	add a,b			;4a9f
 	call L_4C51		;4aa0
-	ld a,002h		;4aa3
+	ld a,002h		;4aa3   ; el sonido del disparo
 	call L_799C		;4aa5
 	ld a,(0e123h)		;4aa8
 	ld b,a			;4aab
 	or a			;4aac
-	jr z,L_4ABA		;4aad
+	jr z,mueve_el_disparo_recto		;4aad
 L_4AAF:
 	dec a			;4aaf
-	ld a,003h		;4ab0
+	ld a,003h		;4ab0   ; tres pixeles
 	jr z,L_4AB6		;4ab2
-	ld a,0fdh		;4ab4
+	ld a,0fdh		;4ab4   ; o tres hacia atras
 L_4AB6:
 	call L_4C0B		;4ab6
 	ret			;4ab9
-L_4ABA:
+mueve_el_disparo_recto:
 	ld a,(0e105h)		;4aba
 	or a			;4abd
-	ld c,001h		;4abe
+	ld c,001h		;4abe   ; un pixel hacia delante
 	jr z,L_4AC4		;4ac0
-	ld c,0ffh		;4ac2
+	ld c,0ffh		;4ac2   ; o uno hacia atras
 L_4AC4:
 	ld hl,0e085h		;4ac4
 	ld a,(hl)			;4ac7
-	add a,c			;4ac8
+	add a,c			;4ac8   ; la posicion, corrida
 	ld (hl),a			;4ac9
 	add a,c			;4aca
-	ld (0e081h),a		;4acb
+	ld (0e081h),a		;4acb   ; y los otros dos sprites, uno mas alla
 	ld (0e089h),a		;4ace
 	ret			;4ad1
-L_4AD2:
+avanza_el_disparo:
 	ld hl,0e121h		;4ad2
-	dec (hl)			;4ad5
+	dec (hl)			;4ad5   ; la recarga, uno menos
 	jr z,L_4B04		;4ad6
 	inc hl			;4ad8
 	inc hl			;4ad9
@@ -4207,7 +4231,7 @@ L_5AB6:
 	call L_4C1E		;5ab6
 L_5AB9:
 	call L_4C67		;5ab9
-	call L_4A28		;5abc
+	call mira_si_dispara		;5abc
 	call L_707A		;5abf
 	ld a,(0e081h)		;5ac2
 	cp 0e8h		;5ac5

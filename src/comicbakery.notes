@@ -595,3 +595,102 @@ C 0x4881 el bit 0: arriba
 C 0x4884 una menos
 C 0x4885 el bit 1: abajo
 C 0x4888 una mas
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x4892 baja_la_cortinilla
+B 0x4892 UN PASO DE CORTINILLA. Avanza 32 celdas -una fila- y pinta la franja en DOS sitios a la vez: en la posicion que toca y en su reflejo respecto de 0x3AAA, con `sbc hl,de`. Se cierra desde arriba y desde abajo al mismo tiempo.
+C 0x4892 por donde va
+C 0x4895 una fila, 32 celdas
+C 0x489e el punto de reflejo
+C 0x48a1 restando sale la franja de abajo
+C 0x48a4 el primer patron
+C 0x48a6 tres por tres
+C 0x48aa el patron
+C 0x48ae el siguiente, uno mas
+C 0x48b2 la fila de abajo
+C 0x48b8 catorce menos lo que se lleva pintado
+C 0x48c0 doce celdas de relleno
+C 0x48cc un paso menos
+L 0x48ce el_cuadro_de_la_partida
+B 0x48ce EL CUADRO DE LA PARTIDA, y es el indice del cartucho: VEINTISIETE llamadas seguidas, una por cada cosa que se mueve o se pinta, y al final el reloj. Lo que va primero se pinta antes, asi que el orden ES la profundidad.
+C 0x48d7 el contador de panes
+C 0x491f y el reloj, lo ultimo
+C 0x4922 el compas de ocho
+C 0x4925 solo cuando vale 7
+C 0x492c dos bytes de estado, intercambiados
+C 0x4937 otra vez el compas
+C 0x4943 el destino en la VRAM
+C 0x4946 320 bytes de un tiron
+L 0x494c prepara_la_fase
+B 0x494c PREPARAR LA FASE: copia los nueve valores iniciales a 0xE110 y pone a cero siete variables sueltas, una por una.
+C 0x494c los nueve valores iniciales
+C 0x4952 nueve bytes
+C 0x4959 y siete variables a cero
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+B 0x498a Y AQUI TAMBIEN SALE EL AZAR DEL REGISTRO R, como en Magical Tree: dos bits del contador de refresco se suman al numero de fase, se dobla el resultado y se recorta a 0x17. Si sale cero se fuerza a uno. De ahi sale la variante con la que arranca la fase, sin semilla ni tabla.
+C 0x498a el numero de fase
+C 0x498e el contador de refresco del Z80: el azar
+C 0x4990 dos bits
+C 0x4992 sumados a la fase
+C 0x4994 y recortado
+C 0x4998 si sale cero, se fuerza uno
+C 0x499e la fase 1 no lleva desplazamiento
+L 0x49a6 monta_la_fase
+B 0x49a6 EL MONTAJE DE LA FASE. La lista de 0xE160 se rellena con `ldir` propagando un UNO -no un cero- desde la propia celda, y luego se cierra a mano con un 2 y un 3. Detras vienen ocho llamadas con parejas de coordenadas: es el decorado de la panaderia, montado por trozos.
+C 0x49a9 el primer hueco, a cero
+C 0x49af un uno
+C 0x49b1 treinta bytes
+C 0x49b4 y el ldir lo arrastra
+C 0x49b6 los dos ultimos, a mano
+C 0x49ea el marcador
+C 0x49ed el contador de panes
+C 0x49f5 treinta y dos huecos
+C 0x49f7 el bufer de 0xE1A0
+C 0x4a03 el numero de hueco
+C 0x4a0f el bloque comprimido del decorado
+C 0x4a18 y el reloj a cero
+L 0x4a28 mira_si_dispara
+C 0x4a2b la bandera de 0xE121
+C 0x4a33 el plazo de recarga
+C 0x4a38 y que se acabe de pulsar el boton
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x4a3c la recarga, uno menos
+C 0x4a41 el compas de ocho
+C 0x4a44 uno de cada dos
+L 0x4a4a arranca_el_disparo
+B 0x4a4a ARRANCAR EL DISPARO. Su duracion depende de la fase -14 cuadros hasta la cuarta, 18 desde ella-, y la direccion elige uno de tres juegos de desplazamientos: (0x18, 0xF2), (0x18, 0x0E) o ninguno. Los tres sprites se colocan a partir de la posicion del panadero.
+C 0x4a4a el numero de fase
+C 0x4a4d catorce cuadros
+C 0x4a4f de la cuarta en adelante
+C 0x4a53 dieciocho
+C 0x4a58 la direccion, guardada
+C 0x4a5f un juego de desplazamientos
+C 0x4a66 otro
+C 0x4a6d y el tercero, sin desplazar
+C 0x4a72 el hueco del sprite
+C 0x4a75 y la posicion del panadero
+C 0x4a82 la variante de 0xE123
+C 0x4a86 dieciseis
+C 0x4a8b o veinte
+C 0x4a93 los dos bits de direccion
+C 0x4aa3 el sonido del disparo
+C 0x4ab0 tres pixeles
+C 0x4ab4 o tres hacia atras
+L 0x4aba mueve_el_disparo_recto
+C 0x4abe un pixel hacia delante
+C 0x4ac2 o uno hacia atras
+C 0x4ac8 la posicion, corrida
+C 0x4acb y los otros dos sprites, uno mas alla
+L 0x4ad2 avanza_el_disparo
+C 0x4ad5 la recarga, uno menos
