@@ -808,3 +808,74 @@ C 0x4ce4 uno menos
 C 0x4cec 320 bytes
 C 0x4cef corridos hacia atras
 C 0x4cf6 el tope
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x4cfe el bufer, una celda mas alla
+C 0x4d07 y los 320 bytes se corren hacia delante
+L 0x4d0c pinta_una_columna_de_la_cinta
+B 0x4d0c PINTAR UNA COLUMNA DE LA CINTA. El indice se multiplica por DIEZ sin multiplicar: `add hl,hl` tres veces da ocho veces, y sumando el doble guardado antes salen los diez. Luego se copian diez indices, uno por fila, saltando 32 celdas entre ellos.
+C 0x4d0f por dos
+C 0x4d10 el doble, guardado
+C 0x4d12 por ocho
+C 0x4d14 y ocho mas dos son DIEZ
+C 0x4d15 la tabla de columnas
+C 0x4d19 diez filas
+C 0x4d1e la fila de abajo, 32 celdas
+L 0x4d2e el_panadero_alcanzado
+B 0x4d2e EL PANADERO ALCANZADO: la pose cambia cada cuatro cuadros con los bits 2 y 3 del contador -tres dibujos, 0, 4 y 8- y baja hasta 0x98, donde se para. Al llegar, el plazo se pone a 16 y suena.
+C 0x4d31 el plazo
+C 0x4d3e uno de cada cuatro cuadros
+C 0x4d42 el bit 2 elige el segundo dibujo
+C 0x4d48 y el bit 3 el tercero
+C 0x4d51 un pixel hacia abajo
+C 0x4d59 hasta llegar a 0x98
+C 0x4d65 dieciseis cuadros de plazo
+C 0x4d74 y la pose de estar tumbado
+L 0x4d82 pone_en_pie_al_panadero
+B 0x4d82 PONER EN PIE AL PANADERO: copia dieciseis bytes de sprites y doce mas, le pone la pose 0 y saca sus cuatro sprites de la pantalla con la fila 0xD0.
+C 0x4d82 los dieciseis bytes de sus sprites
+C 0x4d8d y los doce del resto
+C 0x4da3 cuatro sprites
+C 0x4da8 0xD0: fuera de la pantalla
+C 0x4dab cuatro bytes por sprite
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x4dbe coloca_el_indicador
+B 0x4dbe EL INDICADOR QUE SIGUE AL PANADERO: su columna sale de dividir la del panadero entre CUATRO (`srl a` dos veces), redondear a par y sumarle un desplazamiento distinto por planta -0x2A, 0x0C o 0x84-. Y su patron alterna entre 0x0F y 0x09 con el compas de dieciseis.
+C 0x4dc1 la planta
+C 0x4dcb el desplazamiento de la planta baja
+C 0x4dcf el de la primera
+C 0x4dd4 y el de la segunda
+C 0x4dd6 la columna del panadero
+C 0x4dd9 dividida entre cuatro
+C 0x4ddd redondeada a par
+C 0x4de1 el contador de cuadros
+C 0x4de4 el nibble bajo
+C 0x4de6 medio ciclo
+C 0x4de8 un patron
+C 0x4dec o el otro
+L 0x4dfe repone_la_fila_de_marcas
+C 0x4dfe los dieciocho valores de partida
+C 0x4e04 dieciocho bytes
+L 0x4e0a pinta_la_fila_de_marcas
+B 0x4e0a LA FILA DE MARCAS DE ARRIBA, repintada cuando el compas de ocho vale 7. Recorre ocho fichas de 0xE061 y, para las que tengan el bit 0 y el bit 7 puestos, calcula la celda -cinco bits del byte por cuatro, mas 0x80- y le pone el patron 0x6D mas dos bits. Al final vuelca los dieciocho bytes a la VRAM de un tiron.
+C 0x4e0a el compas de ocho
+C 0x4e0d solo cuando vale 7
+C 0x4e18 ocho fichas
+C 0x4e1e el bit 0
+C 0x4e29 y el bit 7
+C 0x4e2e dos giros
+C 0x4e32 +0x80: el bufer de la fila
+C 0x4e36 dos bits del estado
+C 0x4e38 +0x6D: el patron que toca
+C 0x4e41 el destino en la VRAM
+C 0x4e44 dieciocho bytes
+L 0x4e4a mueve_las_tres_cosas
+C 0x4e4e uno de cada cuatro cuadros
+C 0x4e58 tres

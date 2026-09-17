@@ -359,14 +359,14 @@ escena_8_arranca:
 	ld a,(0e11ah)		;41f0   ; la bandera de 0xE11A
 	or a			;41f3
 	jr z,L_41F9		;41f4
-	call L_4D82		;41f6
+	call pone_en_pie_al_panadero		;41f6
 L_41F9:
 	jp L_4381		;41f9
 L_41FC:
 	ld a,(0e11ah)		;41fc
 	or a			;41ff
 	jr z,L_4206		;4200
-	call L_4D2E		;4202
+	call el_panadero_alcanzado		;4202
 	ret nc			;4205
 L_4206:
 	call L_7061		;4206
@@ -1613,7 +1613,7 @@ el_cuadro_de_la_partida:
 	call sube_el_contador_de_panes		;48da
 	call mueve_al_panadero		;48dd
 	call mira_si_salta		;48e0
-	call L_4DBE		;48e3
+	call coloca_el_indicador		;48e3
 	call L_5824		;48e6
 	call L_5117		;48e9
 	call L_5520		;48ec
@@ -1624,9 +1624,9 @@ el_cuadro_de_la_partida:
 	call L_576B		;48fb
 	call L_57DA		;48fe
 	call L_4F0E		;4901
-	call L_4E0A		;4904
+	call pinta_la_fila_de_marcas		;4904
 	call L_4E7F		;4907
-	call L_4E4A		;490a
+	call mueve_las_tres_cosas		;490a
 	call L_5088		;490d
 	call mira_si_dispara		;4910
 	call L_53FF		;4913
@@ -1744,7 +1744,7 @@ L_49FA:
 	push bc			;49fa
 	push de			;49fb
 	ld a,c			;49fc
-	call L_4D0C		;49fd
+	call pinta_una_columna_de_la_cinta		;49fd
 	pop de			;4a00
 	inc de			;4a01
 	pop bc			;4a02
@@ -2271,35 +2271,39 @@ mueve_el_horno:
 	ld bc,00140h		;4cec   ; 320 bytes
 	lddr		;4cef   ; corridos hacia atras
 	ld de,0e1a0h		;4cf1
-	jr L_4D0C		;4cf4
+	jr pinta_una_columna_de_la_cinta		;4cf4
 L_4CF6:
 	sub 03ch		;4cf6   ; el tope
 	jr z,L_4D28		;4cf8
 	inc (hl)			;4cfa
 	ld a,(hl)			;4cfb
 	add a,01fh		;4cfc
-	ld hl,0e1a1h		;4cfe
+	ld hl,0e1a1h		;4cfe   ; el bufer, una celda mas alla
 	ld de,0e1a0h		;4d01
 	ld bc,00140h		;4d04
-	ldir		;4d07
+	ldir		;4d07   ; y los 320 bytes se corren hacia delante
 	ld de,0e1bfh		;4d09
-L_4D0C:
+
+; ----------------------------------------------------------------------
+; PINTAR UNA COLUMNA DE LA CINTA. El indice se multiplica por DIEZ sin multiplicar: `add hl,hl` tres veces da ocho veces, y sumando el doble guardado antes salen los diez. Luego se copian diez indices, uno por fila, saltando 32 celdas entre ellos.
+; ----------------------------------------------------------------------
+pinta_una_columna_de_la_cinta:
 	ld l,a			;4d0c
 	ld h,000h		;4d0d
-	add hl,hl			;4d0f
-	ld b,h			;4d10
+	add hl,hl			;4d0f   ; por dos
+	ld b,h			;4d10   ; el doble, guardado
 	ld c,l			;4d11
-	add hl,hl			;4d12
+	add hl,hl			;4d12   ; por ocho
 	add hl,hl			;4d13
-	add hl,bc			;4d14
-	ld bc,07604h		;4d15
+	add hl,bc			;4d14   ; y ocho mas dos son DIEZ
+	ld bc,07604h		;4d15   ; la tabla de columnas
 	add hl,bc			;4d18
-	ld b,00ah		;4d19
+	ld b,00ah		;4d19   ; diez filas
 L_4D1B:
 	ld a,(hl)			;4d1b
 	ld (de),a			;4d1c
 	inc hl			;4d1d
-	ld a,020h		;4d1e
+	ld a,020h		;4d1e   ; la fila de abajo, 32 celdas
 	call suma_a_a_de		;4d20
 	djnz L_4D1B		;4d23
 	jp L_5897		;4d25
@@ -2309,9 +2313,13 @@ L_4D29:
 	inc a			;4d29
 	ld (0e056h),a		;4d2a
 	ret			;4d2d
-L_4D2E:
-	call L_4E4A		;4d2e
-	ld hl,0e124h		;4d31
+
+; ----------------------------------------------------------------------
+; EL PANADERO ALCANZADO: la pose cambia cada cuatro cuadros con los bits 2 y 3 del contador -tres dibujos, 0, 4 y 8- y baja hasta 0x98, donde se para. Al llegar, el plazo se pone a 16 y suena.
+; ----------------------------------------------------------------------
+el_panadero_alcanzado:
+	call mueve_las_tres_cosas		;4d2e
+	ld hl,0e124h		;4d31   ; el plazo
 	ld a,(hl)			;4d34
 	or a			;4d35
 	jr z,L_4D3A		;4d36
@@ -2320,21 +2328,21 @@ L_4D2E:
 L_4D3A:
 	ld hl,0e003h		;4d3a
 	ld a,(hl)			;4d3d
-	and 003h		;4d3e
+	and 003h		;4d3e   ; uno de cada cuatro cuadros
 	ret nz			;4d40
 	xor a			;4d41
-	bit 2,(hl)		;4d42
+	bit 2,(hl)		;4d42   ; el bit 2 elige el segundo dibujo
 	jr z,L_4D4E		;4d44
 	ld a,004h		;4d46
-	bit 3,(hl)		;4d48
+	bit 3,(hl)		;4d48   ; y el bit 3 el tercero
 	jr z,L_4D4E		;4d4a
 	ld a,008h		;4d4c
 L_4D4E:
 	call pinta_la_pose_del_panadero		;4d4e
-	ld c,001h		;4d51
+	ld c,001h		;4d51   ; un pixel hacia abajo
 	ld hl,0e081h		;4d53
 	call L_4BFB		;4d56
-	cp 098h		;4d59
+	cp 098h		;4d59   ; hasta llegar a 0x98
 	jr z,L_4D65		;4d5b
 	push af			;4d5d
 	call L_707A		;4d5e
@@ -2342,25 +2350,29 @@ L_4D4E:
 	cp 040h		;4d62
 	ret			;4d64
 L_4D65:
-	ld a,010h		;4d65
+	ld a,010h		;4d65   ; dieciseis cuadros de plazo
 	ld (0e124h),a		;4d67
 	ld a,070h		;4d6a
 	ld (0e057h),a		;4d6c
 	ld (0e0c7h),a		;4d6f
 	ld a,030h		;4d72
-	call pinta_la_pose_del_panadero		;4d74
+	call pinta_la_pose_del_panadero		;4d74   ; y la pose de estar tumbado
 	call L_5897		;4d77
 	call L_4940		;4d7a
 L_4D7D:
 	call L_707A		;4d7d
 	or a			;4d80
 	ret			;4d81
-L_4D82:
-	ld hl,07096h		;4d82
+
+; ----------------------------------------------------------------------
+; PONER EN PIE AL PANADERO: copia dieciseis bytes de sprites y doce mas, le pone la pose 0 y saca sus cuatro sprites de la pantalla con la fila 0xD0.
+; ----------------------------------------------------------------------
+pone_en_pie_al_panadero:
+	ld hl,07096h		;4d82   ; los dieciseis bytes de sus sprites
 	ld de,0e080h		;4d85
 	ld bc,00010h		;4d88
 	ldir		;4d8b
-	ld hl,070cah		;4d8d
+	ld hl,070cah		;4d8d   ; y los doce del resto
 	ld de,0e0b4h		;4d90
 	ld bc,0000ch		;4d93
 	ldir		;4d96
@@ -2368,12 +2380,12 @@ L_4D82:
 	ld a,000h		;4d9b
 	ld (0e105h),a		;4d9d
 	call pinta_la_pose_del_panadero		;4da0
-	ld b,004h		;4da3
+	ld b,004h		;4da3   ; cuatro sprites
 	ld hl,0e081h		;4da5
 L_4DA8:
-	ld (hl),0d0h		;4da8
+	ld (hl),0d0h		;4da8   ; 0xD0: fuera de la pantalla
 	ld a,l			;4daa
-	add a,004h		;4dab
+	add a,004h		;4dab   ; cuatro bytes por sprite
 	ld l,a			;4dad
 	djnz L_4DA8		;4dae
 	ld a,008h		;4db0
@@ -2381,34 +2393,38 @@ L_4DA8:
 	ld (0e0bbh),a		;4db5
 	ld (0e0bfh),a		;4db8
 	jp L_4D7D		;4dbb
-L_4DBE:
+
+; ----------------------------------------------------------------------
+; EL INDICADOR QUE SIGUE AL PANADERO: su columna sale de dividir la del panadero entre CUATRO (`srl a` dos veces), redondear a par y sumarle un desplazamiento distinto por planta -0x2A, 0x0C o 0x84-. Y su patron alterna entre 0x0F y 0x09 con el compas de dieciseis.
+; ----------------------------------------------------------------------
+coloca_el_indicador:
 	ld hl,0e095h		;4dbe
-	ld a,(0e056h)		;4dc1
+	ld a,(0e056h)		;4dc1   ; la planta
 	or a			;4dc4
 	jr nz,L_4DCF		;4dc5
 	ld a,(0e055h)		;4dc7
 	add a,a			;4dca
-	ld e,02ah		;4dcb
+	ld e,02ah		;4dcb   ; el desplazamiento de la planta baja
 	jr L_4DDF		;4dcd
 L_4DCF:
-	ld e,00ch		;4dcf
+	ld e,00ch		;4dcf   ; el de la primera
 	dec a			;4dd1
 	jr z,L_4DD6		;4dd2
-	ld e,084h		;4dd4
+	ld e,084h		;4dd4   ; y el de la segunda
 L_4DD6:
-	ld a,(0e081h)		;4dd6
-	srl a		;4dd9
+	ld a,(0e081h)		;4dd6   ; la columna del panadero
+	srl a		;4dd9   ; dividida entre cuatro
 	srl a		;4ddb
-	and 0feh		;4ddd
+	and 0feh		;4ddd   ; redondeada a par
 L_4DDF:
 	add a,e			;4ddf
 	ld (hl),a			;4de0
-	ld a,(0e003h)		;4de1
-	and 00fh		;4de4
-	cp 008h		;4de6
-	ld a,00fh		;4de8
+	ld a,(0e003h)		;4de1   ; el contador de cuadros
+	and 00fh		;4de4   ; el nibble bajo
+	cp 008h		;4de6   ; medio ciclo
+	ld a,00fh		;4de8   ; un patron
 	jr nc,L_4DEE		;4dea
-	ld a,009h		;4dec
+	ld a,009h		;4dec   ; o el otro
 L_4DEE:
 	inc hl			;4dee
 	inc hl			;4def
@@ -2424,26 +2440,30 @@ L_4DF2:
 	inc (hl)			;4dfc
 L_4DFD:
 	ret			;4dfd
-L_4DFE:
-	ld hl,04efch		;4dfe
+repone_la_fila_de_marcas:
+	ld hl,04efch		;4dfe   ; los dieciocho valores de partida
 	ld de,0e181h		;4e01
-	ld bc,00012h		;4e04
+	ld bc,00012h		;4e04   ; dieciocho bytes
 	ldir		;4e07
 	ret			;4e09
-L_4E0A:
-	ld a,(0e00bh)		;4e0a
-	cp 007h		;4e0d
+
+; ----------------------------------------------------------------------
+; LA FILA DE MARCAS DE ARRIBA, repintada cuando el compas de ocho vale 7. Recorre ocho fichas de 0xE061 y, para las que tengan el bit 0 y el bit 7 puestos, calcula la celda -cinco bits del byte por cuatro, mas 0x80- y le pone el patron 0x6D mas dos bits. Al final vuelca los dieciocho bytes a la VRAM de un tiron.
+; ----------------------------------------------------------------------
+pinta_la_fila_de_marcas:
+	ld a,(0e00bh)		;4e0a   ; el compas de ocho
+	cp 007h		;4e0d   ; solo cuando vale 7
 	ret nz			;4e0f
-	call L_4DFE		;4e10
+	call repone_la_fila_de_marcas		;4e10
 	ld hl,0e061h		;4e13
 	ld d,0e1h		;4e16
-	ld b,008h		;4e18
+	ld b,008h		;4e18   ; ocho fichas
 L_4E1A:
 	ld a,(hl)			;4e1a
 	inc hl			;4e1b
 	ld e,(hl)			;4e1c
 	inc hl			;4e1d
-	bit 0,e		;4e1e
+	bit 0,e		;4e1e   ; el bit 0
 	jr z,L_4E26		;4e20
 	or a			;4e22
 	jr nz,L_4E3B		;4e23
@@ -2451,35 +2471,35 @@ L_4E1A:
 L_4E26:
 	or a			;4e26
 	jr z,L_4E3B		;4e27
-	bit 7,e		;4e29
+	bit 7,e		;4e29   ; y el bit 7
 	jr z,L_4E3B		;4e2b
 	ld a,(hl)			;4e2d
-	rrca			;4e2e
+	rrca			;4e2e   ; dos giros
 	rrca			;4e2f
 	and 01fh		;4e30
-	add a,080h		;4e32
+	add a,080h		;4e32   ; +0x80: el bufer de la fila
 	ld e,a			;4e34
 	ld a,(hl)			;4e35
-	and 003h		;4e36
-	add a,06dh		;4e38
+	and 003h		;4e36   ; dos bits del estado
+	add a,06dh		;4e38   ; +0x6D: el patron que toca
 	ld (de),a			;4e3a
 L_4E3B:
 	inc hl			;4e3b
 	djnz L_4E1A		;4e3c
 	ld hl,0e181h		;4e3e
-	ld de,07883h		;4e41
-	ld bc,00012h		;4e44
+	ld de,07883h		;4e41   ; el destino en la VRAM
+	ld bc,00012h		;4e44   ; dieciocho bytes
 	jp vuelca_bloque		;4e47
-L_4E4A:
+mueve_las_tres_cosas:
 	ld hl,0e003h		;4e4a
 	ld a,(hl)			;4e4d
-	and 003h		;4e4e
+	and 003h		;4e4e   ; uno de cada cuatro cuadros
 	ret nz			;4e50
 L_4E51:
 	ld a,(0e057h)		;4e51
 	ld c,a			;4e54
 	ld de,0e0b7h		;4e55
-	ld b,003h		;4e58
+	ld b,003h		;4e58   ; tres
 L_4E5A:
 	ld a,(de)			;4e5a
 	ld a,004h		;4e5b
