@@ -265,7 +265,7 @@ L_4151:
 	ld a,(0e003h)		;4151
 	rra			;4154   ; su bit 0 al acarreo
 	ret nc			;4155
-	call baja_la_cortinilla		;4156
+	call baja_el_logotipo_un_paso		;4156
 	ret nz			;4159
 	ld hl,05e42h		;415a   ; el rotulo
 	call pinta_rotulo		;415d
@@ -1584,7 +1584,7 @@ DATA_modos_de_juego:
 ; ----------------------------------------------------------------------
 ; UN PASO DE CORTINILLA. Avanza 32 celdas -una fila- y pinta la franja en DOS sitios a la vez: en la posicion que toca y en su reflejo respecto de 0x3AAA, con `sbc hl,de`. Se cierra desde arriba y desde abajo al mismo tiempo.
 ; ----------------------------------------------------------------------
-baja_la_cortinilla:
+baja_el_logotipo_un_paso:
 	ld hl,(0e00eh)		;4892   ; por donde va
 	ld de,00020h		;4895   ; una fila, 32 celdas
 	add hl,de			;4898
@@ -5656,8 +5656,12 @@ L_61E7:
 	jp descomprime_en_de		;61f2
 
 ; ----------------------------------------------------------------------
-; DATOS bloque_0x61F5: 672 bytes comprimidos -> 904 en VRAM (1 tramos: ?); lo
-;   carga 0x610F
+; DATOS bloque_0x61F5: 672 bytes comprimidos -> 904 en VRAM; lo carga 0x610F
+;   en la tabla de PATRONES de cada tercio. Dentro van, dibujados desde la
+;   ROM: la fuente -del patron 0x10 al 0x3A, o sea cada letra en su codigo
+;   ASCII menos 0x20-, los dos dibujos de la palabra "with" y el cursor del
+;   menu, y del 0x40 al 0x59 EL LOGOTIPO DE KONAMI, que 0x48A4 pinta en tres
+;   filas de 3, 11 y 12 celdas
 ;   0x61f5..0x6495  (672 bytes)
 DATA_bloque_0x61F5:
 	defb 040h,000h,040h,000h,0d8h,000h,01ch,022h,063h,063h,063h,022h,01ch,000h,018h,038h	; 61f5  @.@...."ccc"...8
@@ -6266,8 +6270,18 @@ DATA_bloque_0x72F3:
 ; DATOS mapa_de_la_panaderia: 92 columnas de diez celdas. No es una
 ;   estimacion: 0x4D15 hace `A x 10 + 0x7604` -por eso el `add hl,hl / add
 ;   hl,hl / add hl,hl / add hl,bc`, que es ocho mas dos-, lee DIEZ bytes y los
-;   va dejando una fila de pantalla (32 celdas) mas abajo cada vez. Y 92 por
-;   10 son los 920 bytes justos que hay hasta el codigo de 0x799C
+;   va dejando una fila de pantalla (32 celdas) mas abajo cada vez, en el
+;   bufer de 0xE1BF; y 0x4D07 corre los 320 bytes del bufer -diez filas de 32-
+;   una columna hacia delante en cada paso, que es el desplazamiento lateral.
+;   Y 92 por 10 son los 920 bytes justos que hay hasta el codigo de 0x799C.
+;   DIBUJADO ENTERO desde la ROM sale la panaderia de punta a punta: cuatro
+;   maquinas verdes unidas por cintas transportadoras, cada una con su
+;   interruptor ON/OFF, y el suelo de ladrillo. En las dos ultimas filas hay
+;   TRES ROTULOS ESCRITOS EN JAPONES, uno debajo de cada maquina, de dos
+;   caracteres de ancho por dos celdas de alto. El segundo y el tercero se
+;   leen sin dudas y son fases de la panificacion: 第二発酵 -la segunda
+;   fermentacion- y 焼き上げ -el horneado-. El primero empieza por 窯, el horno de
+;   lena. Son las unicas letras japonesas del cartucho
 ;   0x7604..0x799c  (920 bytes)
 DATA_mapa_de_la_panaderia:
 	defb 0aeh,08eh,094h,094h,094h,094h,094h,094h,08ch,068h,0aeh,0c4h,0c4h,0c4h,0c4h,0c4h	; 7604  .........h......

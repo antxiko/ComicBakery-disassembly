@@ -314,7 +314,7 @@ C 0x4464 y entra por arriba
 # LENGUAJE es el mismo: 0nnnnnnn b repite, 1nnnnnnn b*n copia, 0x80 cambia de
 # destino y 0x00 termina. Donde acaba cada bloque lo mide tools/rle.py
 # ejecutandolo.
-D 0x61f5 0x6495 bloque_0x61F5  672 bytes comprimidos -> 904 en VRAM (1 tramos: ?); lo carga 0x610F
+D 0x61f5 0x6495 bloque_0x61F5  672 bytes comprimidos -> 904 en VRAM; lo carga 0x610F en la tabla de PATRONES de cada tercio. Dentro van, dibujados desde la ROM: la fuente -del patron 0x10 al 0x3A, o sea cada letra en su codigo ASCII menos 0x20-, los dos dibujos de la palabra "with" y el cursor del menu, y del 0x40 al 0x59 EL LOGOTIPO DE KONAMI, que 0x48A4 pinta en tres filas de 3, 11 y 12 celdas
 D 0x650d 0x6517 bloque_0x650D  10 bytes comprimidos -> 8 en VRAM (1 tramos: ?); lo carga 0x6194
 D 0x6521 0x657b bloque_0x6521  90 bytes comprimidos -> 104 en VRAM (1 tramos: ?); lo carga 0x616B
 D 0x6566 0x657b bloque_0x6566  21 bytes comprimidos -> 24 en VRAM (1 tramos: ?); lo carga 0x617E
@@ -600,7 +600,7 @@ C 0x4888 una mas
 # ======================================================================
 # COMENTARIOS DE LINEA
 # ======================================================================
-L 0x4892 baja_la_cortinilla
+L 0x4892 baja_el_logotipo_un_paso
 B 0x4892 UN PASO DE CORTINILLA. Avanza 32 celdas -una fila- y pinta la franja en DOS sitios a la vez: en la posicion que toca y en su reflejo respecto de 0x3AAA, con `sbc hl,de`. Se cierra desde arriba y desde abajo al mismo tiempo.
 C 0x4892 por donde va
 C 0x4895 una fila, 32 celdas
@@ -1876,7 +1876,7 @@ D 0x702b 0x7061 bloque_0x702B  54 bytes comprimidos -> 192 a la VRAM; lo carga 0
 D 0x7096 0x70d6 sprites_iniciales_0x7096  64 bytes que 0x7061 copia enteros al bufer de 0xE080; 0x4D82 usa solo los dieciseis primeros y 0x4D8D los doce que empiezan en 0x70CA
 D 0x7124 0x715c poses_del_panadero  catorce poses de cuatro bytes; 0x4C51 las indexa y de cada una salen los patrones de los cuatro sprites que forman la figura
 D 0x72f3 0x7604 bloque_0x72F3  el bloque comprimido que 0x70E8 carga entero; 0x711B vuelve a entrar por su cola, en 0x753B, y ese segundo tramo es el que llega hasta 0x7604
-D 0x7604 0x799c mapa_de_la_panaderia  92 columnas de diez celdas. No es una estimacion: 0x4D15 hace `A x 10 + 0x7604` -por eso el `add hl,hl / add hl,hl / add hl,hl / add hl,bc`, que es ocho mas dos-, lee DIEZ bytes y los va dejando una fila de pantalla (32 celdas) mas abajo cada vez. Y 92 por 10 son los 920 bytes justos que hay hasta el codigo de 0x799C
+D 0x7604 0x799c mapa_de_la_panaderia  92 columnas de diez celdas. No es una estimacion: 0x4D15 hace `A x 10 + 0x7604` -por eso el `add hl,hl / add hl,hl / add hl,hl / add hl,bc`, que es ocho mas dos-, lee DIEZ bytes y los va dejando una fila de pantalla (32 celdas) mas abajo cada vez, en el bufer de 0xE1BF; y 0x4D07 corre los 320 bytes del bufer -diez filas de 32- una columna hacia delante en cada paso, que es el desplazamiento lateral. Y 92 por 10 son los 920 bytes justos que hay hasta el codigo de 0x799C. DIBUJADO ENTERO desde la ROM sale la panaderia de punta a punta: cuatro maquinas verdes unidas por cintas transportadoras, cada una con su interruptor ON/OFF, y el suelo de ladrillo. En las dos ultimas filas hay TRES ROTULOS ESCRITOS EN JAPONES, uno debajo de cada maquina, de dos caracteres de ancho por dos celdas de alto. El segundo y el tercero se leen sin dudas y son fases de la panificacion: 第二発酵 -la segunda fermentacion- y 焼き上げ -el horneado-. El primero empieza por 窯, el horno de lena. Son las unicas letras japonesas del cartucho
 
 
 # ======================================================================
