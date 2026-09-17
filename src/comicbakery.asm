@@ -1610,9 +1610,9 @@ el_cuadro_de_la_partida:
 	call L_56DC		;48d1
 	call L_5735		;48d4
 	call pinta_los_panes		;48d7   ; el contador de panes
-	call L_4B0E		;48da
-	call L_4BBB		;48dd
-	call L_4C67		;48e0
+	call sube_el_contador_de_panes		;48da
+	call mueve_al_panadero		;48dd
+	call mira_si_salta		;48e0
 	call L_4DBE		;48e3
 	call L_5824		;48e6
 	call L_5117		;48e9
@@ -1643,7 +1643,7 @@ el_cuadro_de_la_partida:
 	dec hl			;492f
 	ld (hl),a			;4930
 L_4931:
-	call L_4B1D		;4931
+	call avanza_el_estado_del_disparo		;4931
 	call L_707A		;4934
 	ld a,(0e00bh)		;4937   ; otra vez el compas
 	cp 007h		;493a
@@ -1854,7 +1854,7 @@ L_4A9D:
 L_4A9E:
 	ld a,(hl)			;4a9e
 	add a,b			;4a9f
-	call L_4C51		;4aa0
+	call pinta_la_pose_del_panadero		;4aa0
 	ld a,002h		;4aa3   ; el sonido del disparo
 	call L_799C		;4aa5
 	ld a,(0e123h)		;4aa8
@@ -1867,7 +1867,7 @@ L_4AAF:
 	jr z,L_4AB6		;4ab2
 	ld a,0fdh		;4ab4   ; o tres hacia atras
 L_4AB6:
-	call L_4C0B		;4ab6
+	call corre_los_cuatro_sprites		;4ab6
 	ret			;4ab9
 mueve_el_disparo_recto:
 	ld a,(0e105h)		;4aba
@@ -1892,62 +1892,66 @@ avanza_el_disparo:
 	inc hl			;4ad9
 	ld a,(hl)			;4ada
 	or a			;4adb
+
+; ----------------------------------------------------------------------
+; EL VUELO DEL DISPARO. Cuatro pixeles por cuadro en la direccion que lleve, y se acaba por los BORDES: por debajo de 0x28, por encima de 0xE0 o cuando la resta desborda. Es lo que evita llevar una cuenta de alcance.
+; ----------------------------------------------------------------------
 	ld hl,0e091h		;4adc
 	jr z,L_4AF4		;4adf
 	dec a			;4ae1
 	jr nz,L_4AEB		;4ae2
 	ld a,(hl)			;4ae4
-	sub 004h		;4ae5
+	sub 004h		;4ae5   ; cuatro pixeles hacia atras
 	ld (hl),a			;4ae7
-	jr c,L_4AFC		;4ae8
+	jr c,L_4AFC		;4ae8   ; si desborda, se acabo
 	ret			;4aea
 L_4AEB:
 	ld a,(hl)			;4aeb
-	add a,004h		;4aec
+	add a,004h		;4aec   ; cuatro hacia delante
 	ld (hl),a			;4aee
-	cp 0e0h		;4aef
+	cp 0e0h		;4aef   ; el borde de la pantalla
 	jr nc,L_4AFC		;4af1
 	ret			;4af3
 L_4AF4:
 	dec hl			;4af4
 	ld a,(hl)			;4af5
-	sub 004h		;4af6
+	sub 004h		;4af6   ; y en la otra coordenada
 	ld (hl),a			;4af8
-	cp 028h		;4af9
+	cp 028h		;4af9   ; el borde de arriba
 	ret nc			;4afb
 L_4AFC:
 	ld a,(0e121h)		;4afc
-	cp 008h		;4aff
-	call nc,L_4B3F		;4b01
+	cp 008h		;4aff   ; la recarga
+	call nc,recoloca_los_cuatro_sprites		;4b01
 L_4B04:
 	xor a			;4b04
 	ld (0e121h),a		;4b05
-	ld a,0e0h		;4b08
+	ld a,0e0h		;4b08   ; 0xE0: el sprite sale de la pantalla
 	ld (0e090h),a		;4b0a
 	ret			;4b0d
-L_4B0E:
-	ld a,(0e003h)		;4b0e
-	and 0ffh		;4b11
+sube_el_contador_de_panes:
+	ld a,(0e003h)		;4b0e   ; el contador de cuadros
+	and 0ffh		;4b11   ; solo cuando da la vuelta a cero
 	ret nz			;4b13
 	ld hl,0e120h		;4b14
 	ld a,(hl)			;4b17
-	cp 004h		;4b18
+	cp 004h		;4b18   ; el tope son cuatro
 	ret nc			;4b1a
-	inc (hl)			;4b1b
+	inc (hl)			;4b1b   ; uno mas
 	ret			;4b1c
-L_4B1D:
-	ld hl,0e124h		;4b1d
+avanza_el_estado_del_disparo:
+	ld hl,0e124h		;4b1d   ; el plazo de 0xE124
 	ld a,(hl)			;4b20
 	or a			;4b21
 	jr z,L_4B2D		;4b22
 	xor a			;4b24
-	dec (hl)			;4b25
-	call z,L_4C51		;4b26
+	dec (hl)			;4b25   ; uno menos
+	call z,pinta_la_pose_del_panadero		;4b26
 	xor a			;4b29
 	ld (0e102h),a		;4b2a
 L_4B2D:
 	ld a,(0e121h)		;4b2d
-	cp 008h		;4b30
+	cp 008h		;4b30   ; la recarga, contra ocho
 	jr z,L_4B3A		;4b32
 	ret c			;4b34
 	xor a			;4b35
@@ -1955,12 +1959,16 @@ L_4B2D:
 	ret			;4b39
 L_4B3A:
 	ld a,(0e00bh)		;4b3a
-	rra			;4b3d
+	rra			;4b3d   ; uno de cada dos cuadros
 	ret c			;4b3e
-L_4B3F:
+
+; ----------------------------------------------------------------------
+; RECOLOCAR LOS CUATRO SPRITES DEL PANADERO de una vez: se calcula la columna nueva y se escribe en los cuatro huecos -0xE085, 0xE081, 0xE089 y 0xE08D-, que estan separados cuatro bytes. La figura es de cuatro sprites y se mueve como uno.
+; ----------------------------------------------------------------------
+recoloca_los_cuatro_sprites:
 	ld a,(0e105h)		;4b3f
 	ld c,a			;4b42
-	call L_4C51		;4b43
+	call pinta_la_pose_del_panadero		;4b43   ; el sonido
 	ld a,(0e123h)		;4b46
 	or a			;4b49
 	jr z,L_4B50		;4b4a
@@ -1969,59 +1977,67 @@ L_4B3F:
 L_4B50:
 	ld a,c			;4b50
 	or a			;4b51
-	ld a,0ffh		;4b52
+	ld a,0ffh		;4b52   ; un pixel hacia atras
 	jr z,L_4B58		;4b54
-	ld a,001h		;4b56
+	ld a,001h		;4b56   ; o uno hacia delante
 L_4B58:
 	ld hl,0e085h		;4b58
-	add a,(hl)			;4b5b
+	add a,(hl)			;4b5b   ; la columna, corrida
 	ld (hl),a			;4b5c
-	ld (0e081h),a		;4b5d
+	ld (0e081h),a		;4b5d   ; y los otros tres sprites, igual
 	ld (0e089h),a		;4b60
 	ld (0e08dh),a		;4b63
 	ret			;4b66
-L_4B67:
+
+; ----------------------------------------------------------------------
+; EL MARCADOR DE ARRIBA, con el dibujo alternando por el bit 4 del contador de cuadros -uno de cada dieciseis- entre los patrones 0x5D y 0x5F.
+; ----------------------------------------------------------------------
+pinta_el_marcador_de_arriba:
 	ld a,(0e003h)		;4b67
-	bit 4,a		;4b6a
-	ld c,05dh		;4b6c
+	bit 4,a		;4b6a   ; el bit 4 del contador de cuadros
+	ld c,05dh		;4b6c   ; un patron
 	jr nz,L_4B72		;4b6e
-	ld c,05fh		;4b70
+	ld c,05fh		;4b70   ; o el otro
 L_4B72:
 	ld de,04bb3h		;4b72
 	exx			;4b75
 	ld de,020ffh		;4b76
-	ld hl,0e055h		;4b79
+	ld hl,0e055h		;4b79   ; la posicion
 	exx			;4b7c
-	call L_4B8E		;4b7d
+	call pinta_una_marca_del_marcador		;4b7d
 	exx			;4b80
 	ld a,(0e057h)		;4b81
 	ld e,a			;4b84
 	ld d,000h		;4b85
 	exx			;4b87
-	call L_4B8E		;4b88
-	call L_4B8E		;4b8b
-L_4B8E:
+	call pinta_una_marca_del_marcador		;4b88
+	call pinta_una_marca_del_marcador		;4b8b
+
+; ----------------------------------------------------------------------
+; PINTAR UNA MARCA DEL MARCADOR, trabajando con los DOS juegos de registros a la vez: en el alternativo van la posicion y la mascara, y en el normal el puntero al bufer de 0xE200. El bit 3 decide si la marca se pinta o se salta.
+; ----------------------------------------------------------------------
+pinta_una_marca_del_marcador:
 	exx			;4b8e
-	rr e		;4b8f
-	bit 3,e		;4b91
+	rr e		;4b8f   ; el siguiente bit de la mascara
+	bit 3,e		;4b91   ; el bit 3
 	exx			;4b93
 	jr z,L_4BB0		;4b94
-	ld b,002h		;4b96
+	ld b,002h		;4b96   ; dos celdas
 L_4B98:
 	ld a,(de)			;4b98
 	exx			;4b99
 	sub (hl)			;4b9a
 	exx			;4b9b
-	cp 020h		;4b9c
+	cp 020h		;4b9c   ; treinta y dos de margen
 	jr nc,L_4BAC		;4b9e
 	exx			;4ba0
 	add a,d			;4ba1
 	exx			;4ba2
 	ld l,a			;4ba3
-	ld h,0e2h		;4ba4
+	ld h,0e2h		;4ba4   ; el bufer de 0xE200
 	ld (hl),c			;4ba6
 	ld a,b			;4ba7
-	dec a			;4ba8
+	dec a			;4ba8   ; la segunda celda va con el patron anterior
 	jr nz,L_4BAC		;4ba9
 	dec (hl)			;4bab
 L_4BAC:
@@ -2043,61 +2059,69 @@ DATA_4BB3:
 ; ======================================================================
 
 
-L_4BBB:
+
+; ----------------------------------------------------------------------
+; EL MOVIMIENTO DEL PANADERO, y el ritmo lo da el compas de ocho: el paso 0 mueve en una direccion, el 4 en la otra y el 7 hace algo distinto. O sea que en cada vuelta de ocho cuadros solo tres hacen trabajo.
+; ----------------------------------------------------------------------
+mueve_al_panadero:
 	ld hl,0e101h		;4bbb
-	ld a,(hl)			;4bbe
-	and 00ch		;4bbf
+	ld a,(hl)			;4bbe   ; lo que se pulsa
+	and 00ch		;4bbf   ; los dos bits de direccion
 	jr z,L_4BC6		;4bc1
-	ld (0e103h),a		;4bc3
+	ld (0e103h),a		;4bc3   ; guardado para el cuadro
 L_4BC6:
 	inc hl			;4bc6
 	ld a,(hl)			;4bc7
 	and 00ch		;4bc8
 	ret z			;4bca
-	ld a,(0e00bh)		;4bcb
-	or a			;4bce
+	ld a,(0e00bh)		;4bcb   ; el compas de ocho
+	or a			;4bce   ; el paso 0
 	jr z,L_4C1E		;4bcf
-	cp 004h		;4bd1
+	cp 004h		;4bd1   ; el paso 4
 	jp z,L_4C1A		;4bd3
-	cp 007h		;4bd6
-	jp z,L_4CCF		;4bd8
+	cp 007h		;4bd6   ; y el paso 7
+	jp z,mueve_el_horno		;4bd8
 	ret			;4bdb
-L_4BDC:
+
+; ----------------------------------------------------------------------
+; SUBIR O BAJAR DE PLANTA. La planta esta en (0xE056) y el bit 2 de (0xE102) dice hacia donde; cuando la posicion llega a 0x78 con la planta correcta, se completa el cambio. Los topes son 0x18 por arriba y 0xE8 por abajo.
+; ----------------------------------------------------------------------
+sube_o_baja_el_panadero:
 	ld hl,0e081h		;4bdc
-	ld a,(0e056h)		;4bdf
+	ld a,(0e056h)		;4bdf   ; la planta
 	sub 001h		;4be2
 	ret c			;4be4
 	ld c,a			;4be5
-	ld a,(0e102h)		;4be6
-	and 004h		;4be9
-	rrca			;4beb
+	ld a,(0e102h)		;4be6   ; la direccion guardada
+	and 004h		;4be9   ; su bit 2
+	rrca			;4beb   ; bajado a su sitio
 	rrca			;4bec
 	cp c			;4bed
 	ld c,a			;4bee
 	jr nz,L_4BFB		;4bef
 	ld a,(hl)			;4bf1
-	cp 078h		;4bf2
+	cp 078h		;4bf2   ; la posicion de enganche
 	jr nz,L_4BFB		;4bf4
 	xor a			;4bf6
-	ld (0e056h),a		;4bf7
+	ld (0e056h),a		;4bf7   ; y la planta queda cambiada
 	ret			;4bfa
 L_4BFB:
 	ld a,(hl)			;4bfb
 	dec c			;4bfc
 	jr z,L_4C06		;4bfd
-	cp 0e8h		;4bff
+	cp 0e8h		;4bff   ; el tope de abajo
 	ret nc			;4c01
-	ld a,004h		;4c02
-	jr nz,L_4C0B		;4c04
+	ld a,004h		;4c02   ; cuatro pixeles
+	jr nz,corre_los_cuatro_sprites		;4c04
 L_4C06:
-	cp 018h		;4c06
+	cp 018h		;4c06   ; el tope de arriba
 	ret c			;4c08
-	ld a,0fch		;4c09
-L_4C0B:
+	ld a,0fch		;4c09   ; y cuatro hacia atras
+corre_los_cuatro_sprites:
 	ld hl,0e081h		;4c0b
-	add a,(hl)			;4c0e
+	add a,(hl)			;4c0e   ; la fila, corrida
 	ld (hl),a			;4c0f
-	ld (0e085h),a		;4c10
+	ld (0e085h),a		;4c10   ; y los otros tres sprites, igual
 	ld (0e089h),a		;4c13
 	ld (0e08dh),a		;4c16
 	ret			;4c19
@@ -2119,51 +2143,59 @@ L_4C29:
 	jr c,L_4C3B		;4c33
 	ld a,(0e081h)		;4c35
 	rrca			;4c38
-	rrca			;4c39
+	rrca			;4c39   ; tres giros
 	rrca			;4c3a
 L_4C3B:
 	rrca			;4c3b
 	jr nc,L_4C40		;4c3c
-	ld b,008h		;4c3e
+	ld b,008h		;4c3e   ; ocho de desplazamiento
 L_4C40:
 	ld a,(0e104h)		;4c40
 	or a			;4c43
 	jr nz,L_4C4D		;4c44
 	ld a,(0e105h)		;4c46
 	add a,b			;4c49
-	call L_4C51		;4c4a
+	call pinta_la_pose_del_panadero		;4c4a
 L_4C4D:
-	call L_4BDC		;4c4d
+	call sube_o_baja_el_panadero		;4c4d
 	ret			;4c50
-L_4C51:
-	ld hl,07124h		;4c51
+
+; ----------------------------------------------------------------------
+; LA POSE DEL PANADERO: cuatro patrones sacados de la tabla de 0x7124, escritos en los cuatro huecos de sprite separados cuatro bytes. Una sola tabla y un bucle de cuatro.
+; ----------------------------------------------------------------------
+pinta_la_pose_del_panadero:
+	ld hl,07124h		;4c51   ; la tabla de poses
 	call suma_a_a_hl		;4c54
-	ld de,0e082h		;4c57
-	ld b,004h		;4c5a
+	ld de,0e082h		;4c57   ; el primer hueco de sprite
+	ld b,004h		;4c5a   ; cuatro sprites
 L_4C5C:
-	ld a,(hl)			;4c5c
+	ld a,(hl)			;4c5c   ; el patron
 	ld (de),a			;4c5d
 	inc hl			;4c5e
-	ld a,004h		;4c5f
+	ld a,004h		;4c5f   ; cuatro bytes por sprite
 	call suma_a_a_de		;4c61
 	djnz L_4C5C		;4c64
 	ret			;4c66
-L_4C67:
+
+; ----------------------------------------------------------------------
+; EL SALTO. Solo se puede si la recarga esta por debajo de 14 y se acaban de pulsar los dos botones; entonces el plazo se pone a 11 y el paso de la pose depende de la direccion. Mientras dura, avanza uno de cada cuatro cuadros.
+; ----------------------------------------------------------------------
+mira_si_salta:
 	ld hl,0e104h		;4c67
-	ld a,(hl)			;4c6a
+	ld a,(hl)			;4c6a   ; el estado del salto
 	or a			;4c6b
 	jr nz,L_4C92		;4c6c
-	ld a,(0e121h)		;4c6e
-	cp 00eh		;4c71
+	ld a,(0e121h)		;4c6e   ; la recarga
+	cp 00eh		;4c71   ; por encima de catorce no se puede
 	ret nc			;4c73
-	call flanco_de_los_dos_botones		;4c74
+	call flanco_de_los_dos_botones		;4c74   ; y que se acaben de pulsar los dos botones
 	ret z			;4c77
-	ld a,001h		;4c78
+	ld a,001h		;4c78   ; el sonido del salto
 	call L_799C		;4c7a
-	ld (hl),00bh		;4c7d
+	ld (hl),00bh		;4c7d   ; once cuadros de salto
 	inc hl			;4c7f
 	ld a,(0e101h)		;4c80
-	and 00ch		;4c83
+	and 00ch		;4c83   ; los dos bits de direccion
 	jr z,L_4C8E		;4c85
 	sub 004h		;4c87
 	jr z,L_4C8D		;4c89
@@ -2174,26 +2206,30 @@ L_4C8E:
 	ld a,00ch		;4c8e
 	jr L_4C9D		;4c90
 L_4C92:
-	ld a,(0e003h)		;4c92
-	and 003h		;4c95
+	ld a,(0e003h)		;4c92   ; el contador de cuadros
+	and 003h		;4c95   ; uno de cada cuatro
 	ret nz			;4c97
-	dec (hl)			;4c98
-	jr nz,L_4CA1		;4c99
+	dec (hl)			;4c98   ; el plazo, uno menos
+	jr nz,avanza_el_salto		;4c99
 	xor a			;4c9b
 	inc hl			;4c9c
 L_4C9D:
 	add a,(hl)			;4c9d
-	call L_4C51		;4c9e
-L_4CA1:
-	ld hl,04cc3h		;4ca1
-	ld a,(0e104h)		;4ca4
+	call pinta_la_pose_del_panadero		;4c9e
+
+; ----------------------------------------------------------------------
+; EL AVANCE DEL SALTO: la tabla de 0x4CC3 -indexada por el paso- da el desplazamiento, y se reparte entre los CUATRO sprites con desplazamientos fijos de +0x10, -8 y +0x18 entre ellos. La figura sube entera.
+; ----------------------------------------------------------------------
+avanza_el_salto:
+	ld hl,04cc3h		;4ca1   ; la tabla de alturas del salto
+	ld a,(0e104h)		;4ca4   ; el paso
 	ld c,a			;4ca7
 	call suma_a_a_hl		;4ca8
 	ld a,(hl)			;4cab
 	ld hl,0e080h		;4cac
-	add a,(hl)			;4caf
+	add a,(hl)			;4caf   ; aplicado al primer sprite
 	ld (hl),a			;4cb0
-	add a,010h		;4cb1
+	add a,010h		;4cb1   ; y los otros tres, desplazados
 	ld (0e084h),a		;4cb3
 	sub 008h		;4cb6
 	ld (0e088h),a		;4cb8
@@ -2211,11 +2247,15 @@ DATA_4CC3:
 ; ======================================================================
 
 
-L_4CCF:
-	ld a,(0e056h)		;4ccf
+
+; ----------------------------------------------------------------------
+; EL HORNO QUE SE LLENA. El bufer de 0xE1A0 se corre 320 bytes con `lddr` -hacia atras- o con `ldir` -hacia delante- segun suba o baje, que es como se anima la cinta sin recalcular nada.
+; ----------------------------------------------------------------------
+mueve_el_horno:
+	ld a,(0e056h)		;4ccf   ; la planta
 	or a			;4cd2
 	ret nz			;4cd3
-	ld a,(0e102h)		;4cd4
+	ld a,(0e102h)		;4cd4   ; el estado del horno
 	or a			;4cd7
 	ret z			;4cd8
 	cp 008h		;4cd9
@@ -2224,16 +2264,16 @@ L_4CCF:
 	jr z,L_4CF6		;4cdf
 	or a			;4ce1
 	jr z,L_4D29		;4ce2
-	dec (hl)			;4ce4
+	dec (hl)			;4ce4   ; uno menos
 	ld a,(hl)			;4ce5
 	ld hl,0e2deh		;4ce6
 	ld de,0e2dfh		;4ce9
-	ld bc,00140h		;4cec
-	lddr		;4cef
+	ld bc,00140h		;4cec   ; 320 bytes
+	lddr		;4cef   ; corridos hacia atras
 	ld de,0e1a0h		;4cf1
 	jr L_4D0C		;4cf4
 L_4CF6:
-	sub 03ch		;4cf6
+	sub 03ch		;4cf6   ; el tope
 	jr z,L_4D28		;4cf8
 	inc (hl)			;4cfa
 	ld a,(hl)			;4cfb
@@ -2290,7 +2330,7 @@ L_4D3A:
 	jr z,L_4D4E		;4d4a
 	ld a,008h		;4d4c
 L_4D4E:
-	call L_4C51		;4d4e
+	call pinta_la_pose_del_panadero		;4d4e
 	ld c,001h		;4d51
 	ld hl,0e081h		;4d53
 	call L_4BFB		;4d56
@@ -2308,7 +2348,7 @@ L_4D65:
 	ld (0e057h),a		;4d6c
 	ld (0e0c7h),a		;4d6f
 	ld a,030h		;4d72
-	call L_4C51		;4d74
+	call pinta_la_pose_del_panadero		;4d74
 	call L_5897		;4d77
 	call L_4940		;4d7a
 L_4D7D:
@@ -2327,7 +2367,7 @@ L_4D82:
 	call L_7086		;4d98
 	ld a,000h		;4d9b
 	ld (0e105h),a		;4d9d
-	call L_4C51		;4da0
+	call pinta_la_pose_del_panadero		;4da0
 	ld b,004h		;4da3
 	ld hl,0e081h		;4da5
 L_4DA8:
@@ -2557,16 +2597,16 @@ L_4F1B:
 	djnz L_4F1B		;4f25
 	ld a,(0e109h)		;4f27
 	or a			;4f2a
-	jp nz,L_4B67		;4f2b
+	jp nz,pinta_el_marcador_de_arriba		;4f2b
 	ld hl,0e055h		;4f2e
 	ld a,004h		;4f31
 	sub (hl)			;4f33
-	jp c,L_4B67		;4f34
+	jp c,pinta_el_marcador_de_arriba		;4f34
 	add a,0e0h		;4f37
 	ld l,a			;4f39
 	ld h,0e1h		;4f3a
 	ld (hl),0a0h		;4f3c
-	jp L_4B67		;4f3e
+	jp pinta_el_marcador_de_arriba		;4f3e
 L_4F41:
 	ld a,(hl)			;4f41
 	ld b,a			;4f42
@@ -3870,7 +3910,7 @@ L_5824:
 	and (hl)			;5854
 	ld (hl),a			;5855
 	ld a,030h		;5856
-	call L_4C51		;5858
+	call pinta_la_pose_del_panadero		;5858
 	call L_5897		;585b
 	ld hl,0e24ah		;585e
 	ld de,03a4ah		;5861
@@ -4054,7 +4094,7 @@ L_596B:
 	push bc			;5972
 	push hl			;5973
 	ld a,034h		;5974
-	call L_4C51		;5976
+	call pinta_la_pose_del_panadero		;5976
 	ld hl,0e080h		;5979
 	ld de,0e090h		;597c
 	ld bc,00004h		;597f
@@ -4197,7 +4237,7 @@ L_5A71:
 	ld a,005h		;5a71
 	jp L_799C		;5a73
 L_5A76:
-	call L_4C67		;5a76
+	call mira_si_salta		;5a76
 	ld hl,0e090h		;5a79
 	ld (hl),0e0h		;5a7c
 	ld de,0e091h		;5a7e
@@ -4230,7 +4270,7 @@ L_5AA5:
 L_5AB6:
 	call L_4C1E		;5ab6
 L_5AB9:
-	call L_4C67		;5ab9
+	call mira_si_salta		;5ab9
 	call mira_si_dispara		;5abc
 	call L_707A		;5abf
 	ld a,(0e081h)		;5ac2
@@ -4374,11 +4414,11 @@ L_5BA6:
 L_5BC8:
 	call L_5BF0		;5bc8
 	ld a,008h		;5bcb
-	call L_4C0B		;5bcd
+	call corre_los_cuatro_sprites		;5bcd
 	ld a,018h		;5bd0
 	ld c,006h		;5bd2
 L_5BD4:
-	call L_4C51		;5bd4
+	call pinta_la_pose_del_panadero		;5bd4
 	ld a,(0e11eh)		;5bd7
 	sub 007h		;5bda
 	cp c			;5bdc
@@ -4452,7 +4492,7 @@ L_5C4B:
 	ld hl,0e11eh		;5c4b
 	dec (hl)			;5c4e
 	ld a,018h		;5c4f
-	call z,L_4C51		;5c51
+	call z,pinta_la_pose_del_panadero		;5c51
 	jp L_707A		;5c54
 L_5C57:
 	call L_5C0D		;5c57

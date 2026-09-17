@@ -694,3 +694,117 @@ C 0x4ac8 la posicion, corrida
 C 0x4acb y los otros dos sprites, uno mas alla
 L 0x4ad2 avanza_el_disparo
 C 0x4ad5 la recarga, uno menos
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+B 0x4adc EL VUELO DEL DISPARO. Cuatro pixeles por cuadro en la direccion que lleve, y se acaba por los BORDES: por debajo de 0x28, por encima de 0xE0 o cuando la resta desborda. Es lo que evita llevar una cuenta de alcance.
+C 0x4ae5 cuatro pixeles hacia atras
+C 0x4ae8 si desborda, se acabo
+C 0x4aec cuatro hacia delante
+C 0x4aef el borde de la pantalla
+C 0x4af6 y en la otra coordenada
+C 0x4af9 el borde de arriba
+C 0x4aff la recarga
+C 0x4b08 0xE0: el sprite sale de la pantalla
+L 0x4b0e sube_el_contador_de_panes
+C 0x4b0e el contador de cuadros
+C 0x4b11 solo cuando da la vuelta a cero
+C 0x4b18 el tope son cuatro
+C 0x4b1b uno mas
+L 0x4b1d avanza_el_estado_del_disparo
+C 0x4b1d el plazo de 0xE124
+C 0x4b25 uno menos
+C 0x4b30 la recarga, contra ocho
+C 0x4b3d uno de cada dos cuadros
+L 0x4b3f recoloca_los_cuatro_sprites
+B 0x4b3f RECOLOCAR LOS CUATRO SPRITES DEL PANADERO de una vez: se calcula la columna nueva y se escribe en los cuatro huecos -0xE085, 0xE081, 0xE089 y 0xE08D-, que estan separados cuatro bytes. La figura es de cuatro sprites y se mueve como uno.
+C 0x4b43 el sonido
+C 0x4b52 un pixel hacia atras
+C 0x4b56 o uno hacia delante
+C 0x4b5b la columna, corrida
+C 0x4b5d y los otros tres sprites, igual
+L 0x4b67 pinta_el_marcador_de_arriba
+B 0x4b67 EL MARCADOR DE ARRIBA, con el dibujo alternando por el bit 4 del contador de cuadros -uno de cada dieciseis- entre los patrones 0x5D y 0x5F.
+C 0x4b6a el bit 4 del contador de cuadros
+C 0x4b6c un patron
+C 0x4b70 o el otro
+C 0x4b79 la posicion
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x4b8e pinta_una_marca_del_marcador
+B 0x4b8e PINTAR UNA MARCA DEL MARCADOR, trabajando con los DOS juegos de registros a la vez: en el alternativo van la posicion y la mascara, y en el normal el puntero al bufer de 0xE200. El bit 3 decide si la marca se pinta o se salta.
+C 0x4b8f el siguiente bit de la mascara
+C 0x4b91 el bit 3
+C 0x4b96 dos celdas
+C 0x4b9c treinta y dos de margen
+C 0x4ba4 el bufer de 0xE200
+C 0x4ba8 la segunda celda va con el patron anterior
+L 0x4bbb mueve_al_panadero
+B 0x4bbb EL MOVIMIENTO DEL PANADERO, y el ritmo lo da el compas de ocho: el paso 0 mueve en una direccion, el 4 en la otra y el 7 hace algo distinto. O sea que en cada vuelta de ocho cuadros solo tres hacen trabajo.
+C 0x4bbe lo que se pulsa
+C 0x4bbf los dos bits de direccion
+C 0x4bc3 guardado para el cuadro
+C 0x4bcb el compas de ocho
+C 0x4bce el paso 0
+C 0x4bd1 el paso 4
+C 0x4bd6 y el paso 7
+L 0x4bdc sube_o_baja_el_panadero
+B 0x4bdc SUBIR O BAJAR DE PLANTA. La planta esta en (0xE056) y el bit 2 de (0xE102) dice hacia donde; cuando la posicion llega a 0x78 con la planta correcta, se completa el cambio. Los topes son 0x18 por arriba y 0xE8 por abajo.
+C 0x4bdf la planta
+C 0x4be6 la direccion guardada
+C 0x4be9 su bit 2
+C 0x4beb bajado a su sitio
+C 0x4bf2 la posicion de enganche
+C 0x4bf7 y la planta queda cambiada
+C 0x4bff el tope de abajo
+C 0x4c02 cuatro pixeles
+C 0x4c06 el tope de arriba
+C 0x4c09 y cuatro hacia atras
+L 0x4c0b corre_los_cuatro_sprites
+C 0x4c0e la fila, corrida
+C 0x4c10 y los otros tres sprites, igual
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x4c39 tres giros
+C 0x4c3e ocho de desplazamiento
+L 0x4c51 pinta_la_pose_del_panadero
+B 0x4c51 LA POSE DEL PANADERO: cuatro patrones sacados de la tabla de 0x7124, escritos en los cuatro huecos de sprite separados cuatro bytes. Una sola tabla y un bucle de cuatro.
+C 0x4c51 la tabla de poses
+C 0x4c57 el primer hueco de sprite
+C 0x4c5a cuatro sprites
+C 0x4c5c el patron
+C 0x4c5f cuatro bytes por sprite
+L 0x4c67 mira_si_salta
+B 0x4c67 EL SALTO. Solo se puede si la recarga esta por debajo de 14 y se acaban de pulsar los dos botones; entonces el plazo se pone a 11 y el paso de la pose depende de la direccion. Mientras dura, avanza uno de cada cuatro cuadros.
+C 0x4c6a el estado del salto
+C 0x4c6e la recarga
+C 0x4c71 por encima de catorce no se puede
+C 0x4c74 y que se acaben de pulsar los dos botones
+C 0x4c78 el sonido del salto
+C 0x4c7d once cuadros de salto
+C 0x4c83 los dos bits de direccion
+C 0x4c92 el contador de cuadros
+C 0x4c95 uno de cada cuatro
+C 0x4c98 el plazo, uno menos
+L 0x4ca1 avanza_el_salto
+B 0x4ca1 EL AVANCE DEL SALTO: la tabla de 0x4CC3 -indexada por el paso- da el desplazamiento, y se reparte entre los CUATRO sprites con desplazamientos fijos de +0x10, -8 y +0x18 entre ellos. La figura sube entera.
+C 0x4ca1 la tabla de alturas del salto
+C 0x4ca4 el paso
+C 0x4caf aplicado al primer sprite
+C 0x4cb1 y los otros tres, desplazados
+L 0x4ccf mueve_el_horno
+B 0x4ccf EL HORNO QUE SE LLENA. El bufer de 0xE1A0 se corre 320 bytes con `lddr` -hacia atras- o con `ldir` -hacia delante- segun suba o baje, que es como se anima la cinta sin recalcular nada.
+C 0x4ccf la planta
+C 0x4cd4 el estado del horno
+C 0x4ce4 uno menos
+C 0x4cec 320 bytes
+C 0x4cef corridos hacia atras
+C 0x4cf6 el tope
