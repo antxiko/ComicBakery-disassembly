@@ -234,7 +234,7 @@ L_4139:
 	call baja_el_contador_y_barre		;4139
 	ret p			;413c
 	call L_4733		;413d
-	call L_6051		;4140
+	call monta_la_pantalla_entera		;4140
 	ld a,011h		;4143   ; el plazo de la cortinilla
 	ld (0e00ah),a		;4145
 	ld hl,00000h		;4148
@@ -391,7 +391,7 @@ L_4221:
 	jr c,L_4230		;422c
 	ld a,08bh		;422e   ; o el otro
 L_4230:
-	call L_799C		;4230
+	call pide_un_sonido		;4230
 plazo_de_32:
 	ld a,020h		;4233   ; 32 cuadros de plazo
 L_4235:
@@ -430,7 +430,7 @@ L_4250:
 	ld hl,04e63h		;426e
 	call L_4E51		;4271
 	ld a,096h		;4274   ; y el sonido del fin de fase
-	call L_799C		;4276
+	call pide_un_sonido		;4276
 	jp escena_15_fin_de_fase		;4279
 
 ; ----------------------------------------------------------------------
@@ -487,7 +487,7 @@ L_42A9:
 	call baja_el_contador_y_barre		;42b0
 	ret p			;42b3
 	ld a,093h		;42b4   ; el sonido del final
-	call L_799C		;42b6
+	call pide_un_sonido		;42b6
 	ld hl,05e2ah		;42b9   ; el cartel
 	call pinta_rotulo_con_marca		;42bc
 	ld a,00dh		;42bf   ; escena 13
@@ -611,7 +611,7 @@ pierde_una_vida:
 	or a			;436b
 	jr nz,L_4386		;436c
 	ld a,08dh		;436e   ; el sonido de perder
-	call L_799C		;4370
+	call pide_un_sonido		;4370
 	ld a,040h		;4373   ; sesenta y cuatro cuadros
 	ld (0e004h),a		;4375
 L_4378:
@@ -1028,7 +1028,7 @@ L_4588:
 	inc (hl)			;458e   ; una vida mas
 	call pinta_las_vidas		;458f   ; repinta el contador
 	ld a,008h		;4592   ; y suena el aviso
-	call L_799C		;4594
+	call pide_un_sonido		;4594
 	pop hl			;4597
 	pop de			;4598
 mira_si_es_record:
@@ -1290,7 +1290,7 @@ arranca_el_hardware:
 	ld e,0b8h		;471f
 	call 00093h		;4721   ; BIOS WRTPSG - Writes data to PSG-register
 	ld a,09ah		;4724   ; el sonido de arranque
-	call L_79AC		;4726
+	call reparte_el_sonido		;4726
 	ld de,04000h		;4729   ; la VRAM entera
 	ld bc,04000h		;472c   ; los dieciseis kilobytes
 	xor a			;472f
@@ -1856,7 +1856,7 @@ L_4A9E:
 	add a,b			;4a9f
 	call pinta_la_pose_del_panadero		;4aa0
 	ld a,002h		;4aa3   ; el sonido del disparo
-	call L_799C		;4aa5
+	call pide_un_sonido		;4aa5
 	ld a,(0e123h)		;4aa8
 	ld b,a			;4aab
 	or a			;4aac
@@ -2191,7 +2191,7 @@ mira_si_salta:
 	call flanco_de_los_dos_botones		;4c74   ; y que se acaben de pulsar los dos botones
 	ret z			;4c77
 	ld a,001h		;4c78   ; el sonido del salto
-	call L_799C		;4c7a
+	call pide_un_sonido		;4c7a
 	ld (hl),00bh		;4c7d   ; once cuadros de salto
 	inc hl			;4c7f
 	ld a,(0e101h)		;4c80
@@ -3551,7 +3551,7 @@ L_557E:
 L_559A:
 	call suma_puntos		;559a
 	ld a,003h		;559d   ; el sonido del acierto
-	call L_799C		;559f
+	call pide_un_sonido		;559f
 	pop hl			;55a2
 	pop de			;55a3
 	ld a,(0e002h)		;55a4
@@ -3588,7 +3588,7 @@ el_carro_del_estado_10:
 	ld de,00300h		;55d2   ; trescientos puntos
 	call suma_puntos		;55d5
 	ld a,003h		;55d8   ; y el sonido
-	call L_799C		;55da
+	call pide_un_sonido		;55da
 	ret			;55dd
 
 ; ----------------------------------------------------------------------
@@ -3659,7 +3659,7 @@ L_5637:
 	ld de,00120h		;563b   ; ciento veinte puntos
 	call suma_puntos		;563e
 	ld a,003h		;5641
-	jp L_799C		;5643
+	jp pide_un_sonido		;5643
 
 ; ----------------------------------------------------------------------
 ; LOS DOS CARROS CONTRA LO QUE HAY EN LA CINTA, con la misma idea de antes: la columna del carro se divide entre ocho (`srl a` tres veces), se le suma 0xC0 y eso apunta al bufer de 0xE2xx. Si ahi hay un 0x69 y las CUATRO celdas de al lado estan a cero, la cosa cuenta.
@@ -3856,7 +3856,7 @@ mira_el_panadero_contra_el_carro:
 	ld hl,0e053h		;574f
 	ld (hl),000h		;5752   ; la senal de partida, apagada
 	ld a,099h		;5754   ; y el sonido del golpe
-	call L_799C		;5756
+	call pide_un_sonido		;5756
 	ret			;5759
 
 ; ----------------------------------------------------------------------
@@ -3993,7 +3993,7 @@ L_5809:
 	and (hl)			;5810
 	ld (hl),a			;5811
 	ld a,007h		;5812   ; y el sonido
-	call L_799C		;5814
+	call pide_un_sonido		;5814
 	jp pinta_las_puertas		;5817
 L_581A:
 	ld (hl),000h		;581a
@@ -4049,7 +4049,7 @@ mete_el_pan_en_el_horno:
 	ld bc,00005h		;586d
 	call vuelca_bloque		;5870
 	ld a,004h		;5873   ; el sonido
-	call L_799C		;5875
+	call pide_un_sonido		;5875
 	ld de,00050h		;5878   ; y cincuenta puntos
 	call suma_puntos		;587b
 	ld hl,0e110h		;587e
@@ -4387,7 +4387,7 @@ suena_en_los_pasos_marcados:
 	ret nz			;5a70
 L_5A71:
 	ld a,005h		;5a71   ; el sonido del golpe
-	jp L_799C		;5a73
+	jp pide_un_sonido		;5a73
 
 ; ----------------------------------------------------------------------
 ; REMATAR LA VIDA PERDIDA: limpia treinta y dos bytes de sprites propagando 0xE0 con `ldir`, espera a que no quede nada sonando y entonces hace sonar el 0x90.
@@ -4404,7 +4404,7 @@ remata_la_vida_perdida:
 	or a			;5a8c
 	ret nz			;5a8d
 	ld a,090h		;5a8e   ; y el sonido del final
-	call L_799C		;5a90
+	call pide_un_sonido		;5a90
 	jp L_4381		;5a93
 
 ; ----------------------------------------------------------------------
@@ -4639,7 +4639,7 @@ el_panadero_entra_a_la_panaderia:
 	xor a			;5c1b
 	ld (0e11ch),a		;5c1c   ; el paso, a cero
 L_5C1F:
-	call L_5D3E		;5c1f
+	call pinta_el_pan_que_sale		;5c1f
 	ld hl,0e11ch		;5c22
 	ld c,008h		;5c25   ; ocho de desplazamiento
 	ld a,(hl)			;5c27
@@ -4673,7 +4673,7 @@ L_5C4B:
 el_panadero_sale:
 	call remata_el_recuento		;5c57
 L_5C5A:
-	call L_5D3E		;5c5a
+	call pinta_el_pan_que_sale		;5c5a
 	ld hl,0e11ch		;5c5d
 	ld c,004h		;5c60   ; cuatro de desplazamiento
 	ld a,(hl)			;5c62
@@ -4687,7 +4687,7 @@ L_5C5A:
 ; LOS PANES DEL RECUENTO, animados por pasos: el 0x0F tiene camino propio, de 0x0C en adelante no se hace nada, y por debajo la altura sale de `(paso-8)*4 + 0xF0`.
 ; ----------------------------------------------------------------------
 anima_los_panes_del_recuento:
-	call L_5D3E		;5c6f
+	call pinta_el_pan_que_sale		;5c6f
 	ld hl,0e11dh		;5c72
 	ld a,(hl)			;5c75   ; el paso
 	or a			;5c76
@@ -4695,7 +4695,7 @@ anima_los_panes_del_recuento:
 	dec hl			;5c78
 	ld a,(hl)			;5c79
 	cp 00fh		;5c7a   ; el paso 0x0F
-	jr z,L_5CCF		;5c7c
+	jr z,cobra_los_panes		;5c7c
 	cp 00ch		;5c7e   ; de doce en adelante, nada
 	ret nc			;5c80
 	sub 008h		;5c81   ; ocho menos
@@ -4703,76 +4703,80 @@ anima_los_panes_del_recuento:
 	add a,a			;5c84
 	add a,0f0h		;5c85   ; y +0xF0: la altura
 	ld e,a			;5c87
-	ld d,039h		;5c88
+	ld d,039h		;5c88   ; la fila 0x39
 	push de			;5c8a
 	ld hl,0e060h		;5c8b
 	ld a,(hl)			;5c8e
-	dec (hl)			;5c8f
-	ld c,0fch		;5c90
+	dec (hl)			;5c8f   ; el progreso, uno menos
+	ld c,0fch		;5c90   ; el patron del hueco
 	jp m,L_5CA1		;5c92
 	call monta_la_tabla_del_recuento		;5c95
-	ld a,00ch		;5c98
+	ld a,00ch		;5c98   ; doce
 	ld c,008h		;5c9a
 	call pinta_la_columna_de_la_rejilla		;5c9c
-	ld c,07eh		;5c9f
+	ld c,07eh		;5c9f   ; o el patron del pan
 L_5CA1:
 	pop de			;5ca1
 	ld a,c			;5ca2
-	call escribe_en_vram		;5ca3
-	ld a,020h		;5ca6
+	call escribe_en_vram		;5ca3   ; la celda de arriba
+	ld a,020h		;5ca6   ; y la de abajo, 32 celdas
 	call suma_a_a_de		;5ca8
 	ld a,c			;5cab
 	inc a			;5cac
 	call escribe_en_vram		;5cad
 	ret			;5cb0
-L_5CB1:
-	ld hl,05fefh		;5cb1
+pinta_la_pantalla_de_transicion:
+	ld hl,05fefh		;5cb1   ; el bloque comprimido
 	call descomprime		;5cb4
-	ld a,(0e19bh)		;5cb7
-	ld hl,05d22h		;5cba
+	ld a,(0e19bh)		;5cb7   ; la variante de 0xE19B
+	ld hl,05d22h		;5cba   ; su tabla de patrones
 	call suma_a_a_hl		;5cbd
 	ld a,(hl)			;5cc0
-	ld de,03867h		;5cc1
+	ld de,03867h		;5cc1   ; la celda de la pantalla
 	call escribe_en_vram		;5cc4
 	inc de			;5cc7
 	inc a			;5cc8
 	call escribe_en_vram		;5cc9
 	jp L_4381		;5ccc
-L_5CCF:
-	ld a,(0e04fh)		;5ccf
-	ld d,a			;5cd2
+
+; ----------------------------------------------------------------------
+; COBRAR LOS PANES: el valor en BCD calculado antes se suma como BYTE ALTO, o sea en centenas, suena el 6 y se dejan 104 cuadros de plazo. Si el progreso tiene el bit 7 puesto, ademas se pinta el remate con el rotulo y su bloque.
+; ----------------------------------------------------------------------
+cobra_los_panes:
+	ld a,(0e04fh)		;5ccf   ; los puntos en BCD
+	ld d,a			;5cd2   ; como byte alto: centenas
 	or a			;5cd3
 	jr z,L_5CDB		;5cd4
 	ld e,000h		;5cd6
 	call suma_puntos		;5cd8
 L_5CDB:
-	ld a,006h		;5cdb
-	call L_799C		;5cdd
-	ld a,068h		;5ce0
+	ld a,006h		;5cdb   ; el sonido del cobro
+	call pide_un_sonido		;5cdd
+	ld a,068h		;5ce0   ; ciento cuatro cuadros
 	ld (0e004h),a		;5ce2
-	ld a,(0e060h)		;5ce5
-	rla			;5ce8
-	jp nc,L_5CB1		;5ce9
-	call L_5D17		;5cec
-	ld hl,05d2ch		;5cef
+	ld a,(0e060h)		;5ce5   ; el progreso
+	rla			;5ce8   ; su bit 7
+	jp nc,pinta_la_pantalla_de_transicion		;5ce9
+	call coloca_los_dos_sprites_del_remate		;5cec
+	ld hl,05d2ch		;5cef   ; el rotulo del remate
 	call pinta_rotulo		;5cf2
-	ld hl,05fd3h		;5cf5
+	ld hl,05fd3h		;5cf5   ; y su bloque comprimido
 	call descomprime		;5cf8
 	ld hl,0e07bh		;5cfb
-	ld a,004h		;5cfe
+	ld a,004h		;5cfe   ; cuatro menos los panes
 	sub (hl)			;5d00
-	add a,0a0h		;5d01
+	add a,0a0h		;5d01   ; +0xA0: el patron que toca
 	ld de,0386dh		;5d03
 	call escribe_en_vram		;5d06
 	ld a,050h		;5d09
 	call L_4349		;5d0b
-	ld hl,0010ch		;5d0e
+	ld hl,0010ch		;5d0e   ; escena 12
 	ld (0e000h),hl		;5d11
 	jp L_4296		;5d14
-L_5D17:
-	ld hl,03e0eh		;5d17
+coloca_los_dos_sprites_del_remate:
+	ld hl,03e0eh		;5d17   ; el primer par
 	ld (0e0a0h),hl		;5d1a
-	ld hl,00ffch		;5d1d
+	ld hl,00ffch		;5d1d   ; y el segundo
 	ld (0e0a2h),hl		;5d20
 	jp L_707A		;5d23
 
@@ -4797,29 +4801,33 @@ DATA_5D36:
 ; ======================================================================
 
 
-L_5D3E:
-	ld a,(0e11dh)		;5d3e
+
+; ----------------------------------------------------------------------
+; EL PAN QUE SALE, con DOS tablas encadenadas: la de 0x5D72 da un indice y con el se entra en la de 0x5D82, que trae el guion. Se pinta con el interprete de rotulos por la puerta de la mascara 0xFF.
+; ----------------------------------------------------------------------
+pinta_el_pan_que_sale:
+	ld a,(0e11dh)		;5d3e   ; el paso
 	or a			;5d41
 	ret z			;5d42
-	ld b,004h		;5d43
+	ld b,004h		;5d43   ; cuatro
 	ld a,(0e060h)		;5d45
-	bit 7,a		;5d48
+	bit 7,a		;5d48   ; el bit 7 del progreso
 	ld a,(0e11ch)		;5d4a
 	jr z,L_5D54		;5d4d
-	cp 00fh		;5d4f
+	cp 00fh		;5d4f   ; el paso 0x0F
 	jr nz,L_5D54		;5d51
-	dec b			;5d53
+	dec b			;5d53   ; uno menos
 L_5D54:
 	ld de,03a2eh		;5d54
-	ld hl,05d72h		;5d57
+	ld hl,05d72h		;5d57   ; la primera tabla
 	call suma_a_a_hl		;5d5a
 	ld a,(hl)			;5d5d
-	ld hl,05d82h		;5d5e
+	ld hl,05d82h		;5d5e   ; y la segunda, encadenada
 	call suma_a_a_hl		;5d61
 L_5D64:
 	push hl			;5d64
 	push bc			;5d65
-	ld c,0ffh		;5d66
+	ld c,0ffh		;5d66   ; mascara 0xFF: se pinta
 	call L_40B4		;5d68
 	pop bc			;5d6b
 	inc de			;5d6c
@@ -4921,33 +4929,37 @@ DATA_5E58:
 ; ======================================================================
 
 
-L_6051:
-	ld de,00000h		;6051
-	call L_60C7		;6054
-	ld de,00800h		;6057
-	call L_60C7		;605a
-	ld de,01000h		;605d
-	call L_60C7		;6060
-	ld hl,065dfh		;6063
+
+; ----------------------------------------------------------------------
+; EL MONTAJE DE LA PANTALLA, tercio a tercio: 0x60C7 se llama tres veces con 0x0000, 0x0800 y 0x1000, que son las tres bandas de patrones de SCREEN 2. Detras van los bloques comprimidos y un bucle que repite DIECINUEVE veces la misma tanda de dieciseis bytes, que es la cinta transportadora.
+; ----------------------------------------------------------------------
+monta_la_pantalla_entera:
+	ld de,00000h		;6051   ; el primer tercio
+	call monta_un_tercio		;6054
+	ld de,00800h		;6057   ; el segundo
+	call monta_un_tercio		;605a
+	ld de,01000h		;605d   ; y el tercero
+	call monta_un_tercio		;6060
+	ld hl,065dfh		;6063   ; el bloque del decorado
 	call descomprime		;6066
 	ld hl,06aeeh		;6069
 	call descomprime		;606c
 	ld hl,061fah		;606f
-	ld de,02500h		;6072
-	ld bc,00050h		;6075
+	ld de,02500h		;6072   ; el destino en la tabla de color
+	ld bc,00050h		;6075   ; ochenta bytes
 	call vuelca_bloque		;6078
 	ld hl,06853h		;607b
 	call L_43F5		;607e
 	ld hl,06c99h		;6081
 	call descomprime		;6084
 	ld de,006d0h		;6087
-	ld b,013h		;608a
+	ld b,013h		;608a   ; diecinueve tandas
 L_608C:
 	push bc			;608c
 	ld hl,06d14h		;608d
-	ld bc,00010h		;6090
+	ld bc,00010h		;6090   ; dieciseis bytes cada una
 	call vuelca_bloque		;6093
-	ld a,010h		;6096
+	ld a,010h		;6096   ; y la siguiente, dieciseis mas alla
 	call suma_a_a_de		;6098
 	pop bc			;609b
 	djnz L_608C		;609c
@@ -4956,8 +4968,8 @@ L_608C:
 L_60A4:
 	ld a,071h		;60a4
 L_60A6:
-	ld bc,00170h		;60a6
-	ld de,01080h		;60a9
+	ld bc,00170h		;60a6   ; 368 celdas
+	ld de,01080h		;60a9   ; rellenas con el patron 0x71
 	call rellena_vram		;60ac
 	ret			;60af
 
@@ -4972,47 +4984,51 @@ DATA_60B0:
 ; ======================================================================
 
 
-L_60C7:
+
+; ----------------------------------------------------------------------
+; MONTAR UN TERCIO DE PANTALLA. Empieza escribiendo dieciseis grupos de ocho bytes con el mismo valor, que va subiendo de uno en uno -0, 1, 2...-: una rampa de patrones generada sin tabla. Luego se le encajan encima cinco bloques a desplazamientos fijos (0x400, 0x680, 0x398, 0x6000 y 0x400 mas).
+; ----------------------------------------------------------------------
+monta_un_tercio:
 	push de			;60c7
 	xor a			;60c8
-	ld c,010h		;60c9
+	ld c,010h		;60c9   ; dieciseis grupos
 L_60CB:
-	ld b,008h		;60cb
+	ld b,008h		;60cb   ; de ocho bytes cada uno
 L_60CD:
-	call escribe_en_vram		;60cd
+	call escribe_en_vram		;60cd   ; el valor, repetido
 	inc de			;60d0
 	djnz L_60CD		;60d1
-	inc a			;60d3
+	inc a			;60d3   ; y uno mas para el grupo siguiente
 	dec c			;60d4
 	jr nz,L_60CB		;60d5
-	ld bc,00250h		;60d7
+	ld bc,00250h		;60d7   ; 592 celdas
 	ld a,0f1h		;60da
 	call L_43D2		;60dc
 	ld hl,06a7ch		;60df
 	call L_43F5		;60e2
 	pop de			;60e5
 	push de			;60e6
-	ld hl,00400h		;60e7
+	ld hl,00400h		;60e7   ; 0x400 mas alla
 	add hl,de			;60ea
 	ex de,hl			;60eb
 	xor a			;60ec
 	call L_61A1		;60ed
 	pop de			;60f0
 	push de			;60f1
-	ld hl,00680h		;60f2
+	ld hl,00680h		;60f2   ; 0x680
 	add hl,de			;60f5
 	ex de,hl			;60f6
 	ld hl,06f7dh		;60f7
 	call L_43F2		;60fa
 	pop de			;60fd
 	push de			;60fe
-	ld hl,00398h		;60ff
+	ld hl,00398h		;60ff   ; 0x398
 	add hl,de			;6102
 	ex de,hl			;6103
 	xor a			;6104
 	call L_6145		;6105
 	pop de			;6108
-	ld hl,06000h		;6109
+	ld hl,06000h		;6109   ; y 0x6000, que es la tabla de color
 	add hl,de			;610c
 	ex de,hl			;610d
 	push de			;610e
@@ -5743,44 +5759,52 @@ DATA_72F3:
 ; ======================================================================
 
 
-L_799C:
+
+; ----------------------------------------------------------------------
+; PEDIR UN SONIDO, y este cartucho es el unico de los tres que GUARDA LOS CUATRO PARES antes de repartirlo: se puede llamar desde cualquier sitio sin pensar en que registros se pierden. Los otros dos dejan esa responsabilidad al que llama.
+; ----------------------------------------------------------------------
+pide_un_sonido:
 	di			;799c
-	push hl			;799d
+	push hl			;799d   ; los cuatro pares, a salvo
 	push de			;799e
 	push bc			;799f
 	push af			;79a0
-	ld d,000h		;79a1
-	call L_79AC		;79a3
+	ld d,000h		;79a1   ; D a cero: no se fuerza
+	call reparte_el_sonido		;79a3
 	pop af			;79a6
 	pop bc			;79a7
 	pop de			;79a8
 	pop hl			;79a9
 	ei			;79aa
 	ret			;79ab
-L_79AC:
-	ld c,a			;79ac
-	ld b,002h		;79ad
+
+; ----------------------------------------------------------------------
+; REPARTIR UN SONIDO ENTRE LAS VOCES: por debajo de 0x89 es efecto, de 0x89 a 0x8C va a una voz y de 0x8D en adelante a otra. Dentro de los efectos, el numero 0x16 tiene su propio hueco. Cada grupo lleva PRIORIDAD: si lo que suena tiene el numero mas alto, el nuevo no entra... salvo que pase de 0x96, que entonces se recorta y entra igual.
+; ----------------------------------------------------------------------
+reparte_el_sonido:
+	ld c,a			;79ac   ; el numero de sonido
+	ld b,002h		;79ad   ; dos voces
 	ld hl,0e012h		;79af
-	cp 089h		;79b2
+	cp 089h		;79b2   ; por debajo de 0x89: efecto
 	jr c,L_79BD		;79b4
-	cp 08dh		;79b6
+	cp 08dh		;79b6   ; de 0x89 a 0x8C
 	jr c,L_79CA		;79b8
-	inc b			;79ba
+	inc b			;79ba   ; y de 0x8D en adelante, una voz mas
 	jr L_79CA		;79bb
 L_79BD:
-	and 03fh		;79bd
+	and 03fh		;79bd   ; seis bits
 	dec b			;79bf
 	ld hl,0e012h		;79c0
-	cp 016h		;79c3
+	cp 016h		;79c3   ; el sonido 0x16 tiene su hueco
 	jr z,L_79CA		;79c5
 	ld hl,0e028h		;79c7
 L_79CA:
-	dec d			;79ca
+	dec d			;79ca   ; D dice si se fuerza
 	jr z,L_79D6		;79cb
 	ld a,c			;79cd
-	cp (hl)			;79ce
+	cp (hl)			;79ce   ; la prioridad de lo que esta sonando
 	ret c			;79cf
-	cp 096h		;79d0
+	cp 096h		;79d0   ; de 0x96 en adelante entra igual
 	jr c,L_79D6		;79d2
 	and 07fh		;79d4
 L_79D6:
@@ -5791,32 +5815,36 @@ L_79D6:
 	call suma_a_a_de		;79dd
 	dec hl			;79e0
 	dec hl			;79e1
-L_79E2:
-	ld (hl),001h		;79e2
+
+; ----------------------------------------------------------------------
+; ARRANCAR LA VOZ: la cuenta a uno para que suene en el cuadro siguiente, el numero de sonido y los dos bytes de la partitura sacados de la tabla de 0x7B68. Los SEIS bytes que se salta con `ld a,006h / add a,l` son el resto del estado -en Circus Charlie y Magical Tree eran cinco: la ficha de voz de este cartucho es un byte mas larga-.
+; ----------------------------------------------------------------------
+arranca_la_voz:
+	ld (hl),001h		;79e2   ; la cuenta, a uno: suena ya
 	inc hl			;79e4
 	ld (hl),001h		;79e5
 	inc hl			;79e7
-	ld (hl),c			;79e8
+	ld (hl),c			;79e8   ; el numero de sonido
 	inc hl			;79e9
-	ld a,(de)			;79ea
+	ld a,(de)			;79ea   ; y su partitura, dos bytes
 	ld (hl),a			;79eb
 	inc hl			;79ec
 	inc de			;79ed
 	ld a,(de)			;79ee
 	ld (hl),a			;79ef
-	ld a,006h		;79f0
+	ld a,006h		;79f0   ; seis bytes mas alla del estado
 	add a,l			;79f2
 	ld l,a			;79f3
-	ld (hl),000h		;79f4
+	ld (hl),000h		;79f4   ; las vueltas, a cero
 	inc hl			;79f6
 	inc de			;79f7
-	djnz L_79E2		;79f8
+	djnz arranca_la_voz		;79f8
 	ret			;79fa
-L_79FB:
+repite_o_encadena:
 	inc hl			;79fb
-	ld a,(ix+009h)		;79fc
-	inc a			;79ff
-	cp (hl)			;7a00
+	ld a,(ix+009h)		;79fc   ; las vueltas dadas
+	inc a			;79ff   ; una mas
+	cp (hl)			;7a00   ; contra las que pide la partitura
 	jp z,L_7AB0		;7a01
 	jr c,L_7A07		;7a04
 	dec a			;7a06
@@ -5825,7 +5853,7 @@ L_7A07:
 	ld a,(ix+002h)		;7a08
 	push bc			;7a0b
 	ld d,001h		;7a0c
-	call L_79AC		;7a0e
+	call reparte_el_sonido		;7a0e   ; y vuelve a arrancar el mismo sonido
 	pop bc			;7a11
 	ex af,af'			;7a12
 	ld (ix+009h),a		;7a13
@@ -5869,7 +5897,7 @@ L_7A53:
 	ld h,(ix+004h)		;7a56
 	ld a,(hl)			;7a59
 	cp 0feh		;7a5a
-	jr z,L_79FB		;7a5c
+	jr z,repite_o_encadena		;7a5c
 	jr nc,L_7AB0		;7a5e
 	bit 7,(ix+002h)		;7a60
 	jp nz,L_7AEB		;7a64

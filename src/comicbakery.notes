@@ -1509,3 +1509,108 @@ C 0x5c7e de doce en adelante, nada
 C 0x5c81 ocho menos
 C 0x5c83 por cuatro
 C 0x5c85 y +0xF0: la altura
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x5c88 la fila 0x39
+C 0x5c8f el progreso, uno menos
+C 0x5c90 el patron del hueco
+C 0x5c98 doce
+C 0x5c9f o el patron del pan
+C 0x5ca3 la celda de arriba
+C 0x5ca6 y la de abajo, 32 celdas
+L 0x5cb1 pinta_la_pantalla_de_transicion
+C 0x5cb1 el bloque comprimido
+C 0x5cb7 la variante de 0xE19B
+C 0x5cba su tabla de patrones
+C 0x5cc1 la celda de la pantalla
+L 0x5ccf cobra_los_panes
+B 0x5ccf COBRAR LOS PANES: el valor en BCD calculado antes se suma como BYTE ALTO, o sea en centenas, suena el 6 y se dejan 104 cuadros de plazo. Si el progreso tiene el bit 7 puesto, ademas se pinta el remate con el rotulo y su bloque.
+C 0x5ccf los puntos en BCD
+C 0x5cd2 como byte alto: centenas
+C 0x5cdb el sonido del cobro
+C 0x5ce0 ciento cuatro cuadros
+C 0x5ce5 el progreso
+C 0x5ce8 su bit 7
+C 0x5cef el rotulo del remate
+C 0x5cf5 y su bloque comprimido
+C 0x5cfe cuatro menos los panes
+C 0x5d01 +0xA0: el patron que toca
+C 0x5d0e escena 12
+L 0x5d17 coloca_los_dos_sprites_del_remate
+C 0x5d17 el primer par
+C 0x5d1d y el segundo
+L 0x5d3e pinta_el_pan_que_sale
+B 0x5d3e EL PAN QUE SALE, con DOS tablas encadenadas: la de 0x5D72 da un indice y con el se entra en la de 0x5D82, que trae el guion. Se pinta con el interprete de rotulos por la puerta de la mascara 0xFF.
+C 0x5d3e el paso
+C 0x5d43 cuatro
+C 0x5d48 el bit 7 del progreso
+C 0x5d4f el paso 0x0F
+C 0x5d53 uno menos
+C 0x5d57 la primera tabla
+C 0x5d5e y la segunda, encadenada
+C 0x5d66 mascara 0xFF: se pinta
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x6051 monta_la_pantalla_entera
+B 0x6051 EL MONTAJE DE LA PANTALLA, tercio a tercio: 0x60C7 se llama tres veces con 0x0000, 0x0800 y 0x1000, que son las tres bandas de patrones de SCREEN 2. Detras van los bloques comprimidos y un bucle que repite DIECINUEVE veces la misma tanda de dieciseis bytes, que es la cinta transportadora.
+C 0x6051 el primer tercio
+C 0x6057 el segundo
+C 0x605d y el tercero
+C 0x6063 el bloque del decorado
+C 0x6072 el destino en la tabla de color
+C 0x6075 ochenta bytes
+C 0x608a diecinueve tandas
+C 0x6090 dieciseis bytes cada una
+C 0x6096 y la siguiente, dieciseis mas alla
+C 0x60a6 368 celdas
+C 0x60a9 rellenas con el patron 0x71
+L 0x60c7 monta_un_tercio
+B 0x60c7 MONTAR UN TERCIO DE PANTALLA. Empieza escribiendo dieciseis grupos de ocho bytes con el mismo valor, que va subiendo de uno en uno -0, 1, 2...-: una rampa de patrones generada sin tabla. Luego se le encajan encima cinco bloques a desplazamientos fijos (0x400, 0x680, 0x398, 0x6000 y 0x400 mas).
+C 0x60c9 dieciseis grupos
+C 0x60cb de ocho bytes cada uno
+C 0x60cd el valor, repetido
+C 0x60d3 y uno mas para el grupo siguiente
+C 0x60d7 592 celdas
+C 0x60e7 0x400 mas alla
+C 0x60f2 0x680
+C 0x60ff 0x398
+C 0x6109 y 0x6000, que es la tabla de color
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x799c pide_un_sonido
+B 0x799c PEDIR UN SONIDO, y este cartucho es el unico de los tres que GUARDA LOS CUATRO PARES antes de repartirlo: se puede llamar desde cualquier sitio sin pensar en que registros se pierden. Los otros dos dejan esa responsabilidad al que llama.
+C 0x799d los cuatro pares, a salvo
+C 0x79a1 D a cero: no se fuerza
+L 0x79ac reparte_el_sonido
+B 0x79ac REPARTIR UN SONIDO ENTRE LAS VOCES: por debajo de 0x89 es efecto, de 0x89 a 0x8C va a una voz y de 0x8D en adelante a otra. Dentro de los efectos, el numero 0x16 tiene su propio hueco. Cada grupo lleva PRIORIDAD: si lo que suena tiene el numero mas alto, el nuevo no entra... salvo que pase de 0x96, que entonces se recorta y entra igual.
+C 0x79ac el numero de sonido
+C 0x79ad dos voces
+C 0x79b2 por debajo de 0x89: efecto
+C 0x79b6 de 0x89 a 0x8C
+C 0x79ba y de 0x8D en adelante, una voz mas
+C 0x79bd seis bits
+C 0x79c3 el sonido 0x16 tiene su hueco
+C 0x79ca D dice si se fuerza
+C 0x79ce la prioridad de lo que esta sonando
+C 0x79d0 de 0x96 en adelante entra igual
+L 0x79e2 arranca_la_voz
+B 0x79e2 ARRANCAR LA VOZ: la cuenta a uno para que suene en el cuadro siguiente, el numero de sonido y los dos bytes de la partitura sacados de la tabla de 0x7B68. Los SEIS bytes que se salta con `ld a,006h / add a,l` son el resto del estado -en Circus Charlie y Magical Tree eran cinco: la ficha de voz de este cartucho es un byte mas larga-.
+C 0x79e2 la cuenta, a uno: suena ya
+C 0x79e8 el numero de sonido
+C 0x79ea y su partitura, dos bytes
+C 0x79f0 seis bytes mas alla del estado
+C 0x79f4 las vueltas, a cero
+L 0x79fb repite_o_encadena
+C 0x79fc las vueltas dadas
+C 0x79ff una mas
+C 0x7a00 contra las que pide la partitura
+C 0x7a0e y vuelve a arrancar el mismo sonido
