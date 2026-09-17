@@ -954,3 +954,75 @@ L 0x4f99 pinta_el_bicho
 C 0x4f9e la posicion del decorado
 C 0x4fa2 treinta y tres de margen
 C 0x4fa7 el paso siguiente
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+B 0x4fa9 EL DIBUJO DEL BICHO. El paso se multiplica por TRES (`add a,a / add a,h`) y con eso se indexa la tabla de 0x4010 -que empieza dentro de la cabecera del cartucho, en los bytes reservados- para sacar los tres indices de patron. La fila es 0xC0 o 0xE0 segun el paso, y la columna sale del propio estado.
+C 0x4faa el paso
+C 0x4fab por tres
+C 0x4fad la tabla de indices
+C 0x4fb2 una fila
+C 0x4fb5 los tres bits de abajo
+C 0x4fb9 o la otra
+C 0x4fbe el bit 0 del estado
+C 0x4fc4 la lista de posiciones
+C 0x4fce ocho
+C 0x4fd3 o dieciseis de desplazamiento
+C 0x4fd6 el bit 6
+C 0x4fda cuatro mas
+C 0x4fe5 la otra tabla de indices
+L 0x4fef elige_cuantos_tiles_pinta
+C 0x4ff0 por encima de dos, no cabe
+C 0x4ff4 el borde
+C 0x4ff6 una celda
+C 0x4ffa o dos
+C 0x4ffe o ninguna
+L 0x5009 vuelca_las_dos_filas
+B 0x5009 VOLCAR LAS DOS FILAS DEL BICHO al bufer de 0xE1xx: C celdas arriba y otras C abajo, con el salto de 0x20 -una fila de pantalla- entre las dos, y ajustando los punteros con lo que se haya pintado.
+C 0x500a nada que pintar
+C 0x500f un indice
+C 0x5015 tres menos lo pintado
+C 0x501b y treinta y dos menos lo pintado: la fila de abajo
+C 0x5022 la segunda fila
+L 0x5029 avanza_el_paso_del_bicho
+C 0x502a el paso, uno mas
+C 0x502c la tabla de plazos
+C 0x5030 tres bits del paso
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x5039 el_bicho_completa_su_recorrido
+B 0x5039 UN BICHO COMPLETA SU RECORRIDO: se borra su ficha, sube el contador de progreso (0xE060) y se guarda su valor en BCD para pintarlo.
+C 0x503a su plazo, uno menos
+C 0x5045 el progreso, uno mas
+C 0x5048 en BCD
+C 0x504e y se repinta la barra
+L 0x5051 pinta_los_panes_en_la_cinta
+B 0x5051 PINTAR LOS PANES QUE HAY EN LA CINTA. Uno por cada punto de progreso, colocados a partir de 0xE280: la posicion sale de rotar el indice dos veces, quedarse con 0x70 y restarlo de 0x80 -o sea, se colocan de derecha a izquierda-. Solo se pintan los que caigan dentro de la ventana de 0x20.
+C 0x5055 por debajo de 0x36 no se pinta
+C 0x5058 el progreso
+C 0x5061 dos rotaciones
+C 0x5069 restado de 0x80: de derecha a izquierda
+C 0x506e dos bits del indice
+C 0x5070 +0x55: el ajuste fino
+C 0x507c el patron del pan
+L 0x5082 pinta_los_panes_del_otro_lado
+C 0x5082 la otra base
+C 0x5084 y doce
+L 0x5088 mueve_el_gato
+B 0x5088 EL GATO, atendido cuando el compas de ocho vale 2. Su plazo de espera depende de la fase: 0x3C menos el doble del numero de fase, con un suelo de 0x28. O sea que cuanto mas avanzada la partida, antes vuelve.
+C 0x5088 el compas de ocho
+C 0x508b solo cuando vale 2
+C 0x5091 su estado
+C 0x5096 su plazo
+C 0x509a el bicho al que va, por tres
+C 0x50a3 apuntado
+C 0x50a6 el bit 7: ya esta en marcha
+C 0x50af el numero de fase
+C 0x50b2 por dos
+C 0x50b4 0x3C menos eso
+C 0x50b7 con suelo en 0x28

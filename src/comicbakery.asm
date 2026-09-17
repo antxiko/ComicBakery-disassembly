@@ -1627,7 +1627,7 @@ el_cuadro_de_la_partida:
 	call pinta_la_fila_de_marcas		;4904
 	call parpadea_el_aviso		;4907
 	call mueve_las_tres_cosas		;490a
-	call L_5088		;490d
+	call mueve_el_gato		;490d
 	call mira_si_dispara		;4910
 	call L_53FF		;4913
 	call L_5464		;4916
@@ -1648,7 +1648,7 @@ L_4931:
 	ld a,(0e00bh)		;4937   ; otra vez el compas
 	cp 007h		;493a
 	ret nz			;493c
-	call L_5051		;493d
+	call pinta_los_panes_en_la_cinta		;493d
 L_4940:
 	ld hl,0e1a0h		;4940
 	ld de,079a0h		;4943   ; el destino en la VRAM
@@ -1751,8 +1751,8 @@ L_49FA:
 	inc c			;4a03   ; el numero de hueco
 	djnz L_49FA		;4a04
 	call L_4940		;4a06
-	call L_5082		;4a09
-	call L_5051		;4a0c
+	call pinta_los_panes_del_otro_lado		;4a09
+	call pinta_los_panes_en_la_cinta		;4a0c
 	ld hl,05e68h		;4a0f   ; el bloque comprimido del decorado
 	call descomprime		;4a12
 	call pinta_la_barra_de_progreso		;4a15
@@ -2649,7 +2649,7 @@ mueve_un_bicho:
 	and 007h		;4f43   ; los tres bits de abajo
 	jr z,baja_el_plazo_del_bicho		;4f45   ; el estado 0
 	cp 007h		;4f47   ; y el 7
-	jp z,L_5039		;4f49
+	jp z,el_bicho_completa_su_recorrido		;4f49
 	ld a,b			;4f4c
 	rla			;4f4d   ; el bit 7: esta activo?
 	ret nc			;4f4e
@@ -2710,7 +2710,7 @@ L_4F89:
 baja_el_plazo_del_bicho:
 	dec hl			;4f90
 	dec (hl)			;4f91   ; su plazo, uno menos
-	call m,L_5029		;4f92   ; y al pasar de cero, se atiende
+	call m,avanza_el_paso_del_bicho		;4f92   ; y al pasar de cero, se atiende
 	inc hl			;4f95
 	inc hl			;4f96
 	inc (hl)			;4f97
@@ -2729,40 +2729,40 @@ pinta_el_bicho:
 	ld a,b			;4fa6
 	inc a			;4fa7   ; el paso siguiente
 	and 006h		;4fa8
-	ld h,a			;4faa
-	add a,a			;4fab
+	ld h,a			;4faa   ; el paso
+	add a,a			;4fab   ; por tres
 	add a,h			;4fac
-	ld hl,04010h		;4fad
+	ld hl,04010h		;4fad   ; la tabla de indices
 	add a,l			;4fb0
 	ld l,a			;4fb1
-	ld e,0c0h		;4fb2
+	ld e,0c0h		;4fb2   ; una fila
 	ld a,b			;4fb4
-	and 007h		;4fb5
+	and 007h		;4fb5   ; los tres bits de abajo
 	jr nz,L_4FBB		;4fb7
-	ld e,0e0h		;4fb9
+	ld e,0e0h		;4fb9   ; o la otra
 L_4FBB:
 	ld a,d			;4fbb
 	add a,e			;4fbc
 	ld e,a			;4fbd
-	bit 0,b		;4fbe
-	jr nz,L_4FEF		;4fc0
+	bit 0,b		;4fbe   ; el bit 0 del estado
+	jr nz,elige_cuantos_tiles_pinta		;4fc0
 	ld a,d			;4fc2
 	exx			;4fc3
-	ld hl,0e160h		;4fc4
+	ld hl,0e160h		;4fc4   ; la lista de posiciones
 	add a,l			;4fc7
 	ld l,a			;4fc8
 	ld a,(hl)			;4fc9
 	exx			;4fca
 	dec c			;4fcb
 	jr z,L_4FD5		;4fcc
-	ld c,008h		;4fce
+	ld c,008h		;4fce   ; ocho
 	jp m,L_4FD5		;4fd0
-	ld c,010h		;4fd3
+	ld c,010h		;4fd3   ; o dieciseis de desplazamiento
 L_4FD5:
 	add a,c			;4fd5
-	bit 6,b		;4fd6
+	bit 6,b		;4fd6   ; el bit 6
 	jr z,L_4FDF		;4fd8
-	add a,004h		;4fda
+	add a,004h		;4fda   ; cuatro mas
 L_4FDC:
 	inc hl			;4fdc
 	jr L_4FE4		;4fdd
@@ -2772,24 +2772,24 @@ L_4FDF:
 	dec e			;4fe3
 L_4FE4:
 	exx			;4fe4
-	ld hl,04028h		;4fe5
+	ld hl,04028h		;4fe5   ; la otra tabla de indices
 	add a,l			;4fe8
 	ld l,a			;4fe9
 	ld a,(hl)			;4fea
 	exx			;4feb
 	ld c,a			;4fec
-	jr L_5009		;4fed
-L_4FEF:
+	jr vuelca_las_dos_filas		;4fed
+elige_cuantos_tiles_pinta:
 	ld a,c			;4fef
-	cp 002h		;4ff0
+	cp 002h		;4ff0   ; por encima de dos, no cabe
 	ret nc			;4ff2
 	ld a,d			;4ff3
-	cp 01fh		;4ff4
-	ld a,001h		;4ff6
+	cp 01fh		;4ff4   ; el borde
+	ld a,001h		;4ff6   ; una celda
 	jr z,L_4FFF		;4ff8
-	ld a,002h		;4ffa
+	ld a,002h		;4ffa   ; o dos
 	jr c,L_4FFF		;4ffc
-	xor a			;4ffe
+	xor a			;4ffe   ; o ninguna
 L_4FFF:
 	dec c			;4fff
 	jr nz,L_5007		;5000
@@ -2800,65 +2800,77 @@ L_4FFF:
 L_5007:
 	inc hl			;5007
 	ld c,a			;5008
-L_5009:
+
+; ----------------------------------------------------------------------
+; VOLCAR LAS DOS FILAS DEL BICHO al bufer de 0xE1xx: C celdas arriba y otras C abajo, con el salto de 0x20 -una fila de pantalla- entre las dos, y ajustando los punteros con lo que se haya pintado.
+; ----------------------------------------------------------------------
+vuelca_las_dos_filas:
 	ld a,c			;5009
-	or a			;500a
+	or a			;500a   ; nada que pintar
 	ret z			;500b
 	ld d,0e1h		;500c
 	ld b,c			;500e
 L_500F:
-	ld a,(hl)			;500f
+	ld a,(hl)			;500f   ; un indice
 	ld (de),a			;5010
 	inc hl			;5011
 	inc de			;5012
 	djnz L_500F		;5013
-	ld a,003h		;5015
+	ld a,003h		;5015   ; tres menos lo pintado
 	sub c			;5017
 	call suma_a_a_hl		;5018
-	ld a,020h		;501b
+	ld a,020h		;501b   ; y treinta y dos menos lo pintado: la fila de abajo
 	sub c			;501d
 	call suma_a_a_de		;501e
 	ld b,c			;5021
 L_5022:
-	ld a,(hl)			;5022
+	ld a,(hl)			;5022   ; la segunda fila
 	ld (de),a			;5023
 	inc hl			;5024
 	inc de			;5025
 	djnz L_5022		;5026
 	ret			;5028
-L_5029:
+avanza_el_paso_del_bicho:
 	inc hl			;5029
-	inc (hl)			;502a
+	inc (hl)			;502a   ; el paso, uno mas
 	ld b,(hl)			;502b
-	ld de,0510fh		;502c
+	ld de,0510fh		;502c   ; la tabla de plazos
 	ld a,(hl)			;502f
-	and 007h		;5030
+	and 007h		;5030   ; tres bits del paso
 	call suma_a_a_de		;5032
 	dec hl			;5035
 	ld a,(de)			;5036
 	ld (hl),a			;5037
 	ret			;5038
-L_5039:
+
+; ----------------------------------------------------------------------
+; UN BICHO COMPLETA SU RECORRIDO: se borra su ficha, sube el contador de progreso (0xE060) y se guarda su valor en BCD para pintarlo.
+; ----------------------------------------------------------------------
+el_bicho_completa_su_recorrido:
 	dec hl			;5039
-	dec (hl)			;503a
+	dec (hl)			;503a   ; su plazo, uno menos
 	ld a,(hl)			;503b
 	sub 001h		;503c
 	ret nz			;503e
 	call L_4F89		;503f
 	ld hl,0e060h		;5042
-	inc (hl)			;5045
+	inc (hl)			;5045   ; el progreso, uno mas
 	ld a,(hl)			;5046
 	dec a			;5047
-	add a,001h		;5048
+	add a,001h		;5048   ; en BCD
 	daa			;504a
 	ld (0e07bh),a		;504b
-	call pinta_la_barra_de_progreso		;504e
-L_5051:
+	call pinta_la_barra_de_progreso		;504e   ; y se repinta la barra
+
+; ----------------------------------------------------------------------
+; PINTAR LOS PANES QUE HAY EN LA CINTA. Uno por cada punto de progreso, colocados a partir de 0xE280: la posicion sale de rotar el indice dos veces, quedarse con 0x70 y restarlo de 0x80 -o sea, se colocan de derecha a izquierda-. Solo se pintan los que caigan dentro de la ventana de 0x20.
+; ----------------------------------------------------------------------
+pinta_los_panes_en_la_cinta:
 	ld hl,0e055h		;5051
 	ld a,(hl)			;5054
-	cp 036h		;5055
+	cp 036h		;5055   ; por debajo de 0x36 no se pinta
 	ret c			;5057
-	ld a,(0e060h)		;5058
+	ld a,(0e060h)		;5058   ; el progreso
 L_505B:
 	ld b,a			;505b
 	dec a			;505c
@@ -2867,64 +2879,68 @@ L_505E:
 	ld a,b			;505e
 	dec a			;505f
 	ld c,a			;5060
-	rlca			;5061
+	rlca			;5061   ; dos rotaciones
 	rlca			;5062
 	and 070h		;5063
 	add a,a			;5065
 	ld e,a			;5066
 	ld a,080h		;5067
-	sub e			;5069
+	sub e			;5069   ; restado de 0x80: de derecha a izquierda
 	ld e,a			;506a
 	ld d,0e2h		;506b
 	ld a,c			;506d
-	and 003h		;506e
-	add a,055h		;5070
+	and 003h		;506e   ; dos bits del indice
+	add a,055h		;5070   ; +0x55: el ajuste fino
 	sub (hl)			;5072
 	jp m,L_507F		;5073
 	cp 020h		;5076
 	jr nc,L_507F		;5078
 	add a,e			;507a
 	ld e,a			;507b
-	ld a,07dh		;507c
+	ld a,07dh		;507c   ; el patron del pan
 	ld (de),a			;507e
 L_507F:
 	djnz L_505E		;507f
 	ret			;5081
-L_5082:
-	ld c,062h		;5082
-	ld b,00ch		;5084
+pinta_los_panes_del_otro_lado:
+	ld c,062h		;5082   ; la otra base
+	ld b,00ch		;5084   ; y doce
 	jr L_505B		;5086
-L_5088:
-	ld a,(0e00bh)		;5088
-	cp 002h		;508b
+
+; ----------------------------------------------------------------------
+; EL GATO, atendido cuando el compas de ocho vale 2. Su plazo de espera depende de la fase: 0x3C menos el doble del numero de fase, con un suelo de 0x28. O sea que cuanto mas avanzada la partida, antes vuelve.
+; ----------------------------------------------------------------------
+mueve_el_gato:
+	ld a,(0e00bh)		;5088   ; el compas de ocho
+	cp 002h		;508b   ; solo cuando vale 2
 	ret nz			;508d
 	ld hl,0e109h		;508e
-	ld a,(hl)			;5091
+	ld a,(hl)			;5091   ; su estado
 	or a			;5092
 	jr nz,L_50BF		;5093
 	inc hl			;5095
-	dec (hl)			;5096
+	dec (hl)			;5096   ; su plazo
 	ret nz			;5097
 	inc hl			;5098
 	ld a,(hl)			;5099
-	add a,a			;509a
+	add a,a			;509a   ; el bicho al que va, por tres
 	add a,(hl)			;509b
 	ex de,hl			;509c
 	ld hl,0e062h		;509d
 	call suma_a_a_hl		;50a0
-	ld (0e126h),hl		;50a3
-	bit 7,(hl)		;50a6
+	ld (0e126h),hl		;50a3   ; apuntado
+	bit 7,(hl)		;50a6   ; el bit 7: ya esta en marcha
 	ex de,hl			;50a8
 	jr nz,L_5100		;50a9
 	inc (hl)			;50ab
 	res 3,(hl)		;50ac
 	dec hl			;50ae
-	ld a,(0e051h)		;50af
-	add a,a			;50b2
+	ld a,(0e051h)		;50af   ; el numero de fase
+	add a,a			;50b2   ; por dos
 	ld c,a			;50b3
-	ld a,03ch		;50b4
+	ld a,03ch		;50b4   ; 0x3C menos eso
 	sub c			;50b6
-	cp 028h		;50b7
+	cp 028h		;50b7   ; con suelo en 0x28
 	jr nc,L_50BD		;50b9
 	ld a,028h		;50bb
 L_50BD:
@@ -4074,7 +4090,7 @@ L_5919:
 	ld e,a			;591a
 	ld hl,05946h		;591b
 	ld c,003h		;591e
-	call L_5009		;5920
+	call vuelca_las_dos_filas		;5920
 	exx			;5923
 	ld a,(hl)			;5924
 	sub 020h		;5925
@@ -4096,7 +4112,7 @@ L_593B:
 	sub 023h		;593c
 	ld e,a			;593e
 	ld c,002h		;593f
-	call L_5009		;5941
+	call vuelca_las_dos_filas		;5941
 	exx			;5944
 	ret			;5945
 
