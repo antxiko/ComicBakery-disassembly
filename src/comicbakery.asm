@@ -1616,10 +1616,10 @@ el_cuadro_de_la_partida:
 	call coloca_el_indicador		;48e3
 	call L_5824		;48e6
 	call mueve_los_tres_carros		;48e9
-	call L_5520		;48ec
-	call L_55DE		;48ef
-	call L_54E8		;48f2
-	call L_5646		;48f5
+	call mira_el_disparo_contra_el_carro		;48ec
+	call mira_el_carro_contra_la_cinta		;48ef
+	call arranca_un_carro_por_el_reloj		;48f2
+	call mira_los_dos_carros_contra_algo		;48f5
 	call mira_si_el_sonido_va_por_c3		;48f8
 	call L_576B		;48fb
 	call L_57DA		;48fe
@@ -3408,53 +3408,61 @@ L_54D2:
 L_54DC:
 	ld (hl),b			;54dc
 	ld a,l			;54dd
-	add a,004h		;54de
+	add a,004h		;54de   ; cuatro bytes: el segundo sprite
 	ld l,a			;54e0
 	ld (hl),c			;54e1
 	ex de,hl			;54e2
 	inc hl			;54e3
-	ld (hl),012h		;54e4
+	ld (hl),012h		;54e4   ; y el plazo, a 18
 	xor a			;54e6
 	ret			;54e7
-L_54E8:
-	ld a,(0e104h)		;54e8
+
+; ----------------------------------------------------------------------
+; ARRANCAR UN CARRO SEGUN EL CONTADOR DE CUADROS, y aqui el reparto es por VALOR EXACTO: el carro 1 sale cuando el contador esta a cero, el 2 cuando vale 0x80 y el 3 cuando vale 0x40. O sea, uno cada 128 cuadros, escalonados.
+; ----------------------------------------------------------------------
+arranca_un_carro_por_el_reloj:
+	ld a,(0e104h)		;54e8   ; el estado del salto
 	or a			;54eb
 	ret nz			;54ec
-	ld a,(0e102h)		;54ed
+	ld a,(0e102h)		;54ed   ; la direccion guardada
 	or a			;54f0
 	ret z			;54f1
 	ld de,0e09ah		;54f2
 	ld hl,0e110h		;54f5
-	ld a,(0e003h)		;54f8
-	or a			;54fb
+	ld a,(0e003h)		;54f8   ; el contador de cuadros
+	or a			;54fb   ; el valor cero: el primer carro
 	jr z,L_550F		;54fc
 	inc hl			;54fe
 	inc hl			;54ff
 	ld de,0e0a2h		;5500
-	cp 080h		;5503
+	cp 080h		;5503   ; el 0x80: el segundo
 	jr z,L_550F		;5505
 	inc hl			;5507
 	inc hl			;5508
 	ld de,0e0aah		;5509
-	cp 040h		;550c
+	cp 040h		;550c   ; y el 0x40: el tercero
 	ret nz			;550e
 L_550F:
-	bit 7,(hl)		;550f
+	bit 7,(hl)		;550f   ; el bit 7: esta activo
 	ret z			;5511
 	ld a,(hl)			;5512
-	and 03eh		;5513
-	cp 004h		;5515
+	and 03eh		;5513   ; cinco bits del estado
+	cp 004h		;5515   ; el estado 4
 	ret nz			;5517
 L_5518:
-	ld c,006h		;5518
+	ld c,006h		;5518   ; y pasa al 6
 	call L_51D2		;551a
 	ex de,hl			;551d
 	jr L_54D2		;551e
-L_5520:
-	ld a,(0e051h)		;5520
-	cp 002h		;5523
+
+; ----------------------------------------------------------------------
+; EL DISPARO CONTRA UN CARRO, de la fase 2 en adelante. La caja no se compara con dos `cp`: se RESTA el margen dos veces -0x10 y luego 0x18- y basta con mirar el acarreo, que es mas corto. Si acierta, el carro pasa al estado 8 con un plazo de 30.
+; ----------------------------------------------------------------------
+mira_el_disparo_contra_el_carro:
+	ld a,(0e051h)		;5520   ; el numero de fase
+	cp 002h		;5523   ; de la segunda en adelante
 	ret c			;5525
-	ld hl,0e121h		;5526
+	ld hl,0e121h		;5526   ; la recarga
 	ld a,(hl)			;5529
 	or a			;552a
 	ret z			;552b
@@ -3464,14 +3472,14 @@ L_5520:
 	or a			;552f
 	ret z			;5530
 	ld hl,0e110h		;5531
-	xor (hl)			;5534
+	xor (hl)			;5534   ; cruzado con el estado del carro
 	rra			;5535
 	ret c			;5536
 	ld a,(hl)			;5537
-	and 03eh		;5538
-	cp 004h		;553a
+	and 03eh		;5538   ; cinco bits del estado
+	cp 004h		;553a   ; el estado 4
 	ret nz			;553c
-	ld a,(0e091h)		;553d
+	ld a,(0e091h)		;553d   ; la columna del disparo
 	ld c,a			;5540
 	ex de,hl			;5541
 	ld hl,0e099h		;5542
@@ -3480,45 +3488,49 @@ L_5520:
 	rla			;5547
 	jr z,L_5550		;5548
 	ld a,(de)			;554a
-	sub 040h		;554b
+	sub 040h		;554b   ; sesenta y cuatro de margen
 	cp 080h		;554d
 	ret nc			;554f
 L_5550:
 	ld a,(de)			;5550
-	add a,008h		;5551
-	bit 0,(hl)		;5553
+	add a,008h		;5551   ; ocho de desplazamiento
+	bit 0,(hl)		;5553   ; el bit 0: por que lado se compara
 	jr z,L_555A		;5555
 	ld b,a			;5557
 	ld a,c			;5558
 	ld c,b			;5559
 L_555A:
 	sub c			;555a
-	sub 010h		;555b
-	sub 018h		;555d
+	sub 010h		;555b   ; dieciseis
+	sub 018h		;555d   ; y veinticuatro mas: la caja, en dos restas
 	ret nc			;555f
-	ld c,008h		;5560
+	ld c,008h		;5560   ; el estado nuevo, 8
 	call L_51D2		;5562
 	ex de,hl			;5565
 	inc hl			;5566
 	call L_54D2		;5567
-	ld (hl),01eh		;556a
+	ld (hl),01eh		;556a   ; y treinta cuadros de plazo
 	ret			;556c
+
+; ----------------------------------------------------------------------
+; EL CARRO ALCANZADO: su estado 0x10 da 300 puntos y los demas 200 o 300 segun el valor, con el sonido 3. Y la espera que se le pone despues DEPENDE DE LA FASE: el numero de fase -con tope en 6- se rota cuatro veces y se niega, o sea que en las fases altas el carro vuelve mucho antes.
+; ----------------------------------------------------------------------
 L_556D:
 	ld a,(de)			;556d
 	and 03eh		;556e
 	cp 010h		;5570
-	jr z,L_55C8		;5572
+	jr z,el_carro_del_estado_10		;5572
 	ld a,(de)			;5574
-	ld bc,0989ch		;5575
+	ld bc,0989ch		;5575   ; una pareja de patrones
 	rra			;5578
 	jr nc,L_557E		;5579
-	ld bc,0d4d8h		;557b
+	ld bc,0d4d8h		;557b   ; o la otra
 L_557E:
 	push de			;557e
 	ld e,(hl)			;557f
 	inc hl			;5580
 	ld a,(hl)			;5581
-	add a,010h		;5582
+	add a,010h		;5582   ; dieciseis pixeles mas alla: el segundo sprite
 	inc hl			;5584
 	ld (hl),b			;5585
 	inc hl			;5586
@@ -3532,122 +3544,134 @@ L_557E:
 	ld a,e			;558e
 	push de			;558f
 	push hl			;5590
-	ld de,00200h		;5591
-	cp 010h		;5594
+	ld de,00200h		;5591   ; doscientos puntos
+	cp 010h		;5594   ; y el estado 0x10 da trescientos
 	jr z,L_559A		;5596
 	ld d,003h		;5598
 L_559A:
 	call suma_puntos		;559a
-	ld a,003h		;559d
+	ld a,003h		;559d   ; el sonido del acierto
 	call L_799C		;559f
 	pop hl			;55a2
 	pop de			;55a3
 	ld a,(0e002h)		;55a4
-	bit 6,a		;55a7
+	bit 6,a		;55a7   ; el bit 6: estamos en partida
 	ld a,000h		;55a9
 	jr z,L_55BD		;55ab
-	ld a,(0e051h)		;55ad
-	cp 007h		;55b0
+	ld a,(0e051h)		;55ad   ; el numero de fase
+	cp 007h		;55b0   ; con tope en seis
 	jr c,L_55B6		;55b2
 	ld a,006h		;55b4
 L_55B6:
 	dec a			;55b6
-	rlca			;55b7
+	rlca			;55b7   ; cuatro rotaciones
 	rlca			;55b8
 	rlca			;55b9
 	rlca			;55ba
-	neg		;55bb
+	neg		;55bb   ; y en negativo: la espera
 L_55BD:
 	ex de,hl			;55bd
-	set 6,(hl)		;55be
+	set 6,(hl)		;55be   ; se marca el bit 6
 	inc hl			;55c0
 	ld (hl),a			;55c1
-	ld c,00ah		;55c2
+	ld c,00ah		;55c2   ; y el estado nuevo, 10
 	call marca_el_estado_del_carro		;55c4
 	ret			;55c7
-L_55C8:
+el_carro_del_estado_10:
 	ld a,(de)			;55c8
-	and 0c0h		;55c9
-	or 012h		;55cb
+	and 0c0h		;55c9   ; se dejan los dos bits de arriba
+	or 012h		;55cb   ; y el estado 0x12
 	ld (de),a			;55cd
 	inc de			;55ce
 	ld a,007h		;55cf
 	ld (de),a			;55d1
-	ld de,00300h		;55d2
+	ld de,00300h		;55d2   ; trescientos puntos
 	call suma_puntos		;55d5
-	ld a,003h		;55d8
+	ld a,003h		;55d8   ; y el sonido
 	call L_799C		;55da
 	ret			;55dd
-L_55DE:
-	ld a,(0e05bh)		;55de
+
+; ----------------------------------------------------------------------
+; EL CARRO CONTRA LA CINTA. La columna del carro se rota tres veces -o sea, se divide entre ocho- y con 0x3E de desplazamiento indexa el bufer de 0xE2xx: si ahi hay un 0xB0, es que en esa celda hay algo. Otra vez el juego consultando lo que HAY DIBUJADO en vez de un mapa aparte.
+; ----------------------------------------------------------------------
+mira_el_carro_contra_la_cinta:
+	ld a,(0e05bh)		;55de   ; la bandera de 0xE05B
 	or a			;55e1
 	ret nz			;55e2
 	ld hl,0e110h		;55e3
 	ld de,0e099h		;55e6
 	ld a,(de)			;55e9
-	and 007h		;55ea
-	cp 004h		;55ec
+	and 007h		;55ea   ; tres bits
+	cp 004h		;55ec   ; por debajo de cuatro
 	ret nc			;55ee
 	ld a,(hl)			;55ef
-	bit 0,a		;55f0
+	bit 0,a		;55f0   ; el bit 0 del estado
 	ret nz			;55f2
-	and 03eh		;55f3
-	cp 004h		;55f5
+	and 03eh		;55f3   ; cinco bits
+	cp 004h		;55f5   ; el estado 4
 	ret nz			;55f7
 	ld a,(de)			;55f8
-	rrca			;55f9
+	rrca			;55f9   ; tres rotaciones: la celda
 	rrca			;55fa
 	rrca			;55fb
 	and 01fh		;55fc
-	add a,03eh		;55fe
+	add a,03eh		;55fe   ; +0x3E: el sitio en el bufer
 	ld c,a			;5600
 	ld b,0e2h		;5601
 	ld a,(bc)			;5603
-	cp 0b0h		;5604
+	cp 0b0h		;5604   ; el patron 0xB0 es lo que se busca
 	ret nz			;5606
-	ld a,(0e055h)		;5607
+	ld a,(0e055h)		;5607   ; la posicion del decorado
 	add a,c			;560a
-	add a,0c5h		;560b
-	and 070h		;560d
+	add a,0c5h		;560b   ; mas el ajuste
+	and 070h		;560d   ; cuatro bits
 	exx			;560f
 	ld hl,0e057h		;5610
-	cpl			;5613
+	cpl			;5613   ; invertido y cruzado con el mapa de ocupacion
 	and (hl)			;5614
-	ld (0e058h),a		;5615
+	ld (0e058h),a		;5615   ; guardado en 0xE058
 	exx			;5618
 	ex de,hl			;5619
 	inc hl			;561a
 	call L_54D2		;561b
-	ld (hl),006h		;561e
-	ld c,00ch		;5620
+	ld (hl),006h		;561e   ; el plazo, a seis
+	ld c,00ch		;5620   ; y el estado nuevo, 12
 	jp marca_el_estado_del_carro		;5622
-L_5625:
+
+; ----------------------------------------------------------------------
+; EL CARRO QUE LLEGA AL FINAL: pasa al estado 14, deja el bit 0 puesto o no segun la direccion del panadero, y da 120 puntos con el sonido 3.
+; ----------------------------------------------------------------------
+el_carro_llega_al_final:
 	ld a,(hl)			;5625
-	and 03eh		;5626
-	ld c,00eh		;5628
+	and 03eh		;5626   ; cinco bits del estado
+	ld c,00eh		;5628   ; el estado nuevo, 14
 	cp c			;562a
 	ret z			;562b
 	call L_51D2		;562c
-	ld a,(0e105h)		;562f
+	ld a,(0e105h)		;562f   ; la direccion del panadero
 	or a			;5632
 	jr z,L_5637		;5633
 	ld a,001h		;5635
 L_5637:
-	res 0,(hl)		;5637
+	res 0,(hl)		;5637   ; se limpia el bit 0
 	or (hl)			;5639
 	ld (hl),a			;563a
-	ld de,00120h		;563b
+	ld de,00120h		;563b   ; ciento veinte puntos
 	call suma_puntos		;563e
 	ld a,003h		;5641
 	jp L_799C		;5643
-L_5646:
-	ld a,(0e00bh)		;5646
-	cp 007h		;5649
+
+; ----------------------------------------------------------------------
+; LOS DOS CARROS CONTRA LO QUE HAY EN LA CINTA, con la misma idea de antes: la columna del carro se divide entre ocho (`srl a` tres veces), se le suma 0xC0 y eso apunta al bufer de 0xE2xx. Si ahi hay un 0x69 y las CUATRO celdas de al lado estan a cero, la cosa cuenta.
+; ----------------------------------------------------------------------
+mira_los_dos_carros_contra_algo:
+	ld a,(0e00bh)		;5646   ; el compas de ocho
+	cp 007h		;5649   ; en el paso 7 no
 	ret z			;564b
 	ld de,0e114h		;564c
 	ld a,(de)			;564f
-	and 03eh		;5650
-	cp 010h		;5652
+	and 03eh		;5650   ; cinco bits del estado
+	cp 010h		;5652   ; el estado 0x10
 	ret z			;5654
 	dec de			;5655
 	dec de			;5656
@@ -3655,42 +3679,42 @@ L_5646:
 	and 03eh		;5658
 	cp 010h		;565a
 	ret z			;565c
-	ld b,002h		;565d
+	ld b,002h		;565d   ; dos carros
 	ld hl,0e0a1h		;565f
 L_5662:
 	push hl			;5662
 	ld a,(de)			;5663
 	and 03eh		;5664
-	cp 004h		;5666
+	cp 004h		;5666   ; el estado 4
 	jr nz,L_569B		;5668
 	ld a,(hl)			;566a
-	bit 2,a		;566b
+	bit 2,a		;566b   ; el bit 2
 	jr nz,L_569B		;566d
-	sub 040h		;566f
-	cp 088h		;5671
+	sub 040h		;566f   ; sesenta y cuatro menos
+	cp 088h		;5671   ; y la banda util
 	jr nc,L_569B		;5673
 	ld a,(de)			;5675
-	rra			;5676
+	rra			;5676   ; el bit 0: por que lado
 	jr nc,L_567D		;5677
 	ld a,l			;5679
-	add a,004h		;567a
+	add a,004h		;567a   ; cuatro bytes: el segundo sprite
 	ld l,a			;567c
 L_567D:
 	ld a,(hl)			;567d
 	ld c,a			;567e
-	srl a		;567f
+	srl a		;567f   ; tres rotaciones: la celda
 	srl a		;5681
 	srl a		;5683
-	add a,0c0h		;5685
+	add a,0c0h		;5685   ; +0xC0: el sitio en el bufer
 	ld l,a			;5687
 	ld h,0e2h		;5688
 	ld a,(hl)			;568a
-	cp 069h		;568b
+	cp 069h		;568b   ; el patron 0x69 es lo que se busca
 	jr nz,L_569B		;568d
 	dec h			;568f
 	dec l			;5690
 	xor a			;5691
-	or (hl)			;5692
+	or (hl)			;5692   ; y las cuatro celdas de al lado, a cero
 	inc hl			;5693
 	or (hl)			;5694
 	inc hl			;5695
@@ -3700,8 +3724,8 @@ L_567D:
 	jr z,L_56A4		;5699
 L_569B:
 	pop hl			;569b
-	ld hl,0e0a9h		;569c
-	inc de			;569f
+	ld hl,0e0a9h		;569c   ; el segundo carro
+	inc de			;569f   ; dos bytes de estado
 	inc de			;56a0
 	djnz L_5662		;56a1
 	ret			;56a3
@@ -3816,7 +3840,7 @@ L_5735:
 	ld hl,0e110h		;5744
 	ld de,0e098h		;5747
 	bit 6,(hl)		;574a
-	jp nz,L_5625		;574c
+	jp nz,el_carro_llega_al_final		;574c
 	ld hl,0e053h		;574f
 	ld (hl),000h		;5752
 	ld a,099h		;5754

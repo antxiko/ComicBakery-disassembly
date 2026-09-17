@@ -1106,3 +1106,111 @@ C 0x54c8 el estado 4
 C 0x54cc el estado nuevo, 2
 C 0x54d3 una pareja de patrones
 C 0x54d9 o la otra
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x54de cuatro bytes: el segundo sprite
+C 0x54e4 y el plazo, a 18
+L 0x54e8 arranca_un_carro_por_el_reloj
+B 0x54e8 ARRANCAR UN CARRO SEGUN EL CONTADOR DE CUADROS, y aqui el reparto es por VALOR EXACTO: el carro 1 sale cuando el contador esta a cero, el 2 cuando vale 0x80 y el 3 cuando vale 0x40. O sea, uno cada 128 cuadros, escalonados.
+C 0x54e8 el estado del salto
+C 0x54ed la direccion guardada
+C 0x54f8 el contador de cuadros
+C 0x54fb el valor cero: el primer carro
+C 0x5503 el 0x80: el segundo
+C 0x550c y el 0x40: el tercero
+C 0x550f el bit 7: esta activo
+C 0x5513 cinco bits del estado
+C 0x5515 el estado 4
+C 0x5518 y pasa al 6
+L 0x5520 mira_el_disparo_contra_el_carro
+B 0x5520 EL DISPARO CONTRA UN CARRO, de la fase 2 en adelante. La caja no se compara con dos `cp`: se RESTA el margen dos veces -0x10 y luego 0x18- y basta con mirar el acarreo, que es mas corto. Si acierta, el carro pasa al estado 8 con un plazo de 30.
+C 0x5520 el numero de fase
+C 0x5523 de la segunda en adelante
+C 0x5526 la recarga
+C 0x5534 cruzado con el estado del carro
+C 0x5538 cinco bits del estado
+C 0x553a el estado 4
+C 0x553d la columna del disparo
+C 0x554b sesenta y cuatro de margen
+C 0x5551 ocho de desplazamiento
+C 0x5553 el bit 0: por que lado se compara
+C 0x555b dieciseis
+C 0x555d y veinticuatro mas: la caja, en dos restas
+C 0x5560 el estado nuevo, 8
+C 0x556a y treinta cuadros de plazo
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+B 0x556d EL CARRO ALCANZADO: su estado 0x10 da 300 puntos y los demas 200 o 300 segun el valor, con el sonido 3. Y la espera que se le pone despues DEPENDE DE LA FASE: el numero de fase -con tope en 6- se rota cuatro veces y se niega, o sea que en las fases altas el carro vuelve mucho antes.
+C 0x5575 una pareja de patrones
+C 0x557b o la otra
+C 0x5582 dieciseis pixeles mas alla: el segundo sprite
+C 0x5591 doscientos puntos
+C 0x5594 y el estado 0x10 da trescientos
+C 0x559d el sonido del acierto
+C 0x55a7 el bit 6: estamos en partida
+C 0x55ad el numero de fase
+C 0x55b0 con tope en seis
+C 0x55b7 cuatro rotaciones
+C 0x55bb y en negativo: la espera
+C 0x55be se marca el bit 6
+C 0x55c2 y el estado nuevo, 10
+L 0x55c8 el_carro_del_estado_10
+C 0x55c9 se dejan los dos bits de arriba
+C 0x55cb y el estado 0x12
+C 0x55d2 trescientos puntos
+C 0x55d8 y el sonido
+L 0x55de mira_el_carro_contra_la_cinta
+B 0x55de EL CARRO CONTRA LA CINTA. La columna del carro se rota tres veces -o sea, se divide entre ocho- y con 0x3E de desplazamiento indexa el bufer de 0xE2xx: si ahi hay un 0xB0, es que en esa celda hay algo. Otra vez el juego consultando lo que HAY DIBUJADO en vez de un mapa aparte.
+C 0x55de la bandera de 0xE05B
+C 0x55ea tres bits
+C 0x55ec por debajo de cuatro
+C 0x55f0 el bit 0 del estado
+C 0x55f3 cinco bits
+C 0x55f5 el estado 4
+C 0x55f9 tres rotaciones: la celda
+C 0x55fe +0x3E: el sitio en el bufer
+C 0x5604 el patron 0xB0 es lo que se busca
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x5607 la posicion del decorado
+C 0x560b mas el ajuste
+C 0x560d cuatro bits
+C 0x5613 invertido y cruzado con el mapa de ocupacion
+C 0x5615 guardado en 0xE058
+C 0x561e el plazo, a seis
+C 0x5620 y el estado nuevo, 12
+L 0x5625 el_carro_llega_al_final
+B 0x5625 EL CARRO QUE LLEGA AL FINAL: pasa al estado 14, deja el bit 0 puesto o no segun la direccion del panadero, y da 120 puntos con el sonido 3.
+C 0x5626 cinco bits del estado
+C 0x5628 el estado nuevo, 14
+C 0x562f la direccion del panadero
+C 0x5637 se limpia el bit 0
+C 0x563b ciento veinte puntos
+L 0x5646 mira_los_dos_carros_contra_algo
+B 0x5646 LOS DOS CARROS CONTRA LO QUE HAY EN LA CINTA, con la misma idea de antes: la columna del carro se divide entre ocho (`srl a` tres veces), se le suma 0xC0 y eso apunta al bufer de 0xE2xx. Si ahi hay un 0x69 y las CUATRO celdas de al lado estan a cero, la cosa cuenta.
+C 0x5646 el compas de ocho
+C 0x5649 en el paso 7 no
+C 0x5650 cinco bits del estado
+C 0x5652 el estado 0x10
+C 0x565d dos carros
+C 0x5666 el estado 4
+C 0x566b el bit 2
+C 0x566f sesenta y cuatro menos
+C 0x5671 y la banda util
+C 0x5676 el bit 0: por que lado
+C 0x567a cuatro bytes: el segundo sprite
+C 0x567f tres rotaciones: la celda
+C 0x5685 +0xC0: el sitio en el bufer
+C 0x568b el patron 0x69 es lo que se busca
+C 0x5692 y las cuatro celdas de al lado, a cero
+C 0x569c el segundo carro
+C 0x569f dos bytes de estado
