@@ -1214,3 +1214,83 @@ C 0x568b el patron 0x69 es lo que se busca
 C 0x5692 y las cuatro celdas de al lado, a cero
 C 0x569c el segundo carro
 C 0x569f dos bytes de estado
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+B 0x56a4 EL CARRO DEJA SU PAN EN LA CINTA: se le pone el estado 0x10 y el progreso mas 0x10, y se escriben CUATRO patrones a mano -0x5B, 0xB0, 0x6B y uno que alterna entre 0xE8 y 0xAC con el bit 3 del contador de cuadros-. O sea que el pan recien puesto parpadea.
+C 0x56a7 el estado nuevo, 0x10
+C 0x56ab el progreso
+C 0x56ae mas dieciseis
+C 0x56b2 tres rotaciones: la celda
+C 0x56ba mas la posicion del decorado
+C 0x56c1 el primer patron
+C 0x56c6 el segundo
+C 0x56ca el tercero
+C 0x56cf el contador de cuadros
+C 0x56d2 su bit 3
+C 0x56d4 un patron
+C 0x56d8 o el otro: parpadea
+L 0x56dc mira_los_carros_contra_el_disparo
+B 0x56dc LOS TRES CARROS CONTRA EL DISPARO. Se saltan los estados 10, 8, 14 y 0x12 -los que ya estan resueltos- y, segun el estado sea 0x10 o no, se usa una caja u otra: la de 0x572D o la de 0x5731. Cuatro `cp` seguidos en vez de una tabla.
+C 0x56e2 tres carros
+C 0x56e5 el bit 7: esta activo
+C 0x56eb el estado 10
+C 0x56ef el 8
+C 0x56f3 el 14
+C 0x56f7 y el 0x12
+C 0x56fe la posicion del disparo
+C 0x5705 una caja
+C 0x570c o la otra
+C 0x5710 cruzadas las direcciones
+C 0x5715 sesenta y cuatro menos
+C 0x5717 y la banda util
+C 0x5725 ocho bytes por carro
+L 0x5735 mira_el_panadero_contra_el_carro
+B 0x5735 EL PANADERO CONTRA UN CARRO. Con el bit 6 puesto el carro ya estaba resuelto y se va por otro lado; si no, se apaga la senal de partida y suena el 0x99.
+C 0x5735 la posicion del panadero
+C 0x573d su caja
+C 0x574a el bit 6: ya resuelto
+C 0x5752 la senal de partida, apagada
+C 0x5754 y el sonido del golpe
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x575e caja_parametrizada
+B 0x575e LA CAJA, con los CUATRO margenes en una tabla que apunta HL: `B-D+(hl)-(hl+1)` para una coordenada y `C-E+(hl+2)-(hl+3)` para la otra. Cuatro bytes por caja y una sola rutina, que es lo que permite que cada cosa tenga la suya sin repetir codigo.
+C 0x575e la distancia en una coordenada
+C 0x5760 mas el margen de un lado
+C 0x5762 menos el del otro
+C 0x5764 y la otra coordenada, igual
+L 0x576b suelta_el_premio_extra
+B 0x576b EL PREMIO EXTRA, y solo en el cuadro en que el contador de cuadros vale EXACTAMENTE 0x85: una vez cada 256 cuadros y en un instante concreto. Ademas hace falta que el progreso este a 0x70 -o a 0x30 de la quinta fase en adelante-, y entonces el contador de 0xE19A elige la casilla por dos tablas encadenadas.
+C 0x576b el contador de cuadros
+C 0x576e solo cuando vale 0x85
+C 0x5779 cinco bits del estado
+C 0x577b el estado 12
+C 0x577e el numero de fase
+C 0x5781 de la quinta en adelante
+C 0x5789 el progreso a 0x70
+C 0x578e o a 0x30 en las fases altas
+C 0x5794 el contador, uno menos
+C 0x5797 y al llegar a cero vuelve a 23
+C 0x579a la primera tabla
+C 0x57a1 y la segunda, encadenada
+C 0x57a9 el mapa de ocupacion: si el hueco no esta libre, nada
+C 0x57b3 la marca de premio en juego
+L 0x57da mueve_el_premio_extra
+B 0x57da EL PREMIO EXTRA EN MARCHA, atendido cuando el compas de ocho vale 7. Su altura sale de multiplicar por ocho la distancia al decorado (`add a,a` tres veces) y el patron alterna dandole la vuelta al bit 2. Cuando llega al paso 3, se libera su bit del mapa de ocupacion y suena el 7.
+C 0x57da el compas de ocho
+C 0x57dd solo cuando vale 7
+C 0x57e3 la marca de premio en juego
+C 0x57ed treinta y un pixeles de margen
+C 0x57f5 su plazo, uno menos
+C 0x57f9 el patron
+C 0x57fc por ocho: la altura
+C 0x5802 y el bit 2 del color, al reves
+C 0x5806 el paso 3
+C 0x580f el bit se libera del mapa de ocupacion
+C 0x5812 y el sonido

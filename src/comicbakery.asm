@@ -1607,8 +1607,8 @@ L_48AA:
 ; ----------------------------------------------------------------------
 el_cuadro_de_la_partida:
 	call guarda_la_columna_de_los_carros		;48ce
-	call L_56DC		;48d1
-	call L_5735		;48d4
+	call mira_los_carros_contra_el_disparo		;48d1
+	call mira_el_panadero_contra_el_carro		;48d4
 	call pinta_los_panes		;48d7   ; el contador de panes
 	call sube_el_contador_de_panes		;48da
 	call mueve_al_panadero		;48dd
@@ -1621,8 +1621,8 @@ el_cuadro_de_la_partida:
 	call arranca_un_carro_por_el_reloj		;48f2
 	call mira_los_dos_carros_contra_algo		;48f5
 	call mira_si_el_sonido_va_por_c3		;48f8
-	call L_576B		;48fb
-	call L_57DA		;48fe
+	call suelta_el_premio_extra		;48fb
+	call mueve_el_premio_extra		;48fe
 	call mueve_los_ocho_bichos		;4901
 	call pinta_la_fila_de_marcas		;4904
 	call parpadea_el_aviso		;4907
@@ -3729,84 +3729,92 @@ L_569B:
 	inc de			;56a0
 	djnz L_5662		;56a1
 	ret			;56a3
+
+; ----------------------------------------------------------------------
+; EL CARRO DEJA SU PAN EN LA CINTA: se le pone el estado 0x10 y el progreso mas 0x10, y se escriben CUATRO patrones a mano -0x5B, 0xB0, 0x6B y uno que alterna entre 0xE8 y 0xAC con el bit 3 del contador de cuadros-. O sea que el pan recien puesto parpadea.
+; ----------------------------------------------------------------------
 L_56A4:
 	ld a,(de)			;56a4
 	and 0c1h		;56a5
-	or 010h		;56a7
+	or 010h		;56a7   ; el estado nuevo, 0x10
 	ld (de),a			;56a9
 	inc de			;56aa
-	ld a,(0e060h)		;56ab
-	add a,010h		;56ae
+	ld a,(0e060h)		;56ab   ; el progreso
+	add a,010h		;56ae   ; mas dieciseis
 	ld (de),a			;56b0
 	ld a,c			;56b1
-	rra			;56b2
+	rra			;56b2   ; tres rotaciones: la celda
 	rra			;56b3
 	rra			;56b4
 	and 01fh		;56b5
 	ld hl,0e055h		;56b7
-	add a,(hl)			;56ba
+	add a,(hl)			;56ba   ; mas la posicion del decorado
 	dec a			;56bb
 	ld (0e129h),a		;56bc
 	pop hl			;56bf
 	dec hl			;56c0
-	ld (hl),05bh		;56c1
+	ld (hl),05bh		;56c1   ; el primer patron
 	inc hl			;56c3
 	ld (hl),c			;56c4
 	inc hl			;56c5
-	ld (hl),0b0h		;56c6
+	ld (hl),0b0h		;56c6   ; el segundo
 	inc hl			;56c8
 	inc hl			;56c9
-	ld (hl),06bh		;56ca
+	ld (hl),06bh		;56ca   ; el tercero
 	inc hl			;56cc
 	ld (hl),c			;56cd
 	inc hl			;56ce
-	ld a,(0e003h)		;56cf
-	bit 3,a		;56d2
-	ld c,0e8h		;56d4
+	ld a,(0e003h)		;56cf   ; el contador de cuadros
+	bit 3,a		;56d2   ; su bit 3
+	ld c,0e8h		;56d4   ; un patron
 	jr nz,L_56DA		;56d6
-	ld c,0ach		;56d8
+	ld c,0ach		;56d8   ; o el otro: parpadea
 L_56DA:
 	ld (hl),c			;56da
 	ret			;56db
-L_56DC:
+
+; ----------------------------------------------------------------------
+; LOS TRES CARROS CONTRA EL DISPARO. Se saltan los estados 10, 8, 14 y 0x12 -los que ya estan resueltos- y, segun el estado sea 0x10 o no, se usa una caja u otra: la de 0x572D o la de 0x5731. Cuatro `cp` seguidos en vez de una tabla.
+; ----------------------------------------------------------------------
+mira_los_carros_contra_el_disparo:
 	ld hl,0e098h		;56dc
 	ld de,0e110h		;56df
-	ld b,003h		;56e2
+	ld b,003h		;56e2   ; tres carros
 L_56E4:
 	ld a,(de)			;56e4
-	bit 7,a		;56e5
+	bit 7,a		;56e5   ; el bit 7: esta activo
 	jr z,L_5724		;56e7
 	and 03eh		;56e9
-	cp 00ah		;56eb
+	cp 00ah		;56eb   ; el estado 10
 	jr z,L_5724		;56ed
-	cp 008h		;56ef
+	cp 008h		;56ef   ; el 8
 	jr z,L_5724		;56f1
-	cp 00eh		;56f3
+	cp 00eh		;56f3   ; el 14
 	jr z,L_5724		;56f5
-	cp 012h		;56f7
+	cp 012h		;56f7   ; y el 0x12
 	jr z,L_5724		;56f9
 	push bc			;56fb
 	push de			;56fc
 	push hl			;56fd
-	ld bc,(0e090h)		;56fe
+	ld bc,(0e090h)		;56fe   ; la posicion del disparo
 	ld e,(hl)			;5702
 	inc hl			;5703
 	ld d,(hl)			;5704
-	ld hl,0572dh		;5705
+	ld hl,0572dh		;5705   ; una caja
 	cp 010h		;5708
 	jr nz,L_570F		;570a
-	ld hl,05731h		;570c
+	ld hl,05731h		;570c   ; o la otra
 L_570F:
 	ld a,b			;570f
-	xor d			;5710
+	xor d			;5710   ; cruzadas las direcciones
 	rla			;5711
 	jr nc,L_571B		;5712
 	ld a,b			;5714
-	sub 040h		;5715
-	cp 080h		;5717
+	sub 040h		;5715   ; sesenta y cuatro menos
+	cp 080h		;5717   ; y la banda util
 	jr nc,L_571E		;5719
 L_571B:
-	call L_575E		;571b
+	call caja_parametrizada		;571b
 L_571E:
 	pop hl			;571e
 	pop de			;571f
@@ -3814,7 +3822,7 @@ L_571E:
 	jp c,L_556D		;5721
 L_5724:
 	ld a,l			;5724
-	add a,008h		;5725
+	add a,008h		;5725   ; ocho bytes por carro
 	ld l,a			;5727
 	inc de			;5728
 	inc de			;5729
@@ -3831,19 +3839,23 @@ DATA_572D:
 ; ======================================================================
 
 
-L_5735:
-	ld bc,(0e080h)		;5735
+
+; ----------------------------------------------------------------------
+; EL PANADERO CONTRA UN CARRO. Con el bit 6 puesto el carro ya estaba resuelto y se va por otro lado; si no, se apaga la senal de partida y suena el 0x99.
+; ----------------------------------------------------------------------
+mira_el_panadero_contra_el_carro:
+	ld bc,(0e080h)		;5735   ; la posicion del panadero
 	ld de,(0e098h)		;5739
-	ld hl,0575ah		;573d
-	call L_575E		;5740
+	ld hl,0575ah		;573d   ; su caja
+	call caja_parametrizada		;5740
 	ret nc			;5743
 	ld hl,0e110h		;5744
 	ld de,0e098h		;5747
-	bit 6,(hl)		;574a
+	bit 6,(hl)		;574a   ; el bit 6: ya resuelto
 	jp nz,el_carro_llega_al_final		;574c
 	ld hl,0e053h		;574f
-	ld (hl),000h		;5752
-	ld a,099h		;5754
+	ld (hl),000h		;5752   ; la senal de partida, apagada
+	ld a,099h		;5754   ; y el sonido del golpe
 	call L_799C		;5756
 	ret			;5759
 
@@ -3857,63 +3869,71 @@ DATA_575A:
 ; ======================================================================
 
 
-L_575E:
-	ld a,b			;575e
+
+; ----------------------------------------------------------------------
+; LA CAJA, con los CUATRO margenes en una tabla que apunta HL: `B-D+(hl)-(hl+1)` para una coordenada y `C-E+(hl+2)-(hl+3)` para la otra. Cuatro bytes por caja y una sola rutina, que es lo que permite que cada cosa tenga la suya sin repetir codigo.
+; ----------------------------------------------------------------------
+caja_parametrizada:
+	ld a,b			;575e   ; la distancia en una coordenada
 	sub d			;575f
-	add a,(hl)			;5760
+	add a,(hl)			;5760   ; mas el margen de un lado
 	inc hl			;5761
-	sub (hl)			;5762
+	sub (hl)			;5762   ; menos el del otro
 	ret nc			;5763
-	ld a,c			;5764
+	ld a,c			;5764   ; y la otra coordenada, igual
 	sub e			;5765
 	inc hl			;5766
 	add a,(hl)			;5767
 	inc hl			;5768
 	sub (hl)			;5769
 	ret			;576a
-L_576B:
-	ld a,(0e003h)		;576b
-	sub 085h		;576e
+
+; ----------------------------------------------------------------------
+; EL PREMIO EXTRA, y solo en el cuadro en que el contador de cuadros vale EXACTAMENTE 0x85: una vez cada 256 cuadros y en un instante concreto. Ademas hace falta que el progreso este a 0x70 -o a 0x30 de la quinta fase en adelante-, y entonces el contador de 0xE19A elige la casilla por dos tablas encadenadas.
+; ----------------------------------------------------------------------
+suelta_el_premio_extra:
+	ld a,(0e003h)		;576b   ; el contador de cuadros
+	sub 085h		;576e   ; solo cuando vale 0x85
 	ret nz			;5770
 	ld hl,0e05bh		;5771
 	or (hl)			;5774
 	ret nz			;5775
 	ld a,(0e110h)		;5776
-	and 03eh		;5779
-	cp 00ch		;577b
+	and 03eh		;5779   ; cinco bits del estado
+	cp 00ch		;577b   ; el estado 12
 	ret z			;577d
-	ld a,(0e051h)		;577e
-	cp 005h		;5781
+	ld a,(0e051h)		;577e   ; el numero de fase
+	cp 005h		;5781   ; de la quinta en adelante
 	ld a,(0e057h)		;5783
 	ld b,a			;5786
 	jr nc,L_578E		;5787
-	cp 070h		;5789
+	cp 070h		;5789   ; el progreso a 0x70
 	jr z,L_5791		;578b
 	ret			;578d
 L_578E:
-	cp 030h		;578e
+	cp 030h		;578e   ; o a 0x30 en las fases altas
 	ret c			;5790
 L_5791:
 	ld hl,0e19ah		;5791
-	dec (hl)			;5794
+	dec (hl)			;5794   ; el contador, uno menos
 	jr nz,L_5799		;5795
-	ld (hl),017h		;5797
+	ld (hl),017h		;5797   ; y al llegar a cero vuelve a 23
 L_5799:
 	ld a,(hl)			;5799
-	ld hl,057c2h		;579a
+	ld hl,057c2h		;579a   ; la primera tabla
 	call suma_a_a_hl		;579d
 	ld a,(hl)			;57a0
-	ld hl,057bch		;57a1
+	ld hl,057bch		;57a1   ; y la segunda, encadenada
 	call suma_a_a_hl		;57a4
 	ld c,(hl)			;57a7
 	ld a,b			;57a8
-	and c			;57a9
+	and c			;57a9   ; el mapa de ocupacion: si el hueco no esta libre, nada
 	ret z			;57aa
 	inc hl			;57ab
 	ld b,(hl)			;57ac
 	ld (0e059h),bc		;57ad
 	ld a,007h		;57b1
-	ld (0e05bh),a		;57b3
+	ld (0e05bh),a		;57b3   ; la marca de premio en juego
 	ld a,0f4h		;57b6
 	ld (0e0b2h),a		;57b8
 	ret			;57bb
@@ -3929,12 +3949,16 @@ DATA_57BC:
 ; ======================================================================
 
 
-L_57DA:
-	ld a,(0e00bh)		;57da
-	sub 007h		;57dd
+
+; ----------------------------------------------------------------------
+; EL PREMIO EXTRA EN MARCHA, atendido cuando el compas de ocho vale 7. Su altura sale de multiplicar por ocho la distancia al decorado (`add a,a` tres veces) y el patron alterna dandole la vuelta al bit 2. Cuando llega al paso 3, se libera su bit del mapa de ocupacion y suena el 7.
+; ----------------------------------------------------------------------
+mueve_el_premio_extra:
+	ld a,(0e00bh)		;57da   ; el compas de ocho
+	sub 007h		;57dd   ; solo cuando vale 7
 	ret nz			;57df
 	ld hl,0e05bh		;57e0
-	or (hl)			;57e3
+	or (hl)			;57e3   ; la marca de premio en juego
 	ret z			;57e4
 	ex de,hl			;57e5
 	ld hl,0e055h		;57e6
@@ -3942,33 +3966,33 @@ L_57DA:
 	ld a,(de)			;57ea
 	inc de			;57eb
 	sub (hl)			;57ec
-	cp 01fh		;57ed
+	cp 01fh		;57ed   ; treinta y un pixeles de margen
 	ld hl,0e0b0h		;57ef
 	ex de,hl			;57f2
 	jr nc,L_581A		;57f3
-	dec (hl)			;57f5
+	dec (hl)			;57f5   ; su plazo, uno menos
 	ex de,hl			;57f6
 	jr z,L_5821		;57f7
-	ld (hl),08fh		;57f9
+	ld (hl),08fh		;57f9   ; el patron
 	inc hl			;57fb
-	add a,a			;57fc
+	add a,a			;57fc   ; por ocho: la altura
 	add a,a			;57fd
 	add a,a			;57fe
 	ld (hl),a			;57ff
 	inc hl			;5800
 	ld a,(hl)			;5801
-	xor 004h		;5802
+	xor 004h		;5802   ; y el bit 2 del color, al reves
 	ld (hl),a			;5804
 	ld a,(de)			;5805
-	cp 003h		;5806
+	cp 003h		;5806   ; el paso 3
 	ret nz			;5808
 L_5809:
 	ld hl,0e057h		;5809
 	ld a,(0e059h)		;580c
-	cpl			;580f
+	cpl			;580f   ; el bit se libera del mapa de ocupacion
 	and (hl)			;5810
 	ld (hl),a			;5811
-	ld a,007h		;5812
+	ld a,007h		;5812   ; y el sonido
 	call L_799C		;5814
 	jp L_5897		;5817
 L_581A:
