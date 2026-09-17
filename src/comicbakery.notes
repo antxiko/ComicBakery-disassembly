@@ -1026,3 +1026,83 @@ C 0x50af el numero de fase
 C 0x50b2 por dos
 C 0x50b4 0x3C menos eso
 C 0x50b7 con suelo en 0x28
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x50d3 el paso por tres
+C 0x50d5 la tabla de patrones del gato
+C 0x50db la fila 0x39
+C 0x50de el primer patron, a la VRAM
+C 0x50e3 y a la copia en RAM
+C 0x50e6 dos celdas mas
+C 0x50eb a la VRAM y a la copia a la vez
+C 0x50f7 los tres bytes de su ficha
+L 0x5117 mueve_los_tres_carros
+B 0x5117 LOS TRES CARROS de 0xE098, cada uno con su estado en 0xE110 y ocho bytes de separacion. El estado se recorta con `and 03eh` -cinco bits, sin el 0 ni el 6- y eso indexa la tabla de despacho de 0x5138 por la puerta de 0x4098: el mismo despachador de escenas, reutilizado para las piezas del decorado.
+C 0x5117 el primer carro
+C 0x511a y su estado
+C 0x511d tres
+C 0x5123 cinco bits del estado
+C 0x5126 la tabla de despacho de los carros
+C 0x5129 y se salta al que toque
+C 0x5130 ocho bytes por carro
+C 0x5133 y dos de estado
+L 0x51d1 marca_el_estado_del_carro
+C 0x51d3 se dejan los bits 0, 6 y 7
+C 0x51d5 y se mete el estado nuevo
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+B 0x52ce PONER EL SEGUNDO SPRITE DE UN CARRO, dieciseis pixeles mas alla: se copian la fila, la columna corrida y el color al hueco siguiente. Un carro son dos sprites.
+C 0x52d1 dieciseis pixeles mas alla
+C 0x52d4 el color
+C 0x52d7 la fila
+C 0x52d9 la columna corrida
+L 0x534f busca_el_carro_en_el_estado_10
+B 0x534f BUSCAR EL CARRO QUE ESTE EN EL ESTADO 0x10, entre los dos de 0xE0A1 y 0xE0A9. Si su fila esta fuera de la banda 0x30..0xE0 se le clava el patron 0x47.
+C 0x5355 dos carros
+C 0x5358 cinco bits del estado
+C 0x535a el estado 0x10
+C 0x5360 el otro carro
+C 0x5367 la banda util empieza en 0x30
+C 0x5369 y mide 0xB0
+C 0x536d el patron de fuera de sitio
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x5446 guarda_la_columna_de_los_carros
+B 0x5446 GUARDAR LA COLUMNA DE LOS TRES CARROS ACTIVOS -los que tengan el bit 7- en 0xE116, para poder consultarla sin recorrer sus fichas. Tres punteros a la vez: DE por los sprites, BC por la copia y HL por los estados.
+C 0x5452 el bit 7: esta activo
+C 0x5459 ocho bytes por carro
+C 0x545d y dos de estado
+L 0x5464 retira_el_carro_que_se_sale
+B 0x5464 RETIRAR EL CARRO QUE SE SALE: si al sumarle 0x10 a su columna desborda, se le ponen a sus DOS sprites la fila 0xE0 -fuera de la pantalla- y su estado pasa a (0x00, 0x80).
+C 0x546d el bit 7: esta activo
+C 0x5472 dieciseis mas
+C 0x5474 si no desborda, sigue dentro
+C 0x5478 0xE0: fuera de la pantalla
+C 0x547b y el segundo sprite, cuatro bytes mas alla
+C 0x5484 su estado nuevo
+C 0x548a ocho bytes por carro
+L 0x5492 mira_si_el_sonido_va_por_c3
+B 0x5492 UNA COMPROBACION CURIOSA: de la fase 2 en adelante y solo en las impares, mira si la VOZ de 0xE010 esta en uno y si el byte al que apunta su partitura es 0xC3. O sea, el juego cambia el estado de los carros mirando POR DONDE VA LA MUSICA: lo que pasa en pantalla va a compas con lo que suena.
+C 0x5492 el numero de fase
+C 0x5495 de la segunda en adelante
+C 0x5498 y solo las impares
+C 0x549a la voz de 0xE010
+C 0x549f por donde va su partitura
+C 0x54a4 el byte 0xC3 es la marca
+C 0x54ad tres carros
+C 0x54b7 y se les pone el estado 0x20
+L 0x54c5 arranca_un_carro
+C 0x54c6 cinco bits del estado
+C 0x54c8 el estado 4
+C 0x54cc el estado nuevo, 2
+C 0x54d3 una pareja de patrones
+C 0x54d9 o la otra

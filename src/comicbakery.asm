@@ -1606,7 +1606,7 @@ L_48AA:
 ; EL CUADRO DE LA PARTIDA, y es el indice del cartucho: VEINTISIETE llamadas seguidas, una por cada cosa que se mueve o se pinta, y al final el reloj. Lo que va primero se pinta antes, asi que el orden ES la profundidad.
 ; ----------------------------------------------------------------------
 el_cuadro_de_la_partida:
-	call L_5446		;48ce
+	call guarda_la_columna_de_los_carros		;48ce
 	call L_56DC		;48d1
 	call L_5735		;48d4
 	call pinta_los_panes		;48d7   ; el contador de panes
@@ -1615,12 +1615,12 @@ el_cuadro_de_la_partida:
 	call mira_si_salta		;48e0
 	call coloca_el_indicador		;48e3
 	call L_5824		;48e6
-	call L_5117		;48e9
+	call mueve_los_tres_carros		;48e9
 	call L_5520		;48ec
 	call L_55DE		;48ef
 	call L_54E8		;48f2
 	call L_5646		;48f5
-	call L_5492		;48f8
+	call mira_si_el_sonido_va_por_c3		;48f8
 	call L_576B		;48fb
 	call L_57DA		;48fe
 	call mueve_los_ocho_bichos		;4901
@@ -1630,9 +1630,9 @@ el_cuadro_de_la_partida:
 	call mueve_el_gato		;490d
 	call mira_si_dispara		;4910
 	call L_53FF		;4913
-	call L_5464		;4916
+	call retira_el_carro_que_se_sale		;4916
 	call L_58FC		;4919
-	call L_534F		;491c
+	call busca_el_carro_en_el_estado_10		;491c
 	call el_reloj_de_la_jornada		;491f   ; y el reloj, lo ultimo
 	ld a,(0e00bh)		;4922   ; el compas de ocho
 	cp 007h		;4925   ; solo cuando vale 7
@@ -2960,28 +2960,28 @@ L_50BF:
 	add a,020h		;50cf
 	ld c,a			;50d1
 	ld a,(hl)			;50d2
-	add a,a			;50d3
+	add a,a			;50d3   ; el paso por tres
 	add a,(hl)			;50d4
-	ld hl,05103h		;50d5
+	ld hl,05103h		;50d5   ; la tabla de patrones del gato
 	call suma_a_a_hl		;50d8
-	ld d,039h		;50db
+	ld d,039h		;50db   ; la fila 0x39
 	ld a,(hl)			;50dd
-	call escribe_en_vram		;50de
+	call escribe_en_vram		;50de   ; el primer patron, a la VRAM
 	ld d,0e1h		;50e1
-	ld (de),a			;50e3
+	ld (de),a			;50e3   ; y a la copia en RAM
 	ld d,039h		;50e4
-	ld b,002h		;50e6
+	ld b,002h		;50e6   ; dos celdas mas
 	ld e,c			;50e8
 	inc d			;50e9
 	inc hl			;50ea
-	call vuelca_y_guarda_copia		;50eb
+	call vuelca_y_guarda_copia		;50eb   ; a la VRAM y a la copia a la vez
 L_50EE:
 	ld a,(0e109h)		;50ee
 	or a			;50f1
 	ret nz			;50f2
 	ld hl,(0e126h)		;50f3
 	dec hl			;50f6
-	ld (hl),004h		;50f7
+	ld (hl),004h		;50f7   ; los tres bytes de su ficha
 	inc hl			;50f9
 	ld (hl),080h		;50fa
 	inc hl			;50fc
@@ -3003,26 +3003,30 @@ DATA_5103:
 ; ======================================================================
 
 
-L_5117:
-	ld hl,0e098h		;5117
-	ld de,0e110h		;511a
-	ld b,003h		;511d
+
+; ----------------------------------------------------------------------
+; LOS TRES CARROS de 0xE098, cada uno con su estado en 0xE110 y ocho bytes de separacion. El estado se recorta con `and 03eh` -cinco bits, sin el 0 ni el 6- y eso indexa la tabla de despacho de 0x5138 por la puerta de 0x4098: el mismo despachador de escenas, reutilizado para las piezas del decorado.
+; ----------------------------------------------------------------------
+mueve_los_tres_carros:
+	ld hl,0e098h		;5117   ; el primer carro
+	ld de,0e110h		;511a   ; y su estado
+	ld b,003h		;511d   ; tres
 L_511F:
 	push bc			;511f
 	push hl			;5120
 	push de			;5121
 	ld a,(de)			;5122
-	and 03eh		;5123
+	and 03eh		;5123   ; cinco bits del estado
 	exx			;5125
-	ld hl,05138h		;5126
-	call L_4098		;5129
+	ld hl,05138h		;5126   ; la tabla de despacho de los carros
+	call L_4098		;5129   ; y se salta al que toque
 	pop de			;512c
 	pop hl			;512d
 	pop bc			;512e
 	ld a,l			;512f
-	add a,008h		;5130
+	add a,008h		;5130   ; ocho bytes por carro
 	ld l,a			;5132
-	inc de			;5133
+	inc de			;5133   ; y dos de estado
 	inc de			;5134
 	djnz L_511F		;5135
 	ret			;5137
@@ -3046,12 +3050,12 @@ DATA_5138:
 ; ======================================================================
 
 
-L_51D1:
+marca_el_estado_del_carro:
 	dec hl			;51d1
 L_51D2:
 	ld a,(hl)			;51d2
-	and 0c1h		;51d3
-	or c			;51d5
+	and 0c1h		;51d3   ; se dejan los bits 0, 6 y 7
+	or c			;51d5   ; y se mete el estado nuevo
 	ld (hl),a			;51d6
 	xor a			;51d7
 	ret			;51d8
@@ -3081,18 +3085,22 @@ DATA_51D9:
 ; ======================================================================
 
 
+
+; ----------------------------------------------------------------------
+; PONER EL SEGUNDO SPRITE DE UN CARRO, dieciseis pixeles mas alla: se copian la fila, la columna corrida y el color al hueco siguiente. Un carro son dos sprites.
+; ----------------------------------------------------------------------
 L_52CE:
 	ld d,(hl)			;52ce
 	inc hl			;52cf
 	ld a,(hl)			;52d0
-	add a,010h		;52d1
+	add a,010h		;52d1   ; dieciseis pixeles mas alla
 	inc hl			;52d3
-	ld (hl),b			;52d4
+	ld (hl),b			;52d4   ; el color
 	inc hl			;52d5
 	inc hl			;52d6
-	ld (hl),d			;52d7
+	ld (hl),d			;52d7   ; la fila
 	inc hl			;52d8
-	ld (hl),a			;52d9
+	ld (hl),a			;52d9   ; la columna corrida
 	inc hl			;52da
 	ld (hl),c			;52db
 	ret			;52dc
@@ -3114,27 +3122,31 @@ DATA_52DD:
 ; ======================================================================
 
 
-L_534F:
+
+; ----------------------------------------------------------------------
+; BUSCAR EL CARRO QUE ESTE EN EL ESTADO 0x10, entre los dos de 0xE0A1 y 0xE0A9. Si su fila esta fuera de la banda 0x30..0xE0 se le clava el patron 0x47.
+; ----------------------------------------------------------------------
+busca_el_carro_en_el_estado_10:
 	ld hl,0e0a1h		;534f
 	ld de,0e112h		;5352
-	ld b,002h		;5355
+	ld b,002h		;5355   ; dos carros
 L_5357:
 	ld a,(de)			;5357
-	and 03eh		;5358
-	cp 010h		;535a
+	and 03eh		;5358   ; cinco bits del estado
+	cp 010h		;535a   ; el estado 0x10
 	jr z,L_5366		;535c
 	inc de			;535e
 	inc de			;535f
-	ld hl,0e0a9h		;5360
+	ld hl,0e0a9h		;5360   ; el otro carro
 	djnz L_5357		;5363
 	ret			;5365
 L_5366:
 	ld a,(hl)			;5366
-	sub 030h		;5367
-	cp 0b0h		;5369
+	sub 030h		;5367   ; la banda util empieza en 0x30
+	cp 0b0h		;5369   ; y mide 0xB0
 	ret c			;536b
 	dec hl			;536c
-	ld (hl),047h		;536d
+	ld (hl),047h		;536d   ; el patron de fuera de sitio
 	inc hl			;536f
 	ld a,(hl)			;5370
 	sub 004h		;5371
@@ -3275,85 +3287,97 @@ L_543D:
 	ld l,a			;5442
 	djnz L_5411		;5443
 	ret			;5445
-L_5446:
+
+; ----------------------------------------------------------------------
+; GUARDAR LA COLUMNA DE LOS TRES CARROS ACTIVOS -los que tengan el bit 7- en 0xE116, para poder consultarla sin recorrer sus fichas. Tres punteros a la vez: DE por los sprites, BC por la copia y HL por los estados.
+; ----------------------------------------------------------------------
+guarda_la_columna_de_los_carros:
 	ld de,0e099h		;5446
 	ld bc,0e116h		;5449
 	ld hl,0e110h		;544c
 	ld a,003h		;544f
 L_5451:
 	ex af,af'			;5451
-	bit 7,(hl)		;5452
+	bit 7,(hl)		;5452   ; el bit 7: esta activo
 	jr z,L_5458		;5454
 	ld a,(de)			;5456
 	ld (bc),a			;5457
 L_5458:
 	ld a,e			;5458
-	add a,008h		;5459
+	add a,008h		;5459   ; ocho bytes por carro
 	ld e,a			;545b
 	inc bc			;545c
-	inc hl			;545d
+	inc hl			;545d   ; y dos de estado
 	inc hl			;545e
 	ex af,af'			;545f
 	dec a			;5460
 	jr nz,L_5451		;5461
 	ret			;5463
-L_5464:
+
+; ----------------------------------------------------------------------
+; RETIRAR EL CARRO QUE SE SALE: si al sumarle 0x10 a su columna desborda, se le ponen a sus DOS sprites la fila 0xE0 -fuera de la pantalla- y su estado pasa a (0x00, 0x80).
+; ----------------------------------------------------------------------
+retira_el_carro_que_se_sale:
 	ld de,0e110h		;5464
 	ld hl,0e099h		;5467
 	ld b,003h		;546a
 L_546C:
 	ld a,(de)			;546c
-	bit 7,a		;546d
+	bit 7,a		;546d   ; el bit 7: esta activo
 	jr z,L_5489		;546f
 	ld a,(hl)			;5471
-	add a,010h		;5472
-	jr nc,L_5489		;5474
+	add a,010h		;5472   ; dieciseis mas
+	jr nc,L_5489		;5474   ; si no desborda, sigue dentro
 	push hl			;5476
 	dec hl			;5477
-	ld (hl),0e0h		;5478
+	ld (hl),0e0h		;5478   ; 0xE0: fuera de la pantalla
 	ld a,l			;547a
-	add a,004h		;547b
+	add a,004h		;547b   ; y el segundo sprite, cuatro bytes mas alla
 	ld l,a			;547d
 	ld (hl),0e0h		;547e
 	ex de,hl			;5480
 	ld (hl),000h		;5481
 	inc hl			;5483
-	ld (hl),080h		;5484
+	ld (hl),080h		;5484   ; su estado nuevo
 	dec hl			;5486
 	ex de,hl			;5487
 	pop hl			;5488
 L_5489:
 	ld a,l			;5489
-	add a,008h		;548a
+	add a,008h		;548a   ; ocho bytes por carro
 	ld l,a			;548c
 	inc de			;548d
 	inc de			;548e
 	djnz L_546C		;548f
 	ret			;5491
-L_5492:
-	ld a,(0e051h)		;5492
-	cp 002h		;5495
+
+; ----------------------------------------------------------------------
+; UNA COMPROBACION CURIOSA: de la fase 2 en adelante y solo en las impares, mira si la VOZ de 0xE010 esta en uno y si el byte al que apunta su partitura es 0xC3. O sea, el juego cambia el estado de los carros mirando POR DONDE VA LA MUSICA: lo que pasa en pantalla va a compas con lo que suena.
+; ----------------------------------------------------------------------
+mira_si_el_sonido_va_por_c3:
+	ld a,(0e051h)		;5492   ; el numero de fase
+	cp 002h		;5495   ; de la segunda en adelante
 	ret c			;5497
-	rra			;5498
+	rra			;5498   ; y solo las impares
 	ret nc			;5499
-	ld a,(0e010h)		;549a
+	ld a,(0e010h)		;549a   ; la voz de 0xE010
 	dec a			;549d
 	ret nz			;549e
-	ld hl,(0e013h)		;549f
+	ld hl,(0e013h)		;549f   ; por donde va su partitura
 	inc hl			;54a2
 	ld a,(hl)			;54a3
-	cp 0c3h		;54a4
+	cp 0c3h		;54a4   ; el byte 0xC3 es la marca
 	ret nz			;54a6
 	ld hl,0e09ah		;54a7
 	ld de,0e110h		;54aa
-	ld b,003h		;54ad
+	ld b,003h		;54ad   ; tres carros
 L_54AF:
 	push bc			;54af
 	push de			;54b0
 	push hl			;54b1
-	call L_54C5		;54b2
+	call arranca_un_carro		;54b2
 	jr nz,L_54B9		;54b5
-	ld (hl),020h		;54b7
+	ld (hl),020h		;54b7   ; y se les pone el estado 0x20
 L_54B9:
 	pop hl			;54b9
 	ld a,l			;54ba
@@ -3365,22 +3389,22 @@ L_54B9:
 	pop bc			;54c1
 	djnz L_54AF		;54c2
 	ret			;54c4
-L_54C5:
+arranca_un_carro:
 	ld a,(de)			;54c5
-	and 03eh		;54c6
-	cp 004h		;54c8
+	and 03eh		;54c6   ; cinco bits del estado
+	cp 004h		;54c8   ; el estado 4
 	ret nz			;54ca
 L_54CB:
 	ex de,hl			;54cb
-	ld c,002h		;54cc
+	ld c,002h		;54cc   ; el estado nuevo, 2
 	call L_51D2		;54ce
 	ex de,hl			;54d1
 L_54D2:
 	ld a,(de)			;54d2
-	ld bc,09094h		;54d3
+	ld bc,09094h		;54d3   ; una pareja de patrones
 	rra			;54d6
 	jr nc,L_54DC		;54d7
-	ld bc,0ccd0h		;54d9
+	ld bc,0ccd0h		;54d9   ; o la otra
 L_54DC:
 	ld (hl),b			;54dc
 	ld a,l			;54dd
@@ -3539,7 +3563,7 @@ L_55BD:
 	inc hl			;55c0
 	ld (hl),a			;55c1
 	ld c,00ah		;55c2
-	call L_51D1		;55c4
+	call marca_el_estado_del_carro		;55c4
 	ret			;55c7
 L_55C8:
 	ld a,(de)			;55c8
@@ -3596,7 +3620,7 @@ L_55DE:
 	call L_54D2		;561b
 	ld (hl),006h		;561e
 	ld c,00ch		;5620
-	jp L_51D1		;5622
+	jp marca_el_estado_del_carro		;5622
 L_5625:
 	ld a,(hl)			;5625
 	and 03eh		;5626
