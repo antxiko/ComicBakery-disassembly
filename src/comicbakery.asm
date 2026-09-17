@@ -4447,7 +4447,7 @@ la_pantalla_de_recuento:
 	call baja_el_contador_y_barre		;5ad6
 	ret p			;5ad9
 	call L_711B		;5ada
-	call L_5B5E		;5add
+	call monta_la_tabla_del_recuento		;5add
 	call L_61C3		;5ae0
 	ld a,0eeh		;5ae3
 	call codigo_huerfano_4757		;5ae5
@@ -4470,24 +4470,28 @@ la_pantalla_de_recuento:
 	ld a,009h		;5b0a
 L_5B0C:
 	ld (0e19bh),a		;5b0c
+
+; ----------------------------------------------------------------------
+; MULTIPLICAR POR SEIS EN BCD SIN MULTIPLICAR: se suma 6 con `daa` tantas veces como diga B. Es lo que vale cada pan en el recuento de la jornada.
+; ----------------------------------------------------------------------
 	xor a			;5b0f
 L_5B10:
-	add a,006h		;5b10
+	add a,006h		;5b10   ; seis, en BCD
 	daa			;5b12
-	djnz L_5B10		;5b13
+	djnz L_5B10		;5b13   ; tantas veces como panes
 	inc b			;5b15
 	ld (hl),a			;5b16
-	call imprime_bcd		;5b17
+	call imprime_bcd		;5b17   ; y se pinta el resultado
 L_5B1A:
 	ld hl,05b3eh		;5b1a
 	ld de,0e080h		;5b1d
-	ld bc,00020h		;5b20
+	ld bc,00020h		;5b20   ; treinta y dos bytes de sprites
 	ldir		;5b23
 	call L_7086		;5b25
 	set 7,(hl)		;5b28
 	ld hl,0e090h		;5b2a
 	ld de,03b10h		;5b2d
-	ld bc,00010h		;5b30
+	ld bc,00010h		;5b30   ; dieciseis bytes a la VRAM
 	call vuelca_bloque		;5b33
 	ld a,000h		;5b36
 	ld (0e11eh),a		;5b38
@@ -4504,12 +4508,16 @@ DATA_5B3E:
 ; ======================================================================
 
 
-L_5B5E:
+
+; ----------------------------------------------------------------------
+; LA REJILLA DEL RECUENTO: cinco filas de siete valores copiadas desde 0x7982, retrocediendo quince posiciones entre fila y fila con un `sbc hl,bc`. Luego se marcan con el patron 0x7D tantas casillas como panes se hayan hecho, calculando fila y columna con dos restas de 3 y sendos `neg`.
+; ----------------------------------------------------------------------
+monta_la_tabla_del_recuento:
 	ld hl,07982h		;5b5e
 	ld de,0e130h		;5b61
-	ld c,007h		;5b64
+	ld c,007h		;5b64   ; siete filas
 L_5B66:
-	ld b,005h		;5b66
+	ld b,005h		;5b66   ; cinco valores cada una
 L_5B68:
 	ld a,(hl)			;5b68
 	ld (de),a			;5b69
@@ -4517,62 +4525,66 @@ L_5B68:
 	inc de			;5b6b
 	djnz L_5B68		;5b6c
 	ld a,c			;5b6e
-	ld bc,0000fh		;5b6f
+	ld bc,0000fh		;5b6f   ; quince hacia atras
 	sbc hl,bc		;5b72
 	ld c,a			;5b74
 	dec c			;5b75
 	jr nz,L_5B66		;5b76
 	xor a			;5b78
 	ld (0e14eh),a		;5b79
-	ld a,(0e060h)		;5b7c
+	ld a,(0e060h)		;5b7c   ; los panes hechos
 	or a			;5b7f
 	ret z			;5b80
 	ld b,a			;5b81
 L_5B82:
 	ld a,b			;5b82
 	dec a			;5b83
-	and 003h		;5b84
+	and 003h		;5b84   ; dos bits: la columna
 	sub 003h		;5b86
-	neg		;5b88
+	neg		;5b88   ; contada al reves
 	ld c,a			;5b8a
-	add a,a			;5b8b
+	add a,a			;5b8b   ; por cinco
 	add a,a			;5b8c
 	add a,c			;5b8d
 	ld hl,0e135h		;5b8e
 	call suma_a_a_hl		;5b91
 	ld a,b			;5b94
 	dec a			;5b95
-	rra			;5b96
+	rra			;5b96   ; dos rotaciones: la fila
 	rra			;5b97
 	and 003h		;5b98
 	sub 003h		;5b9a
 	neg		;5b9c
 	call suma_a_a_hl		;5b9e
-	ld (hl),07dh		;5ba1
+	ld (hl),07dh		;5ba1   ; y se marca la casilla
 	djnz L_5B82		;5ba3
 	ret			;5ba5
-L_5BA6:
-	ld hl,(0e01eh)		;5ba6
+
+; ----------------------------------------------------------------------
+; LA ANIMACION DEL RECUENTO, y otra vez el juego MIRA LA MUSICA: si el byte al que apunta la partitura de 0xE01E es 0xD4, se va por otro camino. El paso sube hasta 12 y de el salen las posiciones de los cuatro sprites.
+; ----------------------------------------------------------------------
+anima_la_pantalla_del_recuento:
+	ld hl,(0e01eh)		;5ba6   ; por donde va la partitura
 	ld a,(hl)			;5ba9
-	cp 0d4h		;5baa
-	jp z,L_5C18		;5bac
-	ld a,(0e00bh)		;5baf
+	cp 0d4h		;5baa   ; el byte 0xD4 es la marca
+	jp z,el_panadero_entra_a_la_panaderia		;5bac
+	ld a,(0e00bh)		;5baf   ; el compas de ocho
 	cp 004h		;5bb2
 	jr z,L_5BE1		;5bb4
 	or a			;5bb6
 	ret nz			;5bb7
-	ld hl,0e11eh		;5bb8
+	ld hl,0e11eh		;5bb8   ; el paso
 	ld a,(hl)			;5bbb
-	cp 00ch		;5bbc
+	cp 00ch		;5bbc   ; el tope, doce
 	ret nc			;5bbe
-	inc (hl)			;5bbf
+	inc (hl)			;5bbf   ; uno mas
 	ld a,(hl)			;5bc0
 	ld c,a			;5bc1
-	cp 009h		;5bc2
+	cp 009h		;5bc2   ; con techo en ocho para el dibujo
 	jr c,L_5BC8		;5bc4
 	ld c,008h		;5bc6
 L_5BC8:
-	call L_5BF0		;5bc8
+	call pinta_la_columna_de_la_rejilla		;5bc8
 	ld a,008h		;5bcb
 	call corre_los_cuatro_sprites		;5bcd
 	ld a,018h		;5bd0
@@ -4580,55 +4592,59 @@ L_5BC8:
 L_5BD4:
 	call pinta_la_pose_del_panadero		;5bd4
 	ld a,(0e11eh)		;5bd7
-	sub 007h		;5bda
+	sub 007h		;5bda   ; siete menos el paso
 	cp c			;5bdc
 	call c,L_707A		;5bdd
 	ret			;5be0
 L_5BE1:
-	ld a,(0e003h)		;5be1
-	bit 3,a		;5be4
-	ld a,01ch		;5be6
+	ld a,(0e003h)		;5be1   ; el contador de cuadros
+	bit 3,a		;5be4   ; su bit 3: dos poses
+	ld a,01ch		;5be6   ; una
 	jr z,L_5BEC		;5be8
-	ld a,020h		;5bea
+	ld a,020h		;5bea   ; o la otra
 L_5BEC:
 	ld c,005h		;5bec
 	jr L_5BD4		;5bee
-L_5BF0:
-	ld d,039h		;5bf0
-	add a,0bfh		;5bf2
+
+; ----------------------------------------------------------------------
+; PINTAR UNA COLUMNA DE LA REJILLA del recuento: cinco filas de 0xE130, saltando 32 celdas entre ellas y retrocediendo una columna en cada vuelta.
+; ----------------------------------------------------------------------
+pinta_la_columna_de_la_rejilla:
+	ld d,039h		;5bf0   ; la fila 0x39
+	add a,0bfh		;5bf2   ; el ajuste de columna
 	ld e,a			;5bf4
 	ld hl,0e130h		;5bf5
 L_5BF8:
-	ld b,005h		;5bf8
+	ld b,005h		;5bf8   ; cinco filas
 	push de			;5bfa
 L_5BFB:
 	ld a,(hl)			;5bfb
 	call escribe_en_vram		;5bfc
 	inc hl			;5bff
-	ld a,020h		;5c00
+	ld a,020h		;5c00   ; la fila de abajo, 32 celdas
 	call suma_a_a_de		;5c02
 	djnz L_5BFB		;5c05
 	pop de			;5c07
-	dec de			;5c08
+	dec de			;5c08   ; una columna atras
 	dec c			;5c09
 	jr nz,L_5BF8		;5c0a
 	ret			;5c0c
-L_5C0D:
-	ld a,00ch		;5c0d
+remata_el_recuento:
+	ld a,00ch		;5c0d   ; doce cuadros
 	ld (0e11eh),a		;5c0f
 	call L_707A		;5c12
 	jp L_4381		;5c15
-L_5C18:
-	call L_5C0D		;5c18
+el_panadero_entra_a_la_panaderia:
+	call remata_el_recuento		;5c18
 	xor a			;5c1b
-	ld (0e11ch),a		;5c1c
+	ld (0e11ch),a		;5c1c   ; el paso, a cero
 L_5C1F:
 	call L_5D3E		;5c1f
 	ld hl,0e11ch		;5c22
-	ld c,008h		;5c25
+	ld c,008h		;5c25   ; ocho de desplazamiento
 	ld a,(hl)			;5c27
-	cp 004h		;5c28
-	jr z,L_5C57		;5c2a
+	cp 004h		;5c28   ; el paso 4
+	jr z,el_panadero_sale		;5c2a
 L_5C2C:
 	inc hl			;5c2c
 	inc hl			;5c2d
@@ -4636,10 +4652,10 @@ L_5C2C:
 	or a			;5c2f
 	ret z			;5c30
 	ld a,c			;5c31
-	ld (0e102h),a		;5c32
+	ld (0e102h),a		;5c32   ; el estado, a ocho
 	ld a,003h		;5c35
-	ld (0e056h),a		;5c37
-	ld a,(0e00bh)		;5c3a
+	ld (0e056h),a		;5c37   ; y la planta, a tres
+	ld a,(0e00bh)		;5c3a   ; el compas de ocho
 	or a			;5c3d
 	jr z,L_5C48		;5c3e
 	cp 004h		;5c40
@@ -4650,38 +4666,42 @@ L_5C48:
 	call L_4C1E		;5c48
 L_5C4B:
 	ld hl,0e11eh		;5c4b
-	dec (hl)			;5c4e
+	dec (hl)			;5c4e   ; el plazo, uno menos
 	ld a,018h		;5c4f
 	call z,pinta_la_pose_del_panadero		;5c51
 	jp L_707A		;5c54
-L_5C57:
-	call L_5C0D		;5c57
+el_panadero_sale:
+	call remata_el_recuento		;5c57
 L_5C5A:
 	call L_5D3E		;5c5a
 	ld hl,0e11ch		;5c5d
-	ld c,004h		;5c60
+	ld c,004h		;5c60   ; cuatro de desplazamiento
 	ld a,(hl)			;5c62
-	cp 008h		;5c63
+	cp 008h		;5c63   ; el paso 8
 	jr nz,L_5C2C		;5c65
 	ld a,001h		;5c67
-	ld (0e11fh),a		;5c69
-	call L_5C0D		;5c6c
-L_5C6F:
+	ld (0e11fh),a		;5c69   ; y la bandera de fin de recuento
+	call remata_el_recuento		;5c6c
+
+; ----------------------------------------------------------------------
+; LOS PANES DEL RECUENTO, animados por pasos: el 0x0F tiene camino propio, de 0x0C en adelante no se hace nada, y por debajo la altura sale de `(paso-8)*4 + 0xF0`.
+; ----------------------------------------------------------------------
+anima_los_panes_del_recuento:
 	call L_5D3E		;5c6f
 	ld hl,0e11dh		;5c72
-	ld a,(hl)			;5c75
+	ld a,(hl)			;5c75   ; el paso
 	or a			;5c76
 	ret z			;5c77
 	dec hl			;5c78
 	ld a,(hl)			;5c79
-	cp 00fh		;5c7a
+	cp 00fh		;5c7a   ; el paso 0x0F
 	jr z,L_5CCF		;5c7c
-	cp 00ch		;5c7e
+	cp 00ch		;5c7e   ; de doce en adelante, nada
 	ret nc			;5c80
-	sub 008h		;5c81
-	add a,a			;5c83
+	sub 008h		;5c81   ; ocho menos
+	add a,a			;5c83   ; por cuatro
 	add a,a			;5c84
-	add a,0f0h		;5c85
+	add a,0f0h		;5c85   ; y +0xF0: la altura
 	ld e,a			;5c87
 	ld d,039h		;5c88
 	push de			;5c8a
@@ -4690,10 +4710,10 @@ L_5C6F:
 	dec (hl)			;5c8f
 	ld c,0fch		;5c90
 	jp m,L_5CA1		;5c92
-	call L_5B5E		;5c95
+	call monta_la_tabla_del_recuento		;5c95
 	ld a,00ch		;5c98
 	ld c,008h		;5c9a
-	call L_5BF0		;5c9c
+	call pinta_la_columna_de_la_rejilla		;5c9c
 	ld c,07eh		;5c9f
 L_5CA1:
 	pop de			;5ca1

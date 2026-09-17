@@ -1439,3 +1439,73 @@ C 0x5ae8 el bloque comprimido del recuento
 C 0x5af1 los panes que se llevaron
 C 0x5afd un byte, dos digitos
 C 0x5b02 el progreso
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+B 0x5b0f MULTIPLICAR POR SEIS EN BCD SIN MULTIPLICAR: se suma 6 con `daa` tantas veces como diga B. Es lo que vale cada pan en el recuento de la jornada.
+C 0x5b10 seis, en BCD
+C 0x5b13 tantas veces como panes
+C 0x5b17 y se pinta el resultado
+C 0x5b20 treinta y dos bytes de sprites
+C 0x5b30 dieciseis bytes a la VRAM
+L 0x5b5e monta_la_tabla_del_recuento
+B 0x5b5e LA REJILLA DEL RECUENTO: cinco filas de siete valores copiadas desde 0x7982, retrocediendo quince posiciones entre fila y fila con un `sbc hl,bc`. Luego se marcan con el patron 0x7D tantas casillas como panes se hayan hecho, calculando fila y columna con dos restas de 3 y sendos `neg`.
+C 0x5b64 siete filas
+C 0x5b66 cinco valores cada una
+C 0x5b6f quince hacia atras
+C 0x5b7c los panes hechos
+C 0x5b84 dos bits: la columna
+C 0x5b88 contada al reves
+C 0x5b8b por cinco
+C 0x5b96 dos rotaciones: la fila
+C 0x5ba1 y se marca la casilla
+L 0x5ba6 anima_la_pantalla_del_recuento
+B 0x5ba6 LA ANIMACION DEL RECUENTO, y otra vez el juego MIRA LA MUSICA: si el byte al que apunta la partitura de 0xE01E es 0xD4, se va por otro camino. El paso sube hasta 12 y de el salen las posiciones de los cuatro sprites.
+C 0x5ba6 por donde va la partitura
+C 0x5baa el byte 0xD4 es la marca
+C 0x5baf el compas de ocho
+C 0x5bb8 el paso
+C 0x5bbc el tope, doce
+C 0x5bbf uno mas
+C 0x5bc2 con techo en ocho para el dibujo
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x5bda siete menos el paso
+C 0x5be1 el contador de cuadros
+C 0x5be4 su bit 3: dos poses
+C 0x5be6 una
+C 0x5bea o la otra
+L 0x5bf0 pinta_la_columna_de_la_rejilla
+B 0x5bf0 PINTAR UNA COLUMNA DE LA REJILLA del recuento: cinco filas de 0xE130, saltando 32 celdas entre ellas y retrocediendo una columna en cada vuelta.
+C 0x5bf0 la fila 0x39
+C 0x5bf2 el ajuste de columna
+C 0x5bf8 cinco filas
+C 0x5c00 la fila de abajo, 32 celdas
+C 0x5c08 una columna atras
+L 0x5c0d remata_el_recuento
+C 0x5c0d doce cuadros
+L 0x5c18 el_panadero_entra_a_la_panaderia
+C 0x5c1c el paso, a cero
+C 0x5c25 ocho de desplazamiento
+C 0x5c28 el paso 4
+C 0x5c32 el estado, a ocho
+C 0x5c37 y la planta, a tres
+C 0x5c3a el compas de ocho
+C 0x5c4e el plazo, uno menos
+L 0x5c57 el_panadero_sale
+C 0x5c60 cuatro de desplazamiento
+C 0x5c63 el paso 8
+C 0x5c69 y la bandera de fin de recuento
+L 0x5c6f anima_los_panes_del_recuento
+B 0x5c6f LOS PANES DEL RECUENTO, animados por pasos: el 0x0F tiene camino propio, de 0x0C en adelante no se hace nada, y por debajo la altura sale de `(paso-8)*4 + 0xF0`.
+C 0x5c75 el paso
+C 0x5c7a el paso 0x0F
+C 0x5c7e de doce en adelante, nada
+C 0x5c81 ocho menos
+C 0x5c83 por cuatro
+C 0x5c85 y +0xF0: la altura
