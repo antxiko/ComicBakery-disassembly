@@ -425,7 +425,7 @@ L_4250:
 	ld (0e11eh),a		;425f
 	ld a,(0e101h)		;4262   ; la posicion, guardada
 	ld (0e102h),a		;4265
-	call L_5897		;4268
+	call pinta_las_puertas		;4268
 	call L_4940		;426b
 	ld hl,04e63h		;426e
 	call L_4E51		;4271
@@ -452,7 +452,7 @@ DATA_tabla_4282:
 
 
 L_428A:
-	call L_5952		;428a
+	call el_panadero_cae		;428a
 	jp L_4381		;428d
 
 ; ----------------------------------------------------------------------
@@ -1614,7 +1614,7 @@ el_cuadro_de_la_partida:
 	call mueve_al_panadero		;48dd
 	call mira_si_salta		;48e0
 	call coloca_el_indicador		;48e3
-	call L_5824		;48e6
+	call mete_el_pan_en_el_horno		;48e6
 	call mueve_los_tres_carros		;48e9
 	call mira_el_disparo_contra_el_carro		;48ec
 	call mira_el_carro_contra_la_cinta		;48ef
@@ -1631,7 +1631,7 @@ el_cuadro_de_la_partida:
 	call mira_si_dispara		;4910
 	call L_53FF		;4913
 	call retira_el_carro_que_se_sale		;4916
-	call L_58FC		;4919
+	call anima_la_cosa_que_sube		;4919
 	call busca_el_carro_en_el_estado_10		;491c
 	call el_reloj_de_la_jornada		;491f   ; y el reloj, lo ultimo
 	ld a,(0e00bh)		;4922   ; el compas de ocho
@@ -1733,7 +1733,7 @@ monta_la_fase:
 	call L_615E		;49e1
 	ld de,033e8h		;49e4
 	call L_6171		;49e7
-	call L_5897		;49ea   ; el marcador
+	call pinta_las_puertas		;49ea   ; el marcador
 	call pinta_los_panes		;49ed   ; el contador de panes
 	xor a			;49f0
 	ld (0e055h),a		;49f1
@@ -2306,7 +2306,7 @@ L_4D1B:
 	ld a,020h		;4d1e   ; la fila de abajo, 32 celdas
 	call suma_a_a_de		;4d20
 	djnz L_4D1B		;4d23
-	jp L_5897		;4d25
+	jp pinta_las_puertas		;4d25
 L_4D28:
 	inc a			;4d28
 L_4D29:
@@ -2357,7 +2357,7 @@ L_4D65:
 	ld (0e0c7h),a		;4d6f
 	ld a,030h		;4d72
 	call pinta_la_pose_del_panadero		;4d74   ; y la pose de estar tumbado
-	call L_5897		;4d77
+	call pinta_las_puertas		;4d77
 	call L_4940		;4d7a
 L_4D7D:
 	call L_707A		;4d7d
@@ -3994,7 +3994,7 @@ L_5809:
 	ld (hl),a			;5811
 	ld a,007h		;5812   ; y el sonido
 	call L_799C		;5814
-	jp L_5897		;5817
+	jp pinta_las_puertas		;5817
 L_581A:
 	ld (hl),000h		;581a
 	ld a,0e0h		;581c
@@ -4003,98 +4003,106 @@ L_581A:
 L_5821:
 	ld (hl),0e0h		;5821
 	ret			;5823
-L_5824:
-	ld a,(0e00bh)		;5824
+
+; ----------------------------------------------------------------------
+; METER EL PAN EN EL HORNO, que es lo que da los puntos. Las condiciones son cinco: que el compas de ocho no valga 7, que no haya salto, que en la celda 0xE2C0 haya un 0x6A -otra vez consultando lo DIBUJADO-, que no se este moviendo y que su bit del mapa de ocupacion este libre. Vale 50 puntos.
+; ----------------------------------------------------------------------
+mete_el_pan_en_el_horno:
+	ld a,(0e00bh)		;5824   ; el compas de ocho
 	cp 007h		;5827
-	ret z			;5829
+	ret z			;5829   ; en el paso 7 no
 	ld a,(0e104h)		;582a
 	or a			;582d
 	ret nz			;582e
-	ld a,(0e2c0h)		;582f
-	cp 06ah		;5832
+	ld a,(0e2c0h)		;582f   ; la celda del horno, en el bufer de pantalla
+	cp 06ah		;5832   ; y el patron 0x6A es lo que se busca
 	ret nz			;5834
 	ld a,(0e105h)		;5835
 	or a			;5838
 	ret nz			;5839
-	ld hl,0e057h		;583a
+	ld hl,0e057h		;583a   ; el mapa de ocupacion
 	ld a,(0e055h)		;583d
-	add a,010h		;5840
+	add a,010h		;5840   ; la posicion, redondeada
 	and 070h		;5842
 	ld c,a			;5844
-	and (hl)			;5845
+	and (hl)			;5845   ; si su bit ya esta puesto, no cabe
 	ret nz			;5846
 	ld a,c			;5847
-	or (hl)			;5848
+	or (hl)			;5848   ; y se marca
 	ld (hl),a			;5849
 	ld a,010h		;584a
-	ld (0e124h),a		;584c
+	ld (0e124h),a		;584c   ; dieciseis cuadros de plazo
 	ld hl,0e05fh		;584f
 	ld a,c			;5852
-	cpl			;5853
+	cpl			;5853   ; se libera en el otro mapa
 	and (hl)			;5854
 	ld (hl),a			;5855
 	ld a,030h		;5856
-	call pinta_la_pose_del_panadero		;5858
-	call L_5897		;585b
+	call pinta_la_pose_del_panadero		;5858   ; la pose del panadero
+	call pinta_las_puertas		;585b
 	ld hl,0e24ah		;585e
-	ld de,03a4ah		;5861
-	ld bc,00005h		;5864
+	ld de,03a4ah		;5861   ; la celda en la pantalla
+	ld bc,00005h		;5864   ; cinco celdas
 	call vuelca_bloque		;5867
 	ld l,08ah		;586a
 	ld e,l			;586c
 	ld bc,00005h		;586d
 	call vuelca_bloque		;5870
-	ld a,004h		;5873
+	ld a,004h		;5873   ; el sonido
 	call L_799C		;5875
-	ld de,00050h		;5878
+	ld de,00050h		;5878   ; y cincuenta puntos
 	call suma_puntos		;587b
 	ld hl,0e110h		;587e
 	ld a,(hl)			;5881
-	bit 0,a		;5882
+	bit 0,a		;5882   ; el bit 0
 	ret nz			;5884
 	and 03eh		;5885
-	cp 004h		;5887
+	cp 004h		;5887   ; el estado 4
 	ret nz			;5889
 	ld de,0e099h		;588a
 	ld a,(de)			;588d
-	sub 028h		;588e
-	cp 050h		;5890
+	sub 028h		;588e   ; cuarenta de desplazamiento
+	cp 050h		;5890   ; y ochenta de margen
 	ret c			;5892
 	inc de			;5893
 	jp L_5518		;5894
-L_5897:
-	ld de,058f9h		;5897
+
+; ----------------------------------------------------------------------
+; PINTAR LAS TRES PUERTAS, y el juego de registros alternativo se usa como si fuera un banco de constantes: se cargan seis valores de golpe -los patrones de la puerta abierta o cerrada segun el bit 3 del mapa- y se escriben en dos sitios separados 0x3F.
+; ----------------------------------------------------------------------
+pinta_las_puertas:
+	ld de,058f9h		;5897   ; la lista de posiciones
 	ld hl,0e055h		;589a
-	ld a,(0e057h)		;589d
+	ld a,(0e057h)		;589d   ; el mapa de ocupacion
 	ld c,a			;58a0
-	ld b,003h		;58a1
+	ld b,003h		;58a1   ; tres puertas
 L_58A3:
-	rr c		;58a3
+	rr c		;58a3   ; el siguiente bit del mapa
 	ld a,(de)			;58a5
 	inc de			;58a6
 	sub (hl)			;58a7
-	cp 01fh		;58a8
+	cp 01fh		;58a8   ; treinta y un pixeles de margen
 	jr nc,L_58E4		;58aa
-	bit 3,c		;58ac
+	bit 3,c		;58ac   ; el bit 3: abierta o cerrada
 	exx			;58ae
-	ld bc,0b0adh		;58af
+	ld bc,0b0adh		;58af   ; los patrones de un caso
 	ld de,00000h		;58b2
 	ld hl,0a7c2h		;58b5
 	jr nz,L_58C2		;58b8
 	ld b,d			;58ba
 	ld c,e			;58bb
-	ld de,0b0adh		;58bc
+	ld de,0b0adh		;58bc   ; y los del otro
 	ld hl,0c2a6h		;58bf
 L_58C2:
 	push hl			;58c2
-	ld hl,0e240h		;58c3
+	ld hl,0e240h		;58c3   ; el bufer de la pantalla
 	add a,l			;58c6
 	ld l,a			;58c7
 	ld (hl),b			;58c8
 	inc hl			;58c9
 	ld (hl),c			;58ca
 	ld a,l			;58cb
-	add a,03fh		;58cc
+	add a,03fh		;58cc   ; y la fila de abajo, 0x3F mas alla
 	ld l,a			;58ce
 	ld (hl),d			;58cf
 	inc hl			;58d0
@@ -4104,10 +4112,10 @@ L_58C2:
 	sub 084h		;58d4
 	jr c,L_58E0		;58d6
 L_58D8:
-	add a,080h		;58d8
+	add a,080h		;58d8   ; +0x80: la otra franja
 	ld l,a			;58da
 	ld (hl),e			;58db
-	sub 040h		;58dc
+	sub 040h		;58dc   ; y 0x40 mas arriba
 	ld l,a			;58de
 	ld (hl),d			;58df
 L_58E0:
@@ -4116,14 +4124,14 @@ L_58E1:
 	djnz L_58A3		;58e1
 	ret			;58e3
 L_58E4:
-	sub 003h		;58e4
-	cp 020h		;58e6
+	sub 003h		;58e4   ; tres menos
+	cp 020h		;58e6   ; y treinta y dos de margen
 	jr nc,L_58E1		;58e8
-	bit 3,c		;58ea
+	bit 3,c		;58ea   ; el bit 3: abierta o cerrada
 	exx			;58ec
-	ld de,0a7c2h		;58ed
+	ld de,0a7c2h		;58ed   ; los patrones de un caso
 	jr nz,L_58F5		;58f0
-	ld de,0c2a6h		;58f2
+	ld de,0c2a6h		;58f2   ; y los del otro
 L_58F5:
 	ld h,0e2h		;58f5
 	jr L_58D8		;58f7
@@ -4138,36 +4146,40 @@ DATA_58F9:
 ; ======================================================================
 
 
-L_58FC:
-	ld a,(0e00bh)		;58fc
+
+; ----------------------------------------------------------------------
+; LA COSA QUE SUBE, atendida cuando el compas de ocho vale 7. Su altura se corrige con +0x60 y, si desborda, con 0x20 mas; luego se pintan dos bloques, uno de tres celdas y otro de dos, y el plazo baja de 0x20 en 0x20.
+; ----------------------------------------------------------------------
+anima_la_cosa_que_sube:
+	ld a,(0e00bh)		;58fc   ; el compas de ocho
 	cp 007h		;58ff
-	ret nz			;5901
+	ret nz			;5901   ; solo cuando vale 7
 	ld hl,0e12ah		;5902
-	ld a,(hl)			;5905
+	ld a,(hl)			;5905   ; su estado
 	or a			;5906
 	ret z			;5907
-	ld a,(0e055h)		;5908
+	ld a,(0e055h)		;5908   ; la posicion del decorado
 	ld c,a			;590b
 	inc hl			;590c
 	ld a,(hl)			;590d
 	sub c			;590e
 	dec hl			;590f
 	add a,(hl)			;5910
-	add a,060h		;5911
-	cp 0a0h		;5913
+	add a,060h		;5911   ; la correccion
+	cp 0a0h		;5913   ; y si desborda, 0x20 mas
 	jr nc,L_5919		;5915
 	add a,020h		;5917
 L_5919:
 	exx			;5919
 	ld e,a			;591a
-	ld hl,05946h		;591b
+	ld hl,05946h		;591b   ; la tira de tres
 	ld c,003h		;591e
 	call vuelca_las_dos_filas		;5920
 	exx			;5923
 	ld a,(hl)			;5924
-	sub 020h		;5925
+	sub 020h		;5925   ; el plazo, 0x20 menos
 	ld (hl),a			;5927
-	ret z			;5928
+	ret z			;5928   ; al llegar a cero, se acabo
 	inc hl			;5929
 	dec (hl)			;592a
 	exx			;592b
@@ -4181,9 +4193,9 @@ L_5919:
 	ld hl,(0e12ch)		;5938
 L_593B:
 	ld a,e			;593b
-	sub 023h		;593c
+	sub 023h		;593c   ; el segundo bloque, 0x23 mas arriba
 	ld e,a			;593e
-	ld c,002h		;593f
+	ld c,002h		;593f   ; y de dos celdas
 	call vuelca_las_dos_filas		;5941
 	exx			;5944
 	ret			;5945
@@ -4198,19 +4210,23 @@ DATA_5946:
 ; ======================================================================
 
 
-L_5952:
+
+; ----------------------------------------------------------------------
+; EL PANADERO QUE CAE. La direccion la decide la distancia al carro: si no desborda va a un lado (0x08, patron 0x12) y si desborda al otro (0xF8, patron 0x92). Luego se copian sus cuatro bytes de sprite al hueco de 0xE090.
+; ----------------------------------------------------------------------
+el_panadero_cae:
 	ld hl,04e63h		;5952
 	call L_4E51		;5955
-	ld hl,0e080h		;5958
+	ld hl,0e080h		;5958   ; su posicion
 	ld b,(hl)			;595b
 	inc hl			;595c
-	ld a,(0e099h)		;595d
+	ld a,(0e099h)		;595d   ; la del carro
 	sub (hl)			;5960
-	ld c,008h		;5961
-	ld a,012h		;5963
+	ld c,008h		;5961   ; ocho a un lado
+	ld a,012h		;5963   ; y su patron
 	jr nc,L_596B		;5965
-	ld c,0f8h		;5967
-	ld a,092h		;5969
+	ld c,0f8h		;5967   ; o al otro
+	ld a,092h		;5969   ; con el suyo
 L_596B:
 	ld (0e119h),a		;596b
 	ld a,b			;596e
@@ -4218,11 +4234,11 @@ L_596B:
 	push bc			;5972
 	push hl			;5973
 	ld a,034h		;5974
-	call pinta_la_pose_del_panadero		;5976
+	call pinta_la_pose_del_panadero		;5976   ; la pose de caida
 	ld hl,0e080h		;5979
 	ld de,0e090h		;597c
-	ld bc,00004h		;597f
-	ldir		;5982
+	ld bc,00004h		;597f   ; cuatro bytes de sprite
+	ldir		;5982   ; copiados
 	ld de,0e110h		;5984
 	ld hl,0e09ah		;5987
 	call L_54D2		;598a

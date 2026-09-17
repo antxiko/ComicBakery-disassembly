@@ -1294,3 +1294,77 @@ C 0x5802 y el bit 2 del color, al reves
 C 0x5806 el paso 3
 C 0x580f el bit se libera del mapa de ocupacion
 C 0x5812 y el sonido
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x5824 mete_el_pan_en_el_horno
+B 0x5824 METER EL PAN EN EL HORNO, que es lo que da los puntos. Las condiciones son cinco: que el compas de ocho no valga 7, que no haya salto, que en la celda 0xE2C0 haya un 0x6A -otra vez consultando lo DIBUJADO-, que no se este moviendo y que su bit del mapa de ocupacion este libre. Vale 50 puntos.
+C 0x5824 el compas de ocho
+C 0x5829 en el paso 7 no
+C 0x582f la celda del horno, en el bufer de pantalla
+C 0x5832 y el patron 0x6A es lo que se busca
+C 0x583a el mapa de ocupacion
+C 0x5840 la posicion, redondeada
+C 0x5845 si su bit ya esta puesto, no cabe
+C 0x5848 y se marca
+C 0x584c dieciseis cuadros de plazo
+C 0x5853 se libera en el otro mapa
+C 0x5858 la pose del panadero
+C 0x5861 la celda en la pantalla
+C 0x5864 cinco celdas
+C 0x5873 el sonido
+C 0x5878 y cincuenta puntos
+C 0x5882 el bit 0
+C 0x5887 el estado 4
+C 0x588e cuarenta de desplazamiento
+C 0x5890 y ochenta de margen
+L 0x5897 pinta_las_puertas
+B 0x5897 PINTAR LAS TRES PUERTAS, y el juego de registros alternativo se usa como si fuera un banco de constantes: se cargan seis valores de golpe -los patrones de la puerta abierta o cerrada segun el bit 3 del mapa- y se escriben en dos sitios separados 0x3F.
+C 0x5897 la lista de posiciones
+C 0x589d el mapa de ocupacion
+C 0x58a1 tres puertas
+C 0x58a3 el siguiente bit del mapa
+C 0x58a8 treinta y un pixeles de margen
+C 0x58ac el bit 3: abierta o cerrada
+C 0x58af los patrones de un caso
+C 0x58bc y los del otro
+C 0x58c3 el bufer de la pantalla
+C 0x58cc y la fila de abajo, 0x3F mas alla
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x58d8 +0x80: la otra franja
+C 0x58dc y 0x40 mas arriba
+C 0x58e4 tres menos
+C 0x58e6 y treinta y dos de margen
+C 0x58ea el bit 3: abierta o cerrada
+C 0x58ed los patrones de un caso
+C 0x58f2 y los del otro
+L 0x58fc anima_la_cosa_que_sube
+B 0x58fc LA COSA QUE SUBE, atendida cuando el compas de ocho vale 7. Su altura se corrige con +0x60 y, si desborda, con 0x20 mas; luego se pintan dos bloques, uno de tres celdas y otro de dos, y el plazo baja de 0x20 en 0x20.
+C 0x58fc el compas de ocho
+C 0x5901 solo cuando vale 7
+C 0x5905 su estado
+C 0x5908 la posicion del decorado
+C 0x5911 la correccion
+C 0x5913 y si desborda, 0x20 mas
+C 0x591b la tira de tres
+C 0x5925 el plazo, 0x20 menos
+C 0x5928 al llegar a cero, se acabo
+C 0x593c el segundo bloque, 0x23 mas arriba
+C 0x593f y de dos celdas
+L 0x5952 el_panadero_cae
+B 0x5952 EL PANADERO QUE CAE. La direccion la decide la distancia al carro: si no desborda va a un lado (0x08, patron 0x12) y si desborda al otro (0xF8, patron 0x92). Luego se copian sus cuatro bytes de sprite al hueco de 0xE090.
+C 0x5958 su posicion
+C 0x595d la del carro
+C 0x5961 ocho a un lado
+C 0x5963 y su patron
+C 0x5967 o al otro
+C 0x5969 con el suyo
+C 0x5976 la pose de caida
+C 0x597f cuatro bytes de sprite
+C 0x5982 copiados
