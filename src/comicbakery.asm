@@ -1623,9 +1623,9 @@ el_cuadro_de_la_partida:
 	call L_5492		;48f8
 	call L_576B		;48fb
 	call L_57DA		;48fe
-	call L_4F0E		;4901
+	call mueve_los_ocho_bichos		;4901
 	call pinta_la_fila_de_marcas		;4904
-	call L_4E7F		;4907
+	call parpadea_el_aviso		;4907
 	call mueve_las_tres_cosas		;490a
 	call L_5088		;490d
 	call mira_si_dispara		;4910
@@ -1755,7 +1755,7 @@ L_49FA:
 	call L_5051		;4a0c
 	ld hl,05e68h		;4a0f   ; el bloque comprimido del decorado
 	call descomprime		;4a12
-	call L_4EA3		;4a15
+	call pinta_la_barra_de_progreso		;4a15
 	call pinta_el_reloj		;4a18   ; y el reloj a cero
 	call L_70D6		;4a1b
 	ret			;4a1e
@@ -2502,81 +2502,89 @@ L_4E51:
 	ld b,003h		;4e58   ; tres
 L_4E5A:
 	ld a,(de)			;4e5a
-	ld a,004h		;4e5b
-	rr c		;4e5d
-	bit 3,c		;4e5f
+	ld a,004h		;4e5b   ; un color
+	rr c		;4e5d   ; el siguiente bit de la mascara
+	bit 3,c		;4e5f   ; el bit 3
 	jr nz,L_4E6B		;4e61
-	ld a,00fh		;4e63
+	ld a,00fh		;4e63   ; otro color
 	bit 2,(hl)		;4e65
 	jr z,L_4E6B		;4e67
-	ld a,008h		;4e69
+	ld a,008h		;4e69   ; y el tercero
 L_4E6B:
 	ld (de),a			;4e6b
-	inc de			;4e6c
+	inc de			;4e6c   ; cuatro bytes por sprite
 	inc de			;4e6d
 	inc de			;4e6e
 	inc de			;4e6f
 	djnz L_4E5A		;4e70
 	ld hl,0e0b7h		;4e72
-	ld de,03b37h		;4e75
-	ld bc,00009h		;4e78
+	ld de,03b37h		;4e75   ; el destino en la VRAM
+	ld bc,00009h		;4e78   ; nueve bytes
 	call vuelca_bloque		;4e7b
 	ret			;4e7e
-L_4E7F:
-	ld hl,(0e079h)		;4e7f
+
+; ----------------------------------------------------------------------
+; EL AVISO QUE PARPADEA cuando el reloj llega a las siete y pasa de 0x30: la celda 0x38B9 alterna entre dos patrones dandole la vuelta al bit 0, y el ritmo es de 32 o de 16 cuadros segun lo apurado que vaya el reloj. Cuanto menos tiempo queda, mas deprisa parpadea.
+; ----------------------------------------------------------------------
+parpadea_el_aviso:
+	ld hl,(0e079h)		;4e7f   ; el reloj
 	ld a,h			;4e82
-	cp 007h		;4e83
+	cp 007h		;4e83   ; las siete
 	ret nz			;4e85
 	ld a,l			;4e86
-	cp 030h		;4e87
+	cp 030h		;4e87   ; y por debajo de 0x30 todavia no
 	ret c			;4e89
-	ld c,01fh		;4e8a
+	ld c,01fh		;4e8a   ; una de cada 32
 	jr z,L_4E90		;4e8c
-	ld c,00fh		;4e8e
+	ld c,00fh		;4e8e   ; o una de cada 16 si esta mas apurado
 L_4E90:
 	ld a,(0e003h)		;4e90
 	and c			;4e93
 	ret nz			;4e94
 	ld hl,0e125h		;4e95
 	ld a,(hl)			;4e98
-	xor 001h		;4e99
+	xor 001h		;4e99   ; le da la vuelta al bit 0
 	ld (hl),a			;4e9b
-	ld de,038b9h		;4e9c
+	ld de,038b9h		;4e9c   ; la celda del aviso
 	call escribe_en_vram		;4e9f
 	ret			;4ea2
-L_4EA3:
-	ld hl,06975h		;4ea3
+
+; ----------------------------------------------------------------------
+; LA BARRA DE PROGRESO: ocho bytes copiados a 0xE158 y, encima, tantas celdas 0x55 como diga (0xE060) dividido entre cuatro, con el resto eligiendo el remate de la tabla de 0x4EF8. Es como se dibuja una barra a media celda.
+; ----------------------------------------------------------------------
+pinta_la_barra_de_progreso:
+	ld hl,06975h		;4ea3   ; los ocho valores de partida
 	ld de,0e158h		;4ea6
 	ld bc,00008h		;4ea9
 	ldir		;4eac
-	ld a,(0e060h)		;4eae
+	ld a,(0e060h)		;4eae   ; el progreso
 	dec a			;4eb1
 	jp m,L_4ED1		;4eb2
 	ld c,a			;4eb5
-	rrca			;4eb6
+	rrca			;4eb6   ; dividido entre cuatro
 	rrca			;4eb7
 	and 007h		;4eb8
 	ld b,a			;4eba
 	ld a,c			;4ebb
-	and 003h		;4ebc
-	ld hl,04ef8h		;4ebe
+	and 003h		;4ebc   ; y el resto, dos bits
+	ld hl,04ef8h		;4ebe   ; la tabla de cuatro remates
 	call suma_a_a_hl		;4ec1
 	ld c,(hl)			;4ec4
 	ld hl,0e160h		;4ec5
 L_4EC8:
 	dec hl			;4ec8
 	dec hl			;4ec9
-	ld (hl),055h		;4eca
+	ld (hl),055h		;4eca   ; el patron lleno
 	dec b			;4ecc
 	jp p,L_4EC8		;4ecd
-	ld (hl),c			;4ed0
+	ld (hl),c			;4ed0   ; y el remate a medias
 L_4ED1:
 	ld hl,0e158h		;4ed1
-	ld de,066b0h		;4ed4
-	ld bc,00008h		;4ed7
+	ld de,066b0h		;4ed4   ; el destino en la VRAM
+	ld bc,00008h		;4ed7   ; ocho bytes
 	call vuelca_bloque		;4eda
 	ld de,0389bh		;4edd
-	ld bc,001a0h		;4ee0
+	ld bc,001a0h		;4ee0   ; 416 celdas
 	ld hl,0e07bh		;4ee3
 	ld a,(hl)			;4ee6
 	or a			;4ee7
@@ -2598,19 +2606,23 @@ DATA_4EF6:
 ; ======================================================================
 
 
-L_4F0E:
-	ld a,(0e003h)		;4f0e
+
+; ----------------------------------------------------------------------
+; EL BUCLE DE LOS OCHO BICHOS, atendido solo cuando el nibble bajo del contador de cuadros vale 15: una vez de cada dieciseis.
+; ----------------------------------------------------------------------
+mueve_los_ocho_bichos:
+	ld a,(0e003h)		;4f0e   ; el contador de cuadros
 	and 00fh		;4f11
-	cp 00fh		;4f13
+	cp 00fh		;4f13   ; solo cuando el nibble bajo vale 15
 	ret nz			;4f15
-	ld b,008h		;4f16
+	ld b,008h		;4f16   ; ocho bichos
 	ld hl,0e062h		;4f18
 L_4F1B:
 	push bc			;4f1b
 	push hl			;4f1c
-	call L_4F41		;4f1d
+	call mueve_un_bicho		;4f1d
 	pop hl			;4f20
-	inc hl			;4f21
+	inc hl			;4f21   ; tres bytes por bicho
 	inc hl			;4f22
 	inc hl			;4f23
 	pop bc			;4f24
@@ -2619,99 +2631,103 @@ L_4F1B:
 	or a			;4f2a
 	jp nz,pinta_el_marcador_de_arriba		;4f2b
 	ld hl,0e055h		;4f2e
-	ld a,004h		;4f31
+	ld a,004h		;4f31   ; cuatro menos la planta
 	sub (hl)			;4f33
 	jp c,pinta_el_marcador_de_arriba		;4f34
-	add a,0e0h		;4f37
+	add a,0e0h		;4f37   ; +0xE0: el hueco que le toca
 	ld l,a			;4f39
 	ld h,0e1h		;4f3a
-	ld (hl),0a0h		;4f3c
+	ld (hl),0a0h		;4f3c   ; y el patron 0xA0
 	jp pinta_el_marcador_de_arriba		;4f3e
-L_4F41:
-	ld a,(hl)			;4f41
+
+; ----------------------------------------------------------------------
+; LA MAQUINA DE UN BICHO, y el estado cabe en TRES bits: el valor 0 y el 7 tienen camino propio y los seis de en medio son los pasos. Encima, el bit 7 marca si esta activo y los bits de 0xE057 y 0xE05F llevan mapas de ocupacion -un bit por bicho- para que dos no ocupen el mismo sitio.
+; ----------------------------------------------------------------------
+mueve_un_bicho:
+	ld a,(hl)			;4f41   ; el estado del bicho
 	ld b,a			;4f42
-	and 007h		;4f43
-	jr z,L_4F90		;4f45
-	cp 007h		;4f47
+	and 007h		;4f43   ; los tres bits de abajo
+	jr z,baja_el_plazo_del_bicho		;4f45   ; el estado 0
+	cp 007h		;4f47   ; y el 7
 	jp z,L_5039		;4f49
 	ld a,b			;4f4c
-	rla			;4f4d
+	rla			;4f4d   ; el bit 7: esta activo?
 	ret nc			;4f4e
 	ld a,(hl)			;4f4f
-	inc a			;4f50
-	rla			;4f51
+	inc a			;4f50   ; uno mas
+	rla			;4f51   ; tres rotaciones
 	rla			;4f52
 	rla			;4f53
-	and 030h		;4f54
-	cp 030h		;4f56
+	and 030h		;4f54   ; dos bits
+	cp 030h		;4f56   ; el valor 0x30 se cambia por 0x40
 	jr nz,L_4F5C		;4f58
 	ld a,040h		;4f5a
 L_4F5C:
 	ld c,a			;4f5c
 	exx			;4f5d
-	ld hl,0e057h		;4f5e
-	and (hl)			;4f61
+	ld hl,0e057h		;4f5e   ; el mapa de ocupacion
+	and (hl)			;4f61   ; si su bit ya esta puesto, no cabe
 	exx			;4f62
-	jr nz,L_4F90		;4f63
+	jr nz,baja_el_plazo_del_bicho		;4f63
 	ld a,(hl)			;4f65
-	rra			;4f66
-	jr nc,L_4F99		;4f67
+	rra			;4f66   ; el bit 0 del estado
+	jr nc,pinta_el_bicho		;4f67
 	dec hl			;4f69
 	ld a,(hl)			;4f6a
 	inc hl			;4f6b
-	cp 006h		;4f6c
-	jr c,L_4F99		;4f6e
+	cp 006h		;4f6c   ; por debajo de seis no
+	jr c,pinta_el_bicho		;4f6e
 	ld a,c			;4f70
 	exx			;4f71
-	ld hl,0e05fh		;4f72
+	ld hl,0e05fh		;4f72   ; el otro mapa de ocupacion
 	and (hl)			;4f75
 	exx			;4f76
-	jr nz,L_4F88		;4f77
+	jr nz,borra_la_ficha_del_bicho		;4f77
 	ld a,c			;4f79
 	exx			;4f7a
-	or (hl)			;4f7b
+	or (hl)			;4f7b   ; se marca su bit
 	ld (hl),a			;4f7c
 	exx			;4f7d
 	inc hl			;4f7e
-	inc (hl)			;4f7f
+	inc (hl)			;4f7f   ; y se mueven los dos contadores en sentidos contrarios
 	inc (hl)			;4f80
 	dec hl			;4f81
 	dec hl			;4f82
 	dec (hl)			;4f83
 	dec (hl)			;4f84
 	inc hl			;4f85
-	jr L_4F99		;4f86
-L_4F88:
+	jr pinta_el_bicho		;4f86
+borra_la_ficha_del_bicho:
 	dec hl			;4f88
 L_4F89:
-	xor a			;4f89
+	xor a			;4f89   ; los tres bytes, a cero
 	ld (hl),a			;4f8a
 	inc hl			;4f8b
 	ld (hl),a			;4f8c
 	inc hl			;4f8d
 	ld (hl),a			;4f8e
 	ret			;4f8f
-L_4F90:
+baja_el_plazo_del_bicho:
 	dec hl			;4f90
-	dec (hl)			;4f91
-	call m,L_5029		;4f92
+	dec (hl)			;4f91   ; su plazo, uno menos
+	call m,L_5029		;4f92   ; y al pasar de cero, se atiende
 	inc hl			;4f95
 	inc hl			;4f96
 	inc (hl)			;4f97
 	dec hl			;4f98
-L_4F99:
+pinta_el_bicho:
 	dec hl			;4f99
 	ld c,(hl)			;4f9a
 	inc hl			;4f9b
 	inc hl			;4f9c
 	ld a,(hl)			;4f9d
-	ld hl,0e055h		;4f9e
+	ld hl,0e055h		;4f9e   ; la posicion del decorado
 	sub (hl)			;4fa1
-	cp 021h		;4fa2
+	cp 021h		;4fa2   ; treinta y tres de margen
 	ret nc			;4fa4
 	ld d,a			;4fa5
 	ld a,b			;4fa6
-	inc a			;4fa7
+	inc a			;4fa7   ; el paso siguiente
 	and 006h		;4fa8
 	ld h,a			;4faa
 	add a,a			;4fab
@@ -2836,7 +2852,7 @@ L_5039:
 	add a,001h		;5048
 	daa			;504a
 	ld (0e07bh),a		;504b
-	call L_4EA3		;504e
+	call pinta_la_barra_de_progreso		;504e
 L_5051:
 	ld hl,0e055h		;5051
 	ld a,(hl)			;5054

@@ -879,3 +879,78 @@ C 0x4e44 dieciocho bytes
 L 0x4e4a mueve_las_tres_cosas
 C 0x4e4e uno de cada cuatro cuadros
 C 0x4e58 tres
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x4e5b un color
+C 0x4e5d el siguiente bit de la mascara
+C 0x4e5f el bit 3
+C 0x4e63 otro color
+C 0x4e69 y el tercero
+C 0x4e6c cuatro bytes por sprite
+C 0x4e75 el destino en la VRAM
+C 0x4e78 nueve bytes
+L 0x4e7f parpadea_el_aviso
+B 0x4e7f EL AVISO QUE PARPADEA cuando el reloj llega a las siete y pasa de 0x30: la celda 0x38B9 alterna entre dos patrones dandole la vuelta al bit 0, y el ritmo es de 32 o de 16 cuadros segun lo apurado que vaya el reloj. Cuanto menos tiempo queda, mas deprisa parpadea.
+C 0x4e7f el reloj
+C 0x4e83 las siete
+C 0x4e87 y por debajo de 0x30 todavia no
+C 0x4e8a una de cada 32
+C 0x4e8e o una de cada 16 si esta mas apurado
+C 0x4e99 le da la vuelta al bit 0
+C 0x4e9c la celda del aviso
+L 0x4ea3 pinta_la_barra_de_progreso
+B 0x4ea3 LA BARRA DE PROGRESO: ocho bytes copiados a 0xE158 y, encima, tantas celdas 0x55 como diga (0xE060) dividido entre cuatro, con el resto eligiendo el remate de la tabla de 0x4EF8. Es como se dibuja una barra a media celda.
+C 0x4ea3 los ocho valores de partida
+C 0x4eae el progreso
+C 0x4eb6 dividido entre cuatro
+C 0x4ebc y el resto, dos bits
+C 0x4ebe la tabla de cuatro remates
+C 0x4eca el patron lleno
+C 0x4ed0 y el remate a medias
+C 0x4ed4 el destino en la VRAM
+C 0x4ed7 ocho bytes
+C 0x4ee0 416 celdas
+L 0x4f0e mueve_los_ocho_bichos
+B 0x4f0e EL BUCLE DE LOS OCHO BICHOS, atendido solo cuando el nibble bajo del contador de cuadros vale 15: una vez de cada dieciseis.
+C 0x4f0e el contador de cuadros
+C 0x4f13 solo cuando el nibble bajo vale 15
+C 0x4f16 ocho bichos
+C 0x4f21 tres bytes por bicho
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x4f31 cuatro menos la planta
+C 0x4f37 +0xE0: el hueco que le toca
+C 0x4f3c y el patron 0xA0
+L 0x4f41 mueve_un_bicho
+B 0x4f41 LA MAQUINA DE UN BICHO, y el estado cabe en TRES bits: el valor 0 y el 7 tienen camino propio y los seis de en medio son los pasos. Encima, el bit 7 marca si esta activo y los bits de 0xE057 y 0xE05F llevan mapas de ocupacion -un bit por bicho- para que dos no ocupen el mismo sitio.
+C 0x4f41 el estado del bicho
+C 0x4f43 los tres bits de abajo
+C 0x4f45 el estado 0
+C 0x4f47 y el 7
+C 0x4f4d el bit 7: esta activo?
+C 0x4f50 uno mas
+C 0x4f51 tres rotaciones
+C 0x4f54 dos bits
+C 0x4f56 el valor 0x30 se cambia por 0x40
+C 0x4f5e el mapa de ocupacion
+C 0x4f61 si su bit ya esta puesto, no cabe
+C 0x4f66 el bit 0 del estado
+C 0x4f6c por debajo de seis no
+C 0x4f72 el otro mapa de ocupacion
+C 0x4f7b se marca su bit
+C 0x4f7f y se mueven los dos contadores en sentidos contrarios
+L 0x4f88 borra_la_ficha_del_bicho
+C 0x4f89 los tres bytes, a cero
+L 0x4f90 baja_el_plazo_del_bicho
+C 0x4f91 su plazo, uno menos
+C 0x4f92 y al pasar de cero, se atiende
+L 0x4f99 pinta_el_bicho
+C 0x4f9e la posicion del decorado
+C 0x4fa2 treinta y tres de margen
+C 0x4fa7 el paso siguiente
