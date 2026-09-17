@@ -1,0 +1,58 @@
+# ======================================================================
+# COMIC BAKERY (RC-714) - anotaciones del desensamblado
+# ======================================================================
+# Cada directiva D declara un rango de datos con su nombre y con la MEDIDA de
+# la que sale. Los guiones de rotulos los mide tools/guiones.py ejecutando el
+# propio interprete del cartucho.
+
+D 0x4000 0x4010 cabecera_del_cartucho  "AB" y la direccion de INIT (0x40C7); STATEMENT, DEVICE y TEXT a cero
+F 0x4000 w
+
+# Las tres tablas del despachador de 0x4096, pegadas detras de su `call`.
+D 0x4119 0x4139 tabla_de_escenas  16 entradas; la primera apunta a 0x4139, justo detras de la tabla
+F 0x4119 w
+D 0x4282 0x428a tabla_4282  4 entradas; cierra en 0x428A
+F 0x4282 w
+D 0x432b 0x433b tabla_432B  8 entradas; cierra en 0x433B
+F 0x432b w
+
+# ======================================================================
+# LOS GUIONES DE ROTULOS
+# ======================================================================
+# El interprete es 0x40AA (borra, mascara 0x00) / 0x40AE (pinta, 0xFF) /
+# 0x40B0, el mismo que llevan los otros dos cartuchos de la tanda. Formato
+# [destino VRAM, word][indices...], con 0xFE para saltar a otro destino y 0xFF
+# para terminar. Donde acaba cada uno lo mide tools/guiones.py ejecutandolo.
+#
+# La fuente empieza en el espacio -desplazamiento 0x20, como en Circus
+# Charlie-, y con eso los rotulos salen legibles: HI, STAGE, BEAM, 1P, 2P,
+# PLAY SELECT con sus cuatro opciones enteras (1 o 2 jugadores, palanca o
+# teclado), PLAYER 1, "(r) VIDEO CARTRIDGE (r)" y la firma KONAMI 1984.
+D 0x5d2c 0x5d36 guion_0x5D2C  10 bytes, 2 tramos, 4 bytes a la VRAM; lo pinta 0x5CEF
+D 0x5d8e 0x5dab guion_0x5D8E  29 bytes, 4 tramos, 17 bytes a la VRAM; lo pinta 0x45B3
+D 0x5dab 0x5db1 guion_0x5DAB  6 bytes, 1 tramos, 3 bytes a la VRAM; lo pinta 0x45C0
+D 0x5db1 0x5e2a guion_0x5DB1  121 bytes, 6 tramos, 103 bytes a la VRAM; lo pinta 0x4713
+D 0x5e37 0x5e42 guion_0x5E37  11 bytes, 1 tramos, 8 bytes a la VRAM; lo pinta 0x41E7
+D 0x5e42 0x5e58 guion_0x5E42  22 bytes, 1 tramos, 19 bytes a la VRAM; lo pinta 0x415A, 0x4169
+
+# ======================================================================
+# EL SONIDO
+# ======================================================================
+# Los doce periodos del PSG. Son LOS MISMOS DOCE BYTES que en Circus Charlie
+# y en Magical Tree -6A 64 5F 59 54 50 4B 47 43 3F 3C 38-, aunque este
+# cartucho no comparta con ellos ni el descompresor: la afinacion viaja con la
+# casa, no con el motor.
+D 0x7b5e 0x7b6a escala_cromatica  los doce periodos
+F 0x7b5e 12
+
+# El repertorio de sonidos. 0x79D7 hace `and 03fh / add a,a / ld de,07b68h /
+# call L_4057`, o sea que la base de 0x7B68 corresponde al indice 0 y el
+# primer sonido de verdad es el 1, en 0x7B6A.
+#
+# El encaje que fija la cuenta: la entrada mas baja es 0x7BA2, justo donde la
+# tabla acaba. 0x7B6A + 28*2 = 0x7BA2.
+D 0x7b6a 0x7ba2 tabla_de_sonidos  28 punteros
+F 0x7b6a w
+D 0x7ba2 0x7ef4 partituras  los sonidos a los que apunta la tabla
+D 0x7ef4 0x8000 relleno_final  268 bytes de 0xFF hasta el final del cartucho
+F 0x7ef4 16

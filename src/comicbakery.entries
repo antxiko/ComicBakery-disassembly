@@ -26,3 +26,18 @@
 !tabla 0x4119  16   # desde 0x4116; cierra en 0x4139, su entrada mas baja
 !tabla 0x4282   4   # desde 0x427F; cierra en 0x428A
 !tabla 0x432b   8   # desde 0x4328; cierra en 0x433B
+
+# ======================================================================
+# LAS DIRECCIONES DE RETORNO EMPUJADAS A MANO
+# ======================================================================
+# 0x40F7 elige una de dos y la APILA antes de caer en el despachador, igual
+# que hacen 0x40AB en Circus Charlie y 0x40A7 en Magical Tree:
+#
+#     ld a,(0e002h) / and 040h
+#     ld hl,046a3h / jr nz,L_410E / ld hl,04831h
+#     ld a,(0e000h) / cp 008h / jr z,L_4116 / push hl
+#
+# O sea que la escena despachada, al hacer `ret`, sigue por 0x46A3 o por
+# 0x4831. El trazado no puede seguir un retorno fabricado.
+0x46A3   # retorno apilado por 0x4106
+0x4831   # retorno apilado por 0x410B
