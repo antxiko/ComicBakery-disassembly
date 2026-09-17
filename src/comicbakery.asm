@@ -183,7 +183,7 @@ init:
 	ldir		;40e3
 	ld a,001h		;40e5   ; el cerrojo, tomado durante el arranque
 	ld (0e005h),a		;40e7
-	call L_471D		;40ea   ; prepara el VDP y la pantalla
+	call arranca_el_hardware		;40ea   ; prepara el VDP y la pantalla
 	xor a			;40ed
 	ld (0e005h),a		;40ee   ; y ahora si, se suelta
 	call 0013eh		;40f1   ; BIOS RDVDP - Reads VDP status register
@@ -273,7 +273,7 @@ L_4173:
 ; ESCENA 3: espera a que el jugador se decida.
 ; ----------------------------------------------------------------------
 L_4176:
-	call L_46ED		;4176
+	call barre_una_franja		;4176
 	ret c			;4179
 	xor a			;417a
 	jp L_4235		;417b
@@ -284,7 +284,7 @@ L_4176:
 L_417E:
 	ld hl,0e004h		;417e
 	dec (hl)			;4181
-	jp nz,L_451A		;4182
+	jp nz,parpadea_el_cursor		;4182
 	jp plazo_de_32		;4185
 
 ; ----------------------------------------------------------------------
@@ -299,7 +299,7 @@ L_4188:
 	ld (0e051h),a		;4193
 	inc a			;4196
 	ld (0e053h),a		;4197   ; la senal de partida en marcha
-	call L_45B3		;419a   ; el marcador
+	call pinta_el_marcador		;419a   ; el marcador
 	call L_494C		;419d
 	call L_7061		;41a0
 	jp plazo_de_32		;41a3
@@ -324,7 +324,7 @@ L_41B2:
 	ret p			;41b5
 	ld hl,0e050h		;41b6   ; el contador de vidas
 	dec (hl)			;41b9   ; una menos: esta se va a jugar
-	call L_45B3		;41ba   ; repinta el marcador
+	call pinta_el_marcador		;41ba   ; repinta el marcador
 	ld a,(0e002h)		;41bd   ; el bit 5 dice si hay dos jugadores
 	and 020h		;41c0
 	jr z,L_41D6		;41c2
@@ -335,7 +335,7 @@ L_41B2:
 	ld (hl),a			;41cb
 	jr nz,L_41D6		;41cc
 	ld hl,05e37h		;41ce   ; el rotulo "PLAYER 1"
-	call L_453C		;41d1
+	call pinta_rotulo_con_marca		;41d1
 	ld a,02fh		;41d4   ; el plazo, 47 cuadros
 L_41D6:
 	inc a			;41d6   ; y 48 si no hay rotulo
@@ -489,7 +489,7 @@ L_42A9:
 	ld a,093h		;42b4   ; el sonido del final
 	call L_799C		;42b6
 	ld hl,05e2ah		;42b9   ; el cartel
-	call L_453C		;42bc
+	call pinta_rotulo_con_marca		;42bc
 	ld a,00dh		;42bf   ; escena 13
 	ld (0e000h),a		;42c1
 	ld a,080h		;42c4
@@ -617,7 +617,7 @@ pierde_una_vida:
 L_4378:
 	call limpia_la_pantalla		;4378
 	call L_60A4		;437b
-	call L_46E3		;437e
+	call barre_la_pantalla_entera		;437e
 L_4381:
 	ld hl,0e001h		;4381
 	inc (hl)			;4384
@@ -627,8 +627,8 @@ L_4386:
 	dec (hl)			;4389
 	jp z,L_439C		;438a
 	bit 2,(hl)		;438d   ; el bit 2: parpadeo de cuatro en cuatro cuadros
-	jp nz,L_46E3		;438f
-	call L_4531		;4392
+	jp nz,barre_la_pantalla_entera		;438f
+	call donde_va_el_cursor		;4392
 	ld bc,0001bh		;4395   ; 27 celdas que borrar
 	xor a			;4398
 	jp rellena_vram		;4399
@@ -939,226 +939,246 @@ prepara_la_pantalla_de_fin:
 	call L_44E8		;4515
 	dec a			;4518
 	ret			;4519
-L_451A:
-	ld bc,03e3fh		;451a
-	bit 3,(hl)		;451d
+parpadea_el_cursor:
+	ld bc,03e3fh		;451a   ; el par de patrones del cursor
+	bit 3,(hl)		;451d   ; el bit 3 del plazo: parpadea de ocho en ocho cuadros
 	jr nz,L_4524		;451f
 L_4521:
-	ld bc,00000h		;4521
+	ld bc,00000h		;4521   ; y en la otra mitad, celdas vacias
 L_4524:
-	call L_4531		;4524
+	call donde_va_el_cursor		;4524
 	ld a,b			;4527
 	call escribe_en_vram		;4528
 	ld a,c			;452b
 	inc de			;452c
 	call escribe_en_vram		;452d
 	ret			;4530
-L_4531:
-	ld a,(0e042h)		;4531
-	add a,014h		;4534
-	rrca			;4536
+
+; ----------------------------------------------------------------------
+; DONDE CAE EL CURSOR DEL MENU: la opcion de (0xE042), mas 0x14 y dos giros a la derecha, da el byte bajo de la celda, con la fila 0x7A fija en D.
+; ----------------------------------------------------------------------
+donde_va_el_cursor:
+	ld a,(0e042h)		;4531   ; la opcion elegida
+	add a,014h		;4534   ; el desplazamiento a la primera fila
+	rrca			;4536   ; dos giros: cuatro filas por opcion
 	rrca			;4537
 	ld e,a			;4538
-	ld d,07ah		;4539
+	ld d,07ah		;4539   ; la pagina, fija
 	ret			;453b
-L_453C:
+pinta_rotulo_con_marca:
 	call pinta_rotulo		;453c
 	ld a,(0e002h)		;453f
 	or a			;4542
 	ret p			;4543
-	ld a,012h		;4544
+	ld a,012h		;4544   ; la marca del segundo jugador
 	dec de			;4546
 	call escribe_en_vram		;4547
 	ret			;454a
-L_454B:
-	ld a,(0e002h)		;454b
-	add a,a			;454e
-	ret p			;454f
+
+; ----------------------------------------------------------------------
+; SUMAR PUNTOS, en BCD y a seis digitos. El tanteo es el de 0xE049 o el de 0xE046 segun el turno, y con el bit 6 puesto no se suma nada.
+; ----------------------------------------------------------------------
+suma_puntos:
+	ld a,(0e002h)		;454b   ; el turno y las banderas
+	add a,a			;454e   ; el bit 7 al acarreo, el 6 al signo
+	ret p			;454f   ; con el bit 6 puesto no se suman puntos
 	ld hl,0e049h		;4550
 	jr nc,L_4557		;4553
 	ld l,046h		;4555
 L_4557:
 	ld a,(hl)			;4557
-	add a,e			;4558
-	daa			;4559
+	add a,e			;4558   ; los dos digitos de abajo
+	daa			;4559   ; en BCD
 	ld (hl),a			;455a
 	ld e,a			;455b
 	inc l			;455c
 	ld a,(hl)			;455d
-	adc a,d			;455e
+	adc a,d			;455e   ; los del medio, con acarreo
 	daa			;455f
 	ld (hl),a			;4560
 	ld d,a			;4561
 	inc hl			;4562
-	jr nc,L_4599		;4563
+	jr nc,mira_si_es_record		;4563
 	ld a,(hl)			;4565
-	add a,001h		;4566
+	add a,001h		;4566   ; y el tercer par
 	daa			;4568
 	ld (hl),a			;4569
-	jr nc,L_4579		;456a
-	ld bc,09999h		;456c
+	jr nc,mira_la_vida_extra		;456a
+	ld bc,09999h		;456c   ; si desborda los seis digitos, el record se clava en 999999
 	ld (0e043h),bc		;456f
 	ld (0e044h),bc		;4573
 	jr L_45D4		;4577
-L_4579:
-	ld a,(0e052h)		;4579
-	cp (hl)			;457c
-	jr nc,L_4599		;457d
+
+; ----------------------------------------------------------------------
+; LA VIDA EXTRA, y aqui hay un numero distinto: el umbral sube de TRES en tres, no de dos como en Circus Charlie y Magical Tree. Lo demas es igual, incluido el clavarse en 0xFF cuando desbordaria.
+; ----------------------------------------------------------------------
+mira_la_vida_extra:
+	ld a,(0e052h)		;4579   ; el umbral
+	cp (hl)			;457c   ; contra los digitos altos del tanteo
+	jr nc,mira_si_es_record		;457d
 	push de			;457f
 	push hl			;4580
-	add a,003h		;4581
+	add a,003h		;4581   ; el siguiente umbral, TRES mas
 	daa			;4583
 	jr nc,L_4588		;4584
-	ld a,0ffh		;4586
+	ld a,0ffh		;4586   ; si se paso, 0xFF: no habra mas
 L_4588:
 	ld (0e052h),a		;4588
 	ld hl,0e050h		;458b
-	inc (hl)			;458e
-	call L_46BD		;458f
-	ld a,008h		;4592
+	inc (hl)			;458e   ; una vida mas
+	call pinta_las_vidas		;458f   ; repinta el contador
+	ld a,008h		;4592   ; y suena el aviso
 	call L_799C		;4594
 	pop hl			;4597
 	pop de			;4598
-L_4599:
-	ld a,(0e045h)		;4599
+mira_si_es_record:
+	ld a,(0e045h)		;4599   ; el par alto del record
 	ld b,(hl)			;459c
-	sub b			;459d
+	sub b			;459d   ; contra el del tanteo
 	jr c,L_45A9		;459e
-	jr nz,L_45DD		;45a0
-	ld hl,(0e043h)		;45a2
+	jr nz,pinta_el_tanteo		;45a0
+	ld hl,(0e043h)		;45a2   ; empatan arriba: se miran los de abajo
 	sbc hl,de		;45a5
-	jr nc,L_45DD		;45a7
+	jr nc,pinta_el_tanteo		;45a7
 L_45A9:
 	ld (0e043h),de		;45a9
 	ld a,b			;45ad
 	ld (0e045h),a		;45ae
 	jr L_45D4		;45b1
-L_45B3:
-	ld hl,05d8eh		;45b3
+pinta_el_marcador:
+	ld hl,05d8eh		;45b3   ; los rotulos del marcador
 	call pinta_rotulo		;45b6
 	ld a,(0e002h)		;45b9
-	bit 5,a		;45bc
+	bit 5,a		;45bc   ; el bit 5: hay dos jugadores?
 	jr z,L_45CE		;45be
-	ld hl,05dabh		;45c0
+	ld hl,05dabh		;45c0   ; entonces tambien el "2P"
 	call pinta_rotulo		;45c3
 	ld a,(0e002h)		;45c6
-	xor 080h		;45c9
+	xor 080h		;45c9   ; se finge el otro turno
 	call L_45E0		;45cb
 L_45CE:
-	call L_46BD		;45ce
-	call L_45F2		;45d1
+	call pinta_las_vidas		;45ce   ; el contador de vidas
+	call pinta_la_fase		;45d1
 L_45D4:
-	ld hl,0e045h		;45d4
-	ld de,0380fh		;45d7
+	ld hl,0e045h		;45d4   ; el record
+	ld de,0380fh		;45d7   ; en la fila de arriba, columna 15
 	call L_45EE		;45da
-L_45DD:
+pinta_el_tanteo:
 	ld a,(0e002h)		;45dd
 L_45E0:
-	ld de,03805h		;45e0
+	ld de,03805h		;45e0   ; la celda del primer tanteo
 	ld hl,0e04bh		;45e3
-	add a,a			;45e6
+	add a,a			;45e6   ; el bit 7 al acarreo
 	jr nc,L_45EE		;45e7
-	ld e,025h		;45e9
+	ld e,025h		;45e9   ; la columna del segundo
 	ld hl,0e048h		;45eb
 L_45EE:
 	ld b,003h		;45ee
-	jr L_45FA		;45f0
-L_45F2:
-	ld de,0381ch		;45f2
+	jr imprime_bcd		;45f0
+pinta_la_fase:
+	ld de,0381ch		;45f2   ; la celda de la fase
 	ld hl,0e051h		;45f5
 	ld b,001h		;45f8
-L_45FA:
-	ld c,010h		;45fa
+
+; ----------------------------------------------------------------------
+; EL IMPRESOR DE BCD: parte cada byte en sus dos digitos y les suma 0x10, que es donde empieza el "0" en la fuente. El alto va primero y el puntero de la variable retrocede mientras el de la VRAM avanza, porque el BCD esta guardado del reves.
+; ----------------------------------------------------------------------
+imprime_bcd:
+	ld c,010h		;45fa   ; +0x10: el "0" de la fuente
 L_45FC:
 	ld a,(hl)			;45fc
-	and 0f0h		;45fd
-	rra			;45ff
+	and 0f0h		;45fd   ; el digito de arriba
+	rra			;45ff   ; cuatro veces a la derecha
 	rra			;4600
 	rra			;4601
 	rra			;4602
 	or c			;4603
 	call escribe_en_vram		;4604
 	inc de			;4607
-	ld a,(hl)			;4608
+	ld a,(hl)			;4608   ; y el de abajo
 	and 00fh		;4609
 	or c			;460b
 	call escribe_en_vram		;460c
 	inc de			;460f
-	dec hl			;4610
+	dec hl			;4610   ; la variable va hacia atras
 	djnz L_45FC		;4611
 	ret			;4613
-L_4614:
-	ld a,(0e000h)		;4614
-	cp 00bh		;4617
+
+; ----------------------------------------------------------------------
+; EL RELOJ DE LA JORNADA, que es el corazon de este juego y no lo tiene ninguno de sus dos hermanos. Cuenta segundos en BCD hasta 60, y cada sesenta sube un minuto; al llegar al minuto OCHO levanta la senal de fin (0xE00D). O sea que una fase dura ocho minutos de reloj.
+; ----------------------------------------------------------------------
+el_reloj_de_la_jornada:
+	ld a,(0e000h)		;4614   ; la escena en curso
+	cp 00bh		;4617   ; solo la escena 11 mueve el reloj
 	ret nz			;4619
-	ld hl,0e199h		;461a
-	dec (hl)			;461d
+	ld hl,0e199h		;461a   ; el plazo entre tic y tic
+	dec (hl)			;461d   ; uno menos
 	ret nz			;461e
 	ld de,0e07ah		;461f
-	ld c,020h		;4622
+	ld c,020h		;4622   ; el plazo normal
 	ld a,(de)			;4624
 	ld b,a			;4625
 	dec de			;4626
 	or a			;4627
 	jr nz,L_4631		;4628
 	ld a,(de)			;462a
-	cp 011h		;462b
+	cp 011h		;462b   ; por debajo de 0x11
 	jr c,L_463C		;462d
 	jr L_463A		;462f
 L_4631:
-	cp 007h		;4631
+	cp 007h		;4631   ; el estado 7
 	jr nz,L_463A		;4633
 	ld a,(de)			;4635
-	cp 045h		;4636
+	cp 045h		;4636   ; y por debajo de 0x45
 	jr nc,L_463C		;4638
 L_463A:
-	ld c,00ah		;463a
+	ld c,00ah		;463a   ; el plazo corto: el reloj corre el triple
 L_463C:
 	ld (hl),c			;463c
 	ex de,hl			;463d
 	ld a,(hl)			;463e
-	add a,001h		;463f
+	add a,001h		;463f   ; un segundo mas, en BCD
 	daa			;4641
 	ld (hl),a			;4642
-	cp 060h		;4643
-	jr c,L_4655		;4645
-	ld (hl),000h		;4647
+	cp 060h		;4643   ; a los sesenta
+	jr c,pinta_el_reloj		;4645
+	ld (hl),000h		;4647   ; se reinicia
 	inc hl			;4649
-	inc (hl)			;464a
+	inc (hl)			;464a   ; y sube un minuto
 	ld a,(hl)			;464b
-	cp 008h		;464c
-	jr nz,L_4655		;464e
+	cp 008h		;464c   ; al minuto ocho
+	jr nz,pinta_el_reloj		;464e
 	ld a,001h		;4650
-	ld (0e00dh),a		;4652
-L_4655:
+	ld (0e00dh),a		;4652   ; se acaba la jornada
+pinta_el_reloj:
 	ld hl,0e079h		;4655
 	ld de,0e198h		;4658
 	ld a,(hl)			;465b
-	and 00fh		;465c
-	add a,080h		;465e
+	and 00fh		;465c   ; el nibble bajo
+	add a,080h		;465e   ; +0x80: los digitos del reloj
 	ld (de),a			;4660
 	dec de			;4661
 	ld a,(hl)			;4662
-	rra			;4663
+	rra			;4663   ; y el nibble alto
 	rra			;4664
 	rra			;4665
 	rra			;4666
 	and 00fh		;4667
-	add a,090h		;4669
+	add a,090h		;4669   ; +0x90: los de la otra mitad
 	ld (de),a			;466b
 	dec de			;466c
 	inc hl			;466d
 	ld a,(hl)			;466e
 	add a,a			;466f
 	add a,(hl)			;4670
-	ld hl,0468ah		;4671
+	ld hl,0468ah		;4671   ; la tabla de indices del reloj
 	call suma_a_a_hl		;4674
-	ld bc,00003h		;4677
-	lddr		;467a
+	ld bc,00003h		;4677   ; tres bytes
+	lddr		;467a   ; copiados hacia atras
 	ex de,hl			;467c
 	inc hl			;467d
-	ld de,038edh		;467e
-	ld bc,00005h		;4681
+	ld de,038edh		;467e   ; la celda del reloj en la pantalla
+	ld bc,00005h		;4681   ; cinco celdas
 	call vuelca_bloque		;4684
 	ret			;4687
 
@@ -1173,100 +1193,112 @@ DATA_4688:
 ; ======================================================================
 
 
-L_46A3:
-	ld hl,(0e002h)		;46a3
-	ld a,01fh		;46a6
+
+; ----------------------------------------------------------------------
+; EL PARPADEO DEL "1P" / "2P", cada 32 cuadros. Con dos jugadores se descuenta uno para que no parpadeen a la vez. Es ademas el REMATE que 0x40F7 apila cuando el bit 6 de (0xE002) esta a uno.
+; ----------------------------------------------------------------------
+parpadea_el_turno:
+	ld hl,(0e002h)		;46a3   ; de un tiron: (0xE002) y el contador de cuadros
+	ld a,01fh		;46a6   ; los cinco bits de abajo
 	and h			;46a8
-	ret nz			;46a9
+	ret nz			;46a9   ; uno de cada 32 cuadros
 	ld c,a			;46aa
 	bit 5,h		;46ab
 	jr z,L_46B0		;46ad
-	dec c			;46af
+	dec c			;46af   ; con dos jugadores, se desfasa
 L_46B0:
-	bit 7,l		;46b0
+	bit 7,l		;46b0   ; el bit 7 dice de quien es el turno
 	ld hl,05da5h		;46b2
 	jr z,L_46BA		;46b5
 	ld hl,05dabh		;46b7
 L_46BA:
 	jp L_40B0		;46ba
-L_46BD:
-	ld de,03836h		;46bd
-	ld a,(0e050h)		;46c0
+
+; ----------------------------------------------------------------------
+; EL CONTADOR DE VIDAS, cinco marcas de izquierda a derecha: mientras queden se escribe el patron 0x3B y, en cuanto se acaban, el 1, que es la celda vacia de este cartucho.
+; ----------------------------------------------------------------------
+pinta_las_vidas:
+	ld de,03836h		;46bd   ; la primera celda
+	ld a,(0e050h)		;46c0   ; las vidas que quedan
 	ld c,a			;46c3
-	ld a,03bh		;46c4
+	ld a,03bh		;46c4   ; la marca
 L_46C6:
-	ld b,005h		;46c6
+	ld b,005h		;46c6   ; cinco como maximo
 L_46C8:
-	dec c			;46c8
+	dec c			;46c8   ; una menos
 	jp p,L_46CE		;46c9
-	ld a,001h		;46cc
+	ld a,001h		;46cc   ; agotadas: celda vacia
 L_46CE:
 	call escribe_en_vram		;46ce
 	inc de			;46d1
 	djnz L_46C8		;46d2
 	ret			;46d4
-L_46D5:
-	ld de,03831h		;46d5
+pinta_los_panes:
+	ld de,03831h		;46d5   ; su celda
 	ld hl,0e120h		;46d8
 	ld c,(hl)			;46db
 	inc hl			;46dc
 	inc hl			;46dd
 	ld a,(hl)			;46de
-	add a,0bbh		;46df
+	add a,0bbh		;46df   ; el patron, corrido 0xBB
 	jr L_46C6		;46e1
-L_46E3:
+barre_la_pantalla_entera:
 	xor a			;46e3
-	ld (0e00ah),a		;46e4
+	ld (0e00ah),a		;46e4   ; se empieza por la fila 0
 L_46E7:
-	call L_46ED		;46e7
+	call barre_una_franja		;46e7
 	jr c,L_46E7		;46ea
 	ret			;46ec
-L_46ED:
-	ld hl,0e00ah		;46ed
+
+; ----------------------------------------------------------------------
+; EL BARRIDO, tres filas por llamada. (0xE00A) dice por donde va; devuelve acarreo mientras quede trabajo, y al pasar de 19 saca la pantalla de seleccion.
+; ----------------------------------------------------------------------
+barre_una_franja:
+	ld hl,0e00ah		;46ed   ; por donde iba
 	ld a,(hl)			;46f0
-	inc (hl)			;46f1
-	cp 013h		;46f2
+	inc (hl)			;46f1   ; y se deja avanzada
+	cp 013h		;46f2   ; diecinueve pasadas
 	jr nc,L_4712		;46f4
-	ld de,03888h		;46f6
+	ld de,03888h		;46f6   ; la esquina de arriba
 	ld c,a			;46f9
 	add a,e			;46fa
 	ld e,a			;46fb
 	ld a,c			;46fc
-	add a,a			;46fd
-	add a,0dah		;46fe
+	add a,a			;46fd   ; el paso por dos
+	add a,0dah		;46fe   ; +0xDA: de ahi sale el patron de la cortina
 	ld c,a			;4700
-	ld b,003h		;4701
+	ld b,003h		;4701   ; tres filas de golpe
 	xor a			;4703
 L_4704:
 	call escribe_en_vram		;4704
-	ld a,020h		;4707
+	ld a,020h		;4707   ; la de abajo
 	call suma_a_a_de		;4709
 	ld a,c			;470c
 	inc c			;470d
 	djnz L_4704		;470e
-	scf			;4710
+	scf			;4710   ; acarreo: todavia queda
 	ret			;4711
 L_4712:
 	push af			;4712
-	ld hl,05db1h		;4713
+	ld hl,05db1h		;4713   ; "PLAY SELECT" con sus cuatro opciones
 	call z,pinta_rotulo		;4716
 	pop af			;4719
 	cp 034h		;471a
 	ret			;471c
-L_471D:
+arranca_el_hardware:
 	ld a,007h		;471d
 	ld e,0b8h		;471f
 	call 00093h		;4721   ; BIOS WRTPSG - Writes data to PSG-register
-	ld a,09ah		;4724
+	ld a,09ah		;4724   ; el sonido de arranque
 	call L_79AC		;4726
-	ld de,04000h		;4729
-	ld bc,04000h		;472c
+	ld de,04000h		;4729   ; la VRAM entera
+	ld bc,04000h		;472c   ; los dieciseis kilobytes
 	xor a			;472f
 	call rellena_vram		;4730
 L_4733:
-	ld hl,0474fh		;4733
+	ld hl,0474fh		;4733   ; los ocho registros del VDP
 	ld de,0e038h		;4736
-	ld bc,00008h		;4739
+	ld bc,00008h		;4739   ; ocho bytes
 	ldir		;473c
 L_473E:
 	ld hl,0e038h		;473e
@@ -1545,7 +1577,7 @@ L_48CE:
 	call L_5446		;48ce
 	call L_56DC		;48d1
 	call L_5735		;48d4
-	call L_46D5		;48d7
+	call pinta_los_panes		;48d7
 	call L_4B0E		;48da
 	call L_4BBB		;48dd
 	call L_4C67		;48e0
@@ -1569,7 +1601,7 @@ L_48CE:
 	call L_5464		;4916
 	call L_58FC		;4919
 	call L_534F		;491c
-	call L_4614		;491f
+	call el_reloj_de_la_jornada		;491f
 	ld a,(0e00bh)		;4922
 	cp 007h		;4925
 	jr nz,L_4931		;4927
@@ -1658,7 +1690,7 @@ L_49A6:
 	ld de,033e8h		;49e4
 	call L_6171		;49e7
 	call L_5897		;49ea
-	call L_46D5		;49ed
+	call pinta_los_panes		;49ed
 	xor a			;49f0
 	ld (0e055h),a		;49f1
 	ld c,a			;49f4
@@ -1680,7 +1712,7 @@ L_49FA:
 	ld hl,05e68h		;4a0f
 	call descomprime		;4a12
 	call L_4EA3		;4a15
-	call L_4655		;4a18
+	call pinta_el_reloj		;4a18
 	call L_70D6		;4a1b
 	ret			;4a1e
 
@@ -3341,7 +3373,7 @@ L_557E:
 	jr z,L_559A		;5596
 	ld d,003h		;5598
 L_559A:
-	call L_454B		;559a
+	call suma_puntos		;559a
 	ld a,003h		;559d
 	call L_799C		;559f
 	pop hl			;55a2
@@ -3378,7 +3410,7 @@ L_55C8:
 	ld a,007h		;55cf
 	ld (de),a			;55d1
 	ld de,00300h		;55d2
-	call L_454B		;55d5
+	call suma_puntos		;55d5
 	ld a,003h		;55d8
 	call L_799C		;55da
 	ret			;55dd
@@ -3441,7 +3473,7 @@ L_5637:
 	or (hl)			;5639
 	ld (hl),a			;563a
 	ld de,00120h		;563b
-	call L_454B		;563e
+	call suma_puntos		;563e
 	ld a,003h		;5641
 	jp L_799C		;5643
 L_5646:
@@ -3803,7 +3835,7 @@ L_5824:
 	ld a,004h		;5873
 	call L_799C		;5875
 	ld de,00050h		;5878
-	call L_454B		;587b
+	call suma_puntos		;587b
 	ld hl,0e110h		;587e
 	ld a,(hl)			;5881
 	bit 0,a		;5882
@@ -4180,7 +4212,7 @@ L_5AD6:
 	jr z,L_5B1A		;5af6
 	ld de,03ad2h		;5af8
 	ld b,001h		;5afb
-	call L_45FA		;5afd
+	call imprime_bcd		;5afd
 	inc hl			;5b00
 	inc de			;5b01
 	ld a,(0e060h)		;5b02
@@ -4197,7 +4229,7 @@ L_5B10:
 	djnz L_5B10		;5b13
 	inc b			;5b15
 	ld (hl),a			;5b16
-	call L_45FA		;5b17
+	call imprime_bcd		;5b17
 L_5B1A:
 	ld hl,05b3eh		;5b1a
 	ld de,0e080h		;5b1d
@@ -4444,7 +4476,7 @@ L_5CCF:
 	or a			;5cd3
 	jr z,L_5CDB		;5cd4
 	ld e,000h		;5cd6
-	call L_454B		;5cd8
+	call suma_puntos		;5cd8
 L_5CDB:
 	ld a,006h		;5cdb
 	call L_799C		;5cdd

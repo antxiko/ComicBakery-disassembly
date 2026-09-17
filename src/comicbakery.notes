@@ -370,3 +370,139 @@ L 0x44fb prepara_la_pantalla_de_fin
 C 0x44fd 0xD0 en los atributos de sprites
 C 0x450d 704 celdas
 C 0x4510 con el patron 1
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x451a parpadea_el_cursor
+C 0x451a el par de patrones del cursor
+C 0x451d el bit 3 del plazo: parpadea de ocho en ocho cuadros
+C 0x4521 y en la otra mitad, celdas vacias
+L 0x4531 donde_va_el_cursor
+B 0x4531 DONDE CAE EL CURSOR DEL MENU: la opcion de (0xE042), mas 0x14 y dos giros a la derecha, da el byte bajo de la celda, con la fila 0x7A fija en D.
+C 0x4531 la opcion elegida
+C 0x4534 el desplazamiento a la primera fila
+C 0x4536 dos giros: cuatro filas por opcion
+C 0x4539 la pagina, fija
+L 0x453c pinta_rotulo_con_marca
+C 0x4544 la marca del segundo jugador
+L 0x454b suma_puntos
+B 0x454b SUMAR PUNTOS, en BCD y a seis digitos. El tanteo es el de 0xE049 o el de 0xE046 segun el turno, y con el bit 6 puesto no se suma nada.
+C 0x454b el turno y las banderas
+C 0x454e el bit 7 al acarreo, el 6 al signo
+C 0x454f con el bit 6 puesto no se suman puntos
+C 0x4558 los dos digitos de abajo
+C 0x4559 en BCD
+C 0x455e los del medio, con acarreo
+C 0x4566 y el tercer par
+C 0x456c si desborda los seis digitos, el record se clava en 999999
+L 0x4579 mira_la_vida_extra
+B 0x4579 LA VIDA EXTRA, y aqui hay un numero distinto: el umbral sube de TRES en tres, no de dos como en Circus Charlie y Magical Tree. Lo demas es igual, incluido el clavarse en 0xFF cuando desbordaria.
+C 0x4579 el umbral
+C 0x457c contra los digitos altos del tanteo
+C 0x4581 el siguiente umbral, TRES mas
+C 0x4586 si se paso, 0xFF: no habra mas
+C 0x458e una vida mas
+C 0x458f repinta el contador
+C 0x4592 y suena el aviso
+L 0x4599 mira_si_es_record
+C 0x4599 el par alto del record
+C 0x459d contra el del tanteo
+C 0x45a2 empatan arriba: se miran los de abajo
+L 0x45b3 pinta_el_marcador
+C 0x45b3 los rotulos del marcador
+C 0x45bc el bit 5: hay dos jugadores?
+C 0x45c0 entonces tambien el "2P"
+C 0x45c9 se finge el otro turno
+C 0x45ce el contador de vidas
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x45d4 el record
+C 0x45d7 en la fila de arriba, columna 15
+L 0x45dd pinta_el_tanteo
+C 0x45e0 la celda del primer tanteo
+C 0x45e6 el bit 7 al acarreo
+C 0x45e9 la columna del segundo
+L 0x45f2 pinta_la_fase
+C 0x45f2 la celda de la fase
+L 0x45fa imprime_bcd
+B 0x45fa EL IMPRESOR DE BCD: parte cada byte en sus dos digitos y les suma 0x10, que es donde empieza el "0" en la fuente. El alto va primero y el puntero de la variable retrocede mientras el de la VRAM avanza, porque el BCD esta guardado del reves.
+C 0x45fa +0x10: el "0" de la fuente
+C 0x45fd el digito de arriba
+C 0x45ff cuatro veces a la derecha
+C 0x4608 y el de abajo
+C 0x4610 la variable va hacia atras
+L 0x4614 el_reloj_de_la_jornada
+B 0x4614 EL RELOJ DE LA JORNADA, que es el corazon de este juego y no lo tiene ninguno de sus dos hermanos. Cuenta segundos en BCD hasta 60, y cada sesenta sube un minuto; al llegar al minuto OCHO levanta la senal de fin (0xE00D). O sea que una fase dura ocho minutos de reloj.
+C 0x4614 la escena en curso
+C 0x4617 solo la escena 11 mueve el reloj
+C 0x461a el plazo entre tic y tic
+C 0x461d uno menos
+C 0x4622 el plazo normal
+C 0x462b por debajo de 0x11
+C 0x4631 el estado 7
+C 0x4636 y por debajo de 0x45
+C 0x463a el plazo corto: el reloj corre el triple
+C 0x463f un segundo mas, en BCD
+C 0x4643 a los sesenta
+C 0x4647 se reinicia
+C 0x464a y sube un minuto
+C 0x464c al minuto ocho
+C 0x4652 se acaba la jornada
+L 0x4655 pinta_el_reloj
+C 0x465c el nibble bajo
+C 0x465e +0x80: los digitos del reloj
+C 0x4663 y el nibble alto
+C 0x4669 +0x90: los de la otra mitad
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x4671 la tabla de indices del reloj
+C 0x4677 tres bytes
+C 0x467a copiados hacia atras
+C 0x467e la celda del reloj en la pantalla
+C 0x4681 cinco celdas
+L 0x46a3 parpadea_el_turno
+B 0x46a3 EL PARPADEO DEL "1P" / "2P", cada 32 cuadros. Con dos jugadores se descuenta uno para que no parpadeen a la vez. Es ademas el REMATE que 0x40F7 apila cuando el bit 6 de (0xE002) esta a uno.
+C 0x46a3 de un tiron: (0xE002) y el contador de cuadros
+C 0x46a6 los cinco bits de abajo
+C 0x46a9 uno de cada 32 cuadros
+C 0x46af con dos jugadores, se desfasa
+C 0x46b0 el bit 7 dice de quien es el turno
+L 0x46bd pinta_las_vidas
+B 0x46bd EL CONTADOR DE VIDAS, cinco marcas de izquierda a derecha: mientras queden se escribe el patron 0x3B y, en cuanto se acaban, el 1, que es la celda vacia de este cartucho.
+C 0x46bd la primera celda
+C 0x46c0 las vidas que quedan
+C 0x46c4 la marca
+C 0x46c6 cinco como maximo
+C 0x46c8 una menos
+C 0x46cc agotadas: celda vacia
+L 0x46d5 pinta_los_panes
+C 0x46d5 su celda
+C 0x46df el patron, corrido 0xBB
+L 0x46e3 barre_la_pantalla_entera
+C 0x46e4 se empieza por la fila 0
+L 0x46ed barre_una_franja
+B 0x46ed EL BARRIDO, tres filas por llamada. (0xE00A) dice por donde va; devuelve acarreo mientras quede trabajo, y al pasar de 19 saca la pantalla de seleccion.
+C 0x46ed por donde iba
+C 0x46f1 y se deja avanzada
+C 0x46f2 diecinueve pasadas
+C 0x46f6 la esquina de arriba
+C 0x46fd el paso por dos
+C 0x46fe +0xDA: de ahi sale el patron de la cortina
+C 0x4701 tres filas de golpe
+C 0x4707 la de abajo
+C 0x4710 acarreo: todavia queda
+C 0x4713 "PLAY SELECT" con sus cuatro opciones
+L 0x471d arranca_el_hardware
+C 0x4724 el sonido de arranque
+C 0x4729 la VRAM entera
+C 0x472c los dieciseis kilobytes
+C 0x4733 los ocho registros del VDP
+C 0x4739 ocho bytes
