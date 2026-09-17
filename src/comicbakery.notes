@@ -1812,3 +1812,249 @@ L 0x7a18 suena_un_cuadro
 L 0x7a41 avanza_una_voz
 L 0x7aa2 fija_la_duracion_de_la_nota
 L 0x7b52 escribe_la_nota
+
+# ======================================================================
+# EL PRESUPUESTO: LOS RANGOS QUE FALTABAN
+# ======================================================================
+# Cada uno lleva escrito de donde sale su borde: la instruccion que lo carga
+# con su cuenta al lado, o el descompresor del propio cartucho, que se para
+# solo y dice donde.
+
+D 0x4010 0x4028 tabla_de_indices_1  24 bytes; 0x4FAD la carga y la indexa con el paso por tres (`add a,a / add a,h`)
+D 0x4028 0x4040 tabla_de_indices_2  los otros 24; 0x4FE5 la nombra "la otra tabla de indices" y la indexa igual
+D 0x44ae 0x44b6 valores_iniciales  los ocho bytes que 0x4495 lleva de un `ldir` a 0xE050; con dos jugadores, 0x44A2 duplica el bloque entero a 0xE0C0
+D 0x4688 0x46a3 indices_del_reloj  nueve entradas de tres bytes. 0x4671 apunta a 0x468A, que es el ULTIMO byte de la primera, porque las copia con `lddr`, o sea hacia atras: por eso la tabla empieza dos bytes antes de la direccion que aparece en el codigo
+D 0x474f 0x4757 registros_del_vdp  los ocho valores que 0x4733 copia a 0xE038 y 0x473E baja al VDP uno a uno con WRTVDP
+D 0x488e 0x4892 modos_de_juego  cuatro bytes, uno por opcion del menu; 0x4860 los indexa con la opcion de (0xE042) y deja el elegido en (0xE002). Son 0x40 0x60 0x50 0x70, los mismos cuatro y en el mismo orden que Magical Tree (RC-713)
+D 0x4a1f 0x4a28 estado_inicial_de_los_carros  los nueve bytes que 0x494C lleva de un `ldir` a 0xE110
+D 0x4bb3 0x4bbb umbrales  ocho valores que suben (0x03 0x07 0x11 0x1A 0x24 0x33 0x3C 0x4C); 0x4B72 los pasa en DE
+D 0x4cc3 0x4ccf arco_del_salto  doce desplazamientos que van de +8 a -8 pasando por cero; 0x4CA1 los indexa con el paso de (0xE104) y se los suma al primer sprite
+D 0x4ef6 0x4ef8 pareja_0x4EF6  los dos bytes que 0x4EED vuelca con `ld bc,00002h`
+D 0x4ef8 0x4efc cuatro_indices  0x4EBE entra aqui con `suma_a_a_hl` y saca un byte en C
+D 0x4efc 0x4f0e dieciocho_bytes_a_0xE181  los que 0x4DFE copia con `ld bc,00012h`
+D 0x5103 0x510f patrones_0x5103  doce bytes; 0x50D5 los indexa y escribe el primero en la fila 0x39 de la VRAM
+D 0x510f 0x5117 ocho_bytes_0x510F  0x502C los carga en DE
+D 0x5138 0x514c tabla_de_despacho_de_los_carros  diez punteros. La declara el .entries con `!tabla`: cierra en 0x514C, su entrada mas baja, y los diez destinos son las diez rutinas de estado del carro, que sin esto quedaban sin trazar
+D 0x5242 0x525f arco_del_carro  29 desplazamientos, de +3 a -3 pasando por cero. 0x521D los apunta con `ld hl,05241h`, un byte ANTES, porque la rutina hace `inc hl` antes de leer
+D 0x53ce 0x53d4 patrones_del_carro_volcado  0x47 0x34 0x38 0x40 0x4A 0x56. 0x539B la apunta con `ld hl,053cdh`, un byte ANTES: 0x53CD es el ultimo byte del `jp` de 0x53CB, o sea que la tabla de verdad empieza en 0x53CE y el indice que llega vale 1 o mas
+D 0x572d 0x5731 caja_0x572D  los cuatro bytes de una caja de choque; 0x5705 la elige
+D 0x5731 0x5735 caja_0x5731  los de la otra; 0x570C la elige cuando el tipo es 0x10
+D 0x575a 0x575e caja_0x575A  la caja del carro; 0x573D se la pasa a caja_parametrizada
+D 0x57bc 0x57c2 mascaras_de_las_puertas  tres parejas; 0x57A1 la llama "la segunda, encadenada" y saca de ella el mapa de ocupacion en C y el valor en B
+D 0x57c2 0x57da tabla_de_puertas  24 bytes; 0x579A la llama "la primera tabla" y de ella sale el indice con el que entra en la de arriba
+D 0x58f9 0x58fc tres_puertas  los tres bytes 0x11 0x24 0x3D, que son los segundos de las tres parejas de 0x57BC; 0x5897 los pasa en DE para recorrer "tres puertas"
+D 0x5946 0x594c tira_de_tres  seis bytes a cero: dos filas de tres celdas que 0x591B vuelca para BORRAR
+D 0x594c 0x5952 tira_de_dos  0x592C la carga con `ld hl,0594ch` y un `inc hl` detras, asi que la tira util empieza en 0x594D
+D 0x5a50 0x5a62 desplazamientos  seis ternas; 0x5A0F las indexa y suma la primera a la posicion
+D 0x5b3e 0x5b5e sprites_iniciales  los 32 bytes que 0x5B1A copia con `ld bc,00020h` al bufer de sprites de 0xE080
+D 0x5d26 0x5d2c tres_parejas_de_patrones  0x50/0x52, 0x52/0x54 y 0x54/0x56, pegadas delante del guion de 0x5D2C
+D 0x5d72 0x5d82 tabla_encadenada_1  dieciseis bytes; 0x5D57 la llama "la primera tabla" y de ella sale el indice de la siguiente
+D 0x5d82 0x5d8e tabla_encadenada_2  cuatro ternas (0xD2 0xD5 0xFF, 0xD8 0xD5 0xFF, 0xD2 0xD9 0xFF, 0xD8 0xD9 0xFF); 0x5D5E la llama "la segunda, encadenada"
+D 0x5e2a 0x5e37 rotulo_game_over  el guion que 0x42B9 pinta. Dice "GAME  OVER" en 0x396B y sigue -por la puerta 0xFE- en el guion de 0x5E37, que pone "PLAYER 1" en 0x392C. El texto va en claro porque la fuente coloca cada letra en su codigo ASCII menos 0x20: 'A' es 0x21 y '0' es 0x10
+D 0x51b2 0x51ca tres_parejas_de_sprite  tres entradas de ocho bytes, cada una dos registros de sprite; 0x5192 las indexa con (E - 0x98) y copia los ocho con `ld bc,00008h / ldir`
+D 0x5e58 0x5e68 rotulo_demonstration  el guion que pone "DEMONSTRATION" en 0x3909 y cierra con 0xFF. Igual que el de 0x5E2A, el texto va en claro: la fuente coloca cada letra en su codigo ASCII menos 0x20
+D 0x5e68 0x5ef6 bloque_0x5E68  142 bytes comprimidos -> 346 a la VRAM; lo carga 0x4A0F, "el bloque comprimido del decorado"
+D 0x5ef6 0x5fd3 bloque_0x5EF6  221 bytes comprimidos -> 768 a la VRAM; lo carga 0x5AE8
+D 0x5fd3 0x5fef bloque_0x5FD3  28 bytes comprimidos -> 146 a la VRAM; lo carga 0x5CF5
+D 0x5fef 0x6001 bloque_0x5FEF  18 bytes comprimidos -> 140 a la VRAM; lo carga 0x5CB1
+D 0x6001 0x6051 lista_de_movimientos_grabados  los 80 bytes de la demostracion. 0x47BD los indexa y devuelve cada uno como si fuese la lectura del mando: es el guion que "juega" solo mientras el bit 6 de (0xE002) esta a cero
+D 0x6495 0x6517 bloque_0x6495  130 bytes comprimidos; lo carga 0x609E con cabecera y reparte 224 bytes entre 0x3368 y 0x1368
+D 0x6517 0x6521 bloque_0x6517  10 bytes comprimidos -> 8 a la VRAM; lo carga 0x6187
+D 0x657b 0x65df bloque_0x657B  100 bytes comprimidos -> 104 a la VRAM; lo carga 0x615E. Su cola, desde 0x65CB, la vuelve a usar 0x6171 por su cuenta
+D 0x65df 0x66a5 bloque_0x65DF  198 bytes comprimidos -> 224 a la VRAM en 0x2400; lo carga 0x6063, "el bloque del decorado"
+D 0x6853 0x6a7c bloque_0x6853  553 bytes comprimidos -> 688 a la VRAM; lo carga 0x607B con descomprime_a_los_tres_tercios, o sea a los tres tercios de la pantalla
+D 0x6a7c 0x6ab4 bloque_0x6A7C  56 bytes comprimidos -> 184 a la VRAM; lo carga 0x60DF, tambien a los tres tercios
+D 0x6ac7 0x6aee bloque_0x6AC7  39 bytes comprimidos -> 104 a la VRAM; lo carga 0x6138. Su cola, desde 0x6ADD, la usa 0x614B
+D 0x6aee 0x6af4 cabecera_del_bloque_0x6AEE  0x6069 carga 0x6AEE CON cabecera y el descompresor no para hasta 0x6B14; de 0x6AF4 en adelante los bytes ya estan contados como el bloque que carga 0x61BD, asi que lo que falta por asignar es solo esta cabeza
+D 0x6be6 0x6c99 bloque_0x6BE6  179 bytes comprimidos -> 608 a la VRAM; lo carga 0x61A2
+D 0x6c99 0x6d14 bloque_0x6C99  123 bytes comprimidos -> 448 a la VRAM en 0x4500; lo carga 0x6081
+D 0x6d14 0x6d24 tanda_de_dieciseis  los dieciseis bytes que 0x608D vuelca DIECINUEVE veces seguidas, cada vez dieciseis celdas mas alla: el `pop hl` no interviene, es el `ld hl,06d14h` de dentro del bucle el que los devuelve al principio en cada vuelta
+D 0x6d24 0x6d26 dos_bytes_0x6D24  0xA0 0x00, entre la tanda de arriba y el bloque comprimido de 0x6D26
+D 0x6e56 0x6eb9 bloque_0x6E56  99 bytes comprimidos -> 208 a la VRAM; lo carga 0x61E0
+D 0x6eb9 0x6f7d bloque_0x6EB9  196 bytes comprimidos -> 192 a la VRAM; lo carga 0x61D7
+D 0x702b 0x7061 bloque_0x702B  54 bytes comprimidos -> 192 a la VRAM; lo carga 0x61DB
+D 0x7096 0x70d6 sprites_iniciales_0x7096  64 bytes que 0x7061 copia enteros al bufer de 0xE080; 0x4D82 usa solo los dieciseis primeros y 0x4D8D los doce que empiezan en 0x70CA
+D 0x7124 0x715c poses_del_panadero  catorce poses de cuatro bytes; 0x4C51 las indexa y de cada una salen los patrones de los cuatro sprites que forman la figura
+D 0x72f3 0x7604 bloque_0x72F3  el bloque comprimido que 0x70E8 carga entero; 0x711B vuelve a entrar por su cola, en 0x753B, y ese segundo tramo es el que llega hasta 0x7604
+D 0x7604 0x799c mapa_de_la_panaderia  92 columnas de diez celdas. No es una estimacion: 0x4D15 hace `A x 10 + 0x7604` -por eso el `add hl,hl / add hl,hl / add hl,hl / add hl,bc`, que es ocho mas dos-, lee DIEZ bytes y los va dejando una fila de pantalla (32 celdas) mas abajo cada vez. Y 92 por 10 son los 920 bytes justos que hay hasta el codigo de 0x799C
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x514c carro_estado_0_quieto
+L 0x515a gasta_el_plazo_del_carro
+L 0x517c pone_los_dos_sprites_del_carro
+L 0x51ca carro_estado_1_cuenta_atras
+L 0x51cb gasta_el_plazo_sin_cambiar_de_juego
+L 0x51d9 carro_estado_2_rodando
+L 0x51e5 elige_el_patron_de_la_rueda
+L 0x51ff deja_los_dos_sprites
+L 0x520e carro_estado_3_da_la_vuelta
+L 0x5217 carro_estado_4_sube_o_baja
+L 0x522e mira_si_toca_darse_la_vuelta
+L 0x525f carro_estado_5_marca_la_celda
+L 0x5273 aplica_el_desplazamiento
+L 0x5282 borra_el_bit_6_del_estado
+L 0x5285 carro_estado_6_choca_con_el_panadero
+L 0x52a5 corre_el_carro_y_lo_repinta
+L 0x52ca carro_volcado_con_el_otro_color
+L 0x52dd carro_estado_7_un_paso_arriba_o_abajo
+L 0x52e6 suma_el_paso_a_la_fila
+L 0x52f0 carro_estado_8_camino_del_horno
+L 0x5318 busca_el_carro_en_la_lista_de_ocho
+L 0x5320 recorre_la_lista_de_ocho
+L 0x5329 apunta_el_carro_en_0xE12A
+L 0x536d vuelca_el_carro
+L 0x538c carro_estado_9_volcado
+L 0x53bb coloca_los_dos_sprites_del_volcado
+L 0x53ca sale_del_estado_9
+L 0x56cf parpadea_el_patron
+B 0x514c LAS DIEZ RUTINAS DE ESTADO DEL CARRO. El recorrido de 0x5117 pasa por los tres carros y, de cada uno, coge los cinco bits de su estado (`and 03eh`, que ya viene multiplicado por dos) y se salta a la entrada que toque de la tabla de 0x5138. Son diez, de la 0 a la 9, y se despachan con `jp (hl)`: por eso el trazado no llegaba a ninguna hasta declarar la tabla. Las tres primeras trabajan con el juego alternativo de registros -HL' apunta a la ficha del carro en 0xE098 y DE a su estado en 0xE110-, que es lo que explica los `exx` sueltos del principio de cada una.
+B 0x51ca EL PLAZO COMPARTIDO: gasta un cuadro del plazo del carro y, cuando llega a cero, le deja el estado 4. Tres estados distintos (3, 4 y 5) empiezan llamando aqui, asi que el plazo esta escrito UNA vez. La puerta de 0x51CB es la misma sin el `exx` de delante, para quien ya viene con los registros cambiados.
+B 0x51d9 EL CARRO RODANDO: el bit 0 de su estado dice hacia donde va -+1 o -1- y el contador de cuadros elige el patron de la rueda, de modo que parezca que gira. Al final deja los dos sprites que forman el carro, uno dieciseis pixeles debajo del otro.
+B 0x5285 EL CHOQUE CON EL PANADERO: solo se mira cuando (0xE00B) vale 7. Si el carro esta en su ultimo paso, se vuelca; si no, sigue corriendo y se repintan sus dos sprites con el color que le toque.
+B 0x52f0 CAMINO DEL HORNO: gasta el plazo y, al agotarse, vuelca el carro. Mientras dura, cada 0x40 cuadros lo sube ocho pixeles y busca su hueco en la lista de ocho de 0xE063 para dejarlo apuntado en 0xE12A.
+B 0x538c EL CARRO YA VOLCADO: uno de cada cuatro cuadros gasta el plazo, y con lo que queda saca de la tabla de 0x53CE el patron que le toca. Segun la fase, el carro volcado se dibuja con un sprite o con los dos.
+C 0x514c al juego alternativo: HL' es la ficha y DE el estado
+C 0x514d la pareja de 0xE079
+C 0x5152 solo el valor 7
+C 0x5157 y de 0x40 en adelante, no se hace nada
+C 0x515b el segundo byte de la ficha es el plazo
+C 0x515c un cuadro menos
+C 0x515d todavia le queda: nada que hacer
+C 0x515f cual de los tres carros es
+C 0x5160 0x10 es el primero
+C 0x5166 el bit 1 del indice, cambiado
+C 0x5169 los estados viven en la pagina 0xE1
+C 0x516b el numero de fase
+C 0x516e de la cuatro en adelante, por el otro camino
+C 0x5175 al otro carro se le deja el estado 2
+C 0x5177 y si el bit 7 estaba puesto, se sale
+C 0x517c el indice, desde 0x10
+C 0x517e la mitad
+C 0x5180 y desde 0x16
+C 0x5183 otra vez la pagina 0xE1
+C 0x5186 el bit 7 arriba del todo
+C 0x5189 se invierte
+C 0x518b y de ahi salen los patrones 0x84 y 0x85
+C 0x518f la columna
+C 0x5190 desde 0x98
+C 0x5192 la tabla de tres parejas de sprite
+C 0x5198 ocho bytes: dos registros de sprite enteros
+C 0x519e siete pixeles mas arriba
+C 0x51a3 el bit 0 de lo de antes
+C 0x51a6 un color
+C 0x51ad o el otro
+C 0x51ca al juego alternativo
+C 0x51cd un cuadro menos del plazo
+C 0x51ce todavia le queda
+C 0x51cf el estado 4
+C 0x51d9 al juego alternativo
+C 0x51db el plazo
+C 0x51dd el bit 0 dice hacia donde va
+C 0x51df un pixel a la derecha
+C 0x51e3 o uno a la izquierda
+C 0x51e5 el contador de cuadros
+C 0x51ea dos bits
+C 0x51f3 desde el patron 0x78
+C 0x51f5 y si va al reves
+C 0x51f9 0x3C mas alla: los patrones del otro sentido
+C 0x51fe la columna, corrida
+C 0x5201 el patron
+C 0x5205 dieciseis pixeles mas abajo: el segundo sprite
+C 0x520a y su patron, cuatro mas alla
+C 0x520e gasta el plazo
+C 0x5211 si todavia le queda, nada
+C 0x5213 y al agotarse, se da la vuelta
+C 0x5217 gasta el plazo
+C 0x521d el arco del carro, un byte antes
+C 0x5225 el desplazamiento, a la fila
+C 0x5229 y cuatro bytes mas alla, el segundo sprite
+C 0x522e el numero de fase
+C 0x5231 de la ocho en adelante, no
+C 0x5234 por debajo de la tres, siempre
+C 0x5238 y en medio, segun el bit 0 de (0xE060)
+C 0x523e se da la vuelta
+C 0x525f gasta el plazo
+C 0x5265 un paso
+C 0x5267 y dos patrones
+C 0x526a el bit 0: el sentido
+C 0x526e o tres pasos
+C 0x5270 y los otros dos patrones
+C 0x5277 de 0x30 en adelante no cabe
+C 0x527b el bit 2 elige el segundo
+C 0x5280 y se marca la celda
+C 0x5282 el bit 6: ya resuelto, se apaga
+C 0x5285 al juego alternativo
+C 0x5286 el reloj de la escena
+C 0x5289 solo con el valor 7
+C 0x528c gasta el plazo sin cambiar de juego
+C 0x5291 el ultimo paso
+C 0x5292 y entonces se vuelca
+C 0x5297 dos colores
+C 0x529c el bit 0: el sentido
+C 0x52a0 o los otros dos
+C 0x52a6 el paso, sumado a la fila
+C 0x52ab dieciseis pixeles antes
+C 0x52af el color
+C 0x52b8 el paso 2
+C 0x52c1 se repintan las puertas
+C 0x52c4 y suena el aviso
+C 0x52ca los colores del volcado
+C 0x52dd al juego alternativo
+C 0x52df ocho pixeles hacia arriba
+C 0x52e1 el bit 0: el sentido
+C 0x52e4 o los ocho hacia abajo
+C 0x52e8 sumados a la fila
+C 0x52ea y dieciseis mas, al segundo sprite
+C 0x52f0 al juego alternativo
+C 0x52f1 el reloj de la escena
+C 0x52f4 solo con el valor 7
+C 0x52f9 un cuadro menos del plazo
+C 0x52fb agotado: se vuelca
+C 0x52ff seis bytes mas alla
+C 0x5302 el patron que parpadea
+C 0x5305 uno de cada 0x40 cuadros
+C 0x530d ocho pixeles mas
+C 0x5315 y al otro sprite lo mismo
+C 0x5318 la lista de ocho
+C 0x531b ocho entradas
+C 0x5320 esta?
+C 0x5323 tres bytes por entrada
+C 0x532e el patron 0x60
+C 0x5334 tres bits
+C 0x533a por seis
+C 0x533d la tabla de indices
+C 0x5344 y queda apuntado en 0xE12C
+C 0x5348 se borran los tres bytes
+C 0x5377 su hueco de sprite
+C 0x537b se apaga el bit 0 del estado
+C 0x5388 y vuelve a arrancar en el estado 2
+C 0x538c al juego alternativo
+C 0x538d el reloj de la escena
+C 0x5390 uno de cada cuatro cuadros
+C 0x5395 un cuadro menos del plazo
+C 0x5397 agotado: se sale del estado
+C 0x539b la tabla de patrones del volcado
+C 0x53a8 la fase 2
+C 0x53ac por debajo, el otro camino
+C 0x53b2 dieciseis mas: el segundo sprite
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x60b0 visor_de_patrones_de_pruebas
+L 0x60b8 recorre_las_768_celdas
+B 0x60b0 EL VISOR DE PATRONES QUE SE QUEDO DENTRO. Llena las 768 celdas de la tabla de nombres con los indices 0, 1, 2... para ver de golpe todos los patrones cargados, y remata con `jr $`, o sea que se queda colgado ahi para siempre. No es una rutina del juego: es la herramienta de quien lo estaba haciendo. Nadie la llama -ni el trazado entra, ni ninguna instruccion la carga, ni la palabra 0x60B0 aparece en los 16.384 bytes-, y el `ret` del final tampoco se alcanza porque el `jr $` no deja pasar.
+C 0x60b0 la tabla de nombres
+C 0x60b3 se empieza por el patron 0
+C 0x60b5 las 768 celdas
+C 0x60b8 el indice, a la VRAM
+C 0x60bb y el siguiente
+C 0x60bc en la celda de al lado
+C 0x60be A se guarda en L mientras se mira la cuenta
+C 0x60c2 hasta agotar las 768
+C 0x60c4 y aqui se queda: `jr $`, un bucle sobre si mismo
+C 0x60c6 el `ret` al que no se llega

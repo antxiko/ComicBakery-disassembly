@@ -10,6 +10,14 @@
 
 
 ; ----------------------------------------------------------------------
+; Direcciones que solo aparecen como VALOR -en un `ld`, no en
+; un salto-: son punteros que el codigo se pasa o numeros que
+; casualmente coinciden con una direccion. No hay nada que
+; trazar en ellas; el equ existe para que el listado ensamble.
+; ----------------------------------------------------------------------
+l5241h:	equ 0x05241
+
+; ----------------------------------------------------------------------
 ; DATOS cabecera_del_cartucho: "AB" y la direccion de INIT (0x40C7);
 ;   STATEMENT, DEVICE y TEXT a cero
 ;   0x4000..0x4010  (16 bytes)
@@ -17,11 +25,20 @@ DATA_cabecera_del_cartucho:
 	defw 04241h,040c7h,00000h,00000h,00000h,00000h,00000h,00000h	; 4000
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x4010..0x4040  (48 bytes)
-DATA_4010:
+; DATOS tabla_de_indices_1: 24 bytes; 0x4FAD la carga y la indexa con el paso
+;   por tres (`add a,a / add a,h`)
+;   0x4010..0x4028  (24 bytes)
+DATA_tabla_de_indices_1:
 	defb 000h,000h,000h,000h,05ah,05bh,000h,000h,000h,000h,073h,074h,000h,075h,076h,000h	; 4010  ....Z[....st.uv.
-	defb 077h,078h,000h,079h,07ah,000h,07bh,07ch,001h,002h,002h,001h,001h,001h,001h,000h	; 4020  wx.yz.{|........
-	defb 000h,001h,001h,001h,000h,000h,000h,000h,002h,003h,002h,001h,002h,002h,001h,000h	; 4030  ................
+	defb 077h,078h,000h,079h,07ah,000h,07bh,07ch	; 4020  wx.yz.{|
+
+; ----------------------------------------------------------------------
+; DATOS tabla_de_indices_2: los otros 24; 0x4FE5 la nombra "la otra tabla de
+;   indices" y la indexa igual
+;   0x4028..0x4040  (24 bytes)
+DATA_tabla_de_indices_2:
+	defb 001h,002h,002h,001h,001h,001h,001h,000h,000h,001h,001h,001h,000h,000h,000h,000h	; 4028  ................
+	defb 002h,003h,002h,001h,002h,002h,001h,000h	; 4038  ........
 
 ; ======================================================================
 ; CODIGO 0x4040..0x4119  (217 bytes)
@@ -569,7 +586,7 @@ DATA_tabla_432B:
 	defw 05a76h,05a96h,05ad6h,05ba6h,05c1fh,05c5ah,05c6fh,0433bh	; 432b
 
 ; ======================================================================
-; CODIGO 0x433b..0x43dd  (162 bytes)
+; CODIGO 0x433b..0x44ae  (371 bytes)
 ; ======================================================================
 
 
@@ -683,17 +700,8 @@ rellena_vram_con_espera:
 	or c			;43d9
 	jr nz,L_43D1		;43da
 	ret			;43dc
-
-; ----------------------------------------------------------------------
-; DATOS sin identificar  0x43dd..0x43df  (2 bytes)
-DATA_43DD:
-	defb 006h,000h	; 43dd
-
-; ======================================================================
-; CODIGO 0x43df..0x44ae  (207 bytes)
-; ======================================================================
-
-
+L_43DD:
+	ld b,000h		;43dd
 
 ; ----------------------------------------------------------------------
 ; VOLCAR BC BYTES DE MEMORIA A LA VRAM, tal cual.
@@ -869,8 +877,10 @@ L_448E:
 	ret			;44ad
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x44ae..0x44b6  (8 bytes)
-DATA_44AE:
+; DATOS valores_iniciales: los ocho bytes que 0x4495 lleva de un `ldir` a
+;   0xE050; con dos jugadores, 0x44A2 duplica el bloque entero a 0xE0C0
+;   0x44ae..0x44b6  (8 bytes)
+DATA_valores_iniciales:
 	defb 003h,001h,000h,002h,000h,000h,001h,000h	; 44ae  ........
 
 ; ======================================================================
@@ -1183,8 +1193,12 @@ pinta_el_reloj:
 	ret			;4687
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x4688..0x46a3  (27 bytes)
-DATA_4688:
+; DATOS indices_del_reloj: nueve entradas de tres bytes. 0x4671 apunta a
+;   0x468A, que es el ULTIMO byte de la primera, porque las copia con `lddr`,
+;   o sea hacia atras: por eso la tabla empieza dos bytes antes de la
+;   direccion que aparece en el codigo
+;   0x4688..0x46a3  (27 bytes)
+DATA_indices_del_reloj:
 	defb 08ch,08bh,089h,08ch,08ah,080h,08ch,08ah,081h,08eh,08fh,082h,08eh,08dh,081h,08eh	; 4688  ................
 	defb 08dh,082h,08eh,08dh,083h,08eh,08dh,084h,08eh,08dh,085h	; 4698  ...........
 
@@ -1314,8 +1328,10 @@ L_4745:
 	ret			;474e
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x474f..0x4757  (8 bytes)
-DATA_474F:
+; DATOS registros_del_vdp: los ocho valores que 0x4733 copia a 0xE038 y 0x473E
+;   baja al VDP uno a uno con WRTVDP
+;   0x474f..0x4757  (8 bytes)
+DATA_registros_del_vdp:
 	defb 002h,0e2h,00eh,07fh,007h,076h,003h,0e1h	; 474f  .....v..
 
 ; ======================================================================
@@ -1551,8 +1567,12 @@ L_4889:
 	ret			;488d
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x488e..0x4892  (4 bytes)
-DATA_488E:
+; DATOS modos_de_juego: cuatro bytes, uno por opcion del menu; 0x4860 los
+;   indexa con la opcion de (0xE042) y deja el elegido en (0xE002). Son 0x40
+;   0x60 0x50 0x70, los mismos cuatro y en el mismo orden que Magical Tree
+;   (RC-713)
+;   0x488e..0x4892  (4 bytes)
+DATA_modos_de_juego:
 	defb 040h,060h,050h,070h	; 488e
 
 ; ======================================================================
@@ -1761,8 +1781,10 @@ L_49FA:
 	ret			;4a1e
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x4a1f..0x4a28  (9 bytes)
-DATA_4A1F:
+; DATOS estado_inicial_de_los_carros: los nueve bytes que 0x494C lleva de un
+;   `ldir` a 0xE110
+;   0x4a1f..0x4a28  (9 bytes)
+DATA_estado_inicial_de_los_carros:
 	defb 001h,037h,000h,007h,001h,057h,0f0h,000h,0f0h	; 4a1f  .7...W...
 
 ; ======================================================================
@@ -2050,8 +2072,10 @@ L_4BB0:
 	ret			;4bb2
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x4bb3..0x4bbb  (8 bytes)
-DATA_4BB3:
+; DATOS umbrales: ocho valores que suben (0x03 0x07 0x11 0x1A 0x24 0x33 0x3C
+;   0x4C); 0x4B72 los pasa en DE
+;   0x4bb3..0x4bbb  (8 bytes)
+DATA_umbrales:
 	defb 003h,007h,011h,01ah,024h,033h,03ch,04ch	; 4bb3  ....$3<L
 
 ; ======================================================================
@@ -2238,8 +2262,11 @@ avanza_el_salto:
 	jp L_4DF2		;4cc0
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x4cc3..0x4ccf  (12 bytes)
-DATA_4CC3:
+; DATOS arco_del_salto: doce desplazamientos que van de +8 a -8 pasando por
+;   cero; 0x4CA1 los indexa con el paso de (0xE104) y se los suma al primer
+;   sprite
+;   0x4cc3..0x4ccf  (12 bytes)
+DATA_arco_del_salto:
 	defb 008h,007h,005h,004h,001h,001h,0ffh,0ffh,0fch,0fbh,0f9h,0f8h	; 4cc3  ............
 
 ; ======================================================================
@@ -2596,10 +2623,24 @@ L_4EED:
 	jp vuelca_bloque		;4ef3
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x4ef6..0x4f0e  (24 bytes)
-DATA_4EF6:
-	defb 0ach,0adh,040h,050h,054h,055h,000h,0c5h,0c7h,000h,000h,000h,0cbh,0cdh,000h,000h	; 4ef6  ..@PTU..........
-	defb 000h,000h,0cfh,0d1h,000h,000h,000h,000h	; 4f06  ........
+; DATOS pareja_0x4EF6: los dos bytes que 0x4EED vuelca con `ld bc,00002h`
+;   0x4ef6..0x4ef8  (2 bytes)
+DATA_pareja_0x4EF6:
+	defb 0ach,0adh	; 4ef6
+
+; ----------------------------------------------------------------------
+; DATOS cuatro_indices: 0x4EBE entra aqui con `suma_a_a_hl` y saca un byte en
+;   C
+;   0x4ef8..0x4efc  (4 bytes)
+DATA_cuatro_indices:
+	defb 040h,050h,054h,055h	; 4ef8
+
+; ----------------------------------------------------------------------
+; DATOS dieciocho_bytes_a_0xE181: los que 0x4DFE copia con `ld bc,00012h`
+;   0x4efc..0x4f0e  (18 bytes)
+DATA_dieciocho_bytes_a_0xE181:
+	defb 000h,0c5h,0c7h,000h,000h,000h,0cbh,0cdh,000h,000h,000h,000h,0cfh,0d1h,000h,000h	; 4efc  ................
+	defb 000h,000h	; 4f0c
 
 ; ======================================================================
 ; CODIGO 0x4f0e..0x5103  (501 bytes)
@@ -2993,10 +3034,17 @@ L_5100:
 	ret			;5102
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5103..0x5117  (20 bytes)
-DATA_5103:
-	defb 0a0h,05ah,05bh,0b5h,0b7h,000h,0b5h,0b6h,000h,0b5h,0b8h,05bh,003h,007h,00bh,007h	; 5103  .Z[........[....
-	defb 00fh,007h,010h,004h	; 5113
+; DATOS patrones_0x5103: doce bytes; 0x50D5 los indexa y escribe el primero en
+;   la fila 0x39 de la VRAM
+;   0x5103..0x510f  (12 bytes)
+DATA_patrones_0x5103:
+	defb 0a0h,05ah,05bh,0b5h,0b7h,000h,0b5h,0b6h,000h,0b5h,0b8h,05bh	; 5103  .Z[........[
+
+; ----------------------------------------------------------------------
+; DATOS ocho_bytes_0x510F: 0x502C los carga en DE
+;   0x510f..0x5117  (8 bytes)
+DATA_ocho_bytes_0x510F:
+	defb 003h,007h,00bh,007h,00fh,007h,010h,004h	; 510f  ........
 
 ; ======================================================================
 ; CODIGO 0x5117..0x5138  (33 bytes)
@@ -3032,24 +3080,116 @@ L_511F:
 	ret			;5137
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5138..0x51d1  (153 bytes)
-DATA_5138:
+; DATOS tabla_de_despacho_de_los_carros: diez punteros. La declara el .entries
+;   con `!tabla`: cierra en 0x514C, su entrada mas baja, y los diez destinos
+;   son las diez rutinas de estado del carro, que sin esto quedaban sin trazar
+;   0x5138..0x514c  (20 bytes)
+DATA_tabla_de_despacho_de_los_carros:
 	defb 04ch,051h,0cah,051h,0d9h,051h,00eh,052h,017h,052h,05fh,052h,085h,052h,0ddh,052h	; 5138  LQ.Q.Q.R.R_R.R.R
-	defb 0f0h,052h,08ch,053h,0d9h,0edh,04bh,079h,0e0h,078h,0feh,007h,020h,004h,079h,0feh	; 5148  .R.S..Ky.x.. .y.
-	defb 040h,0d0h,0ebh,023h,035h,0c0h,02bh,07dh,0feh,010h,028h,018h,0d9h,05fh,0eeh,006h	; 5158  @..#5.+}..(.._..
-	defb 06fh,026h,0e1h,03ah,051h,0e0h,0feh,004h,030h,008h,07eh,06bh,023h,036h,002h,0cbh	; 5168  o&.:Q...0.~k#6..
-	defb 07fh,0c0h,07bh,0d9h,0d6h,010h,0cbh,03fh,0c6h,016h,04fh,006h,0e1h,00ah,007h,0e6h	; 5178  ..{....?..O.....
-	defb 001h,0eeh,001h,0c6h,084h,077h,008h,07bh,0d6h,098h,021h,0b2h,051h,0cdh,052h,040h	; 5188  .....w.{..!.Q.R@
-	defb 001h,008h,000h,0edh,0b0h,07bh,0d6h,007h,05fh,0ebh,008h,01fh,03eh,001h,00eh,0b4h	; 5198  .....{.._...>...
-	defb 0dah,0ffh,051h,03eh,0eeh,00eh,078h,0c3h,0ffh,051h,09fh,000h,000h,00eh,09fh,000h	; 51a8  ..Q>..x..Q......
-	defb 000h,00eh,047h,000h,000h,00ah,047h,000h,000h,00ah,047h,000h,000h,008h,047h,000h	; 51b8  ..G...G...G...G.
-	defb 000h,008h,0d9h,0ebh,023h,035h,0c0h,00eh,004h	; 51c8  ....#5...
+	defb 0f0h,052h,08ch,053h	; 5148
 
 ; ======================================================================
-; CODIGO 0x51d1..0x51d9  (8 bytes)
+; CODIGO 0x514c..0x51b2  (102 bytes)
 ; ======================================================================
 
 
+
+; ----------------------------------------------------------------------
+; LAS DIEZ RUTINAS DE ESTADO DEL CARRO. El recorrido de 0x5117 pasa por los tres carros y, de cada uno, coge los cinco bits de su estado (`and 03eh`, que ya viene multiplicado por dos) y se salta a la entrada que toque de la tabla de 0x5138. Son diez, de la 0 a la 9, y se despachan con `jp (hl)`: por eso el trazado no llegaba a ninguna hasta declarar la tabla. Las tres primeras trabajan con el juego alternativo de registros -HL' apunta a la ficha del carro en 0xE098 y DE a su estado en 0xE110-, que es lo que explica los `exx` sueltos del principio de cada una.
+; ----------------------------------------------------------------------
+carro_estado_0_quieto:
+	exx			;514c   ; al juego alternativo: HL' es la ficha y DE el estado
+	ld bc,(0e079h)		;514d   ; la pareja de 0xE079
+	ld a,b			;5151
+	cp 007h		;5152   ; solo el valor 7
+	jr nz,gasta_el_plazo_del_carro		;5154
+	ld a,c			;5156
+	cp 040h		;5157   ; y de 0x40 en adelante, no se hace nada
+	ret nc			;5159
+gasta_el_plazo_del_carro:
+	ex de,hl			;515a
+	inc hl			;515b   ; el segundo byte de la ficha es el plazo
+	dec (hl)			;515c   ; un cuadro menos
+	ret nz			;515d   ; todavia le queda: nada que hacer
+	dec hl			;515e
+	ld a,l			;515f   ; cual de los tres carros es
+	cp 010h		;5160   ; 0x10 es el primero
+	jr z,pone_los_dos_sprites_del_carro		;5162
+	exx			;5164
+	ld e,a			;5165
+	xor 006h		;5166   ; el bit 1 del indice, cambiado
+	ld l,a			;5168
+	ld h,0e1h		;5169   ; los estados viven en la pagina 0xE1
+	ld a,(0e051h)		;516b   ; el numero de fase
+	cp 004h		;516e   ; de la cuatro en adelante, por el otro camino
+	jr nc,L_517A		;5170
+	ld a,(hl)			;5172
+	ld l,e			;5173
+	inc hl			;5174
+	ld (hl),002h		;5175   ; al otro carro se le deja el estado 2
+	bit 7,a		;5177   ; y si el bit 7 estaba puesto, se sale
+	ret nz			;5179
+L_517A:
+	ld a,e			;517a
+	exx			;517b
+pone_los_dos_sprites_del_carro:
+	sub 010h		;517c   ; el indice, desde 0x10
+	srl a		;517e   ; la mitad
+	add a,016h		;5180   ; y desde 0x16
+	ld c,a			;5182
+	ld b,0e1h		;5183   ; otra vez la pagina 0xE1
+	ld a,(bc)			;5185
+	rlca			;5186   ; el bit 7 arriba del todo
+	and 001h		;5187
+	xor 001h		;5189   ; se invierte
+	add a,084h		;518b   ; y de ahi salen los patrones 0x84 y 0x85
+	ld (hl),a			;518d
+	ex af,af'			;518e
+	ld a,e			;518f   ; la columna
+	sub 098h		;5190   ; desde 0x98
+	ld hl,051b2h		;5192   ; la tabla de tres parejas de sprite
+	call suma_a_a_hl		;5195
+	ld bc,00008h		;5198   ; ocho bytes: dos registros de sprite enteros
+	ldir		;519b
+	ld a,e			;519d
+	sub 007h		;519e   ; siete pixeles mas arriba
+	ld e,a			;51a0
+	ex de,hl			;51a1
+	ex af,af'			;51a2
+	rra			;51a3   ; el bit 0 de lo de antes
+	ld a,001h		;51a4
+	ld c,0b4h		;51a6   ; un color
+	jp c,deja_los_dos_sprites		;51a8
+	ld a,0eeh		;51ab
+	ld c,078h		;51ad   ; o el otro
+	jp deja_los_dos_sprites		;51af
+
+; ----------------------------------------------------------------------
+; DATOS tres_parejas_de_sprite: tres entradas de ocho bytes, cada una dos
+;   registros de sprite; 0x5192 las indexa con (E - 0x98) y copia los ocho con
+;   `ld bc,00008h / ldir`
+;   0x51b2..0x51ca  (24 bytes)
+DATA_tres_parejas_de_sprite:
+	defb 09fh,000h,000h,00eh,09fh,000h,000h,00eh,047h,000h,000h,00ah,047h,000h,000h,00ah	; 51b2  ........G...G...
+	defb 047h,000h,000h,008h,047h,000h,000h,008h	; 51c2  G...G...
+
+; ======================================================================
+; CODIGO 0x51ca..0x5242  (120 bytes)
+; ======================================================================
+
+
+
+; ----------------------------------------------------------------------
+; EL PLAZO COMPARTIDO: gasta un cuadro del plazo del carro y, cuando llega a cero, le deja el estado 4. Tres estados distintos (3, 4 y 5) empiezan llamando aqui, asi que el plazo esta escrito UNA vez. La puerta de 0x51CB es la misma sin el `exx` de delante, para quien ya viene con los registros cambiados.
+; ----------------------------------------------------------------------
+carro_estado_1_cuenta_atras:
+	exx			;51ca   ; al juego alternativo
+gasta_el_plazo_sin_cambiar_de_juego:
+	ex de,hl			;51cb
+	inc hl			;51cc
+	dec (hl)			;51cd   ; un cuadro menos del plazo
+	ret nz			;51ce   ; todavia le queda
+	ld c,004h		;51cf   ; el estado 4
 marca_el_estado_del_carro:
 	dec hl			;51d1
 marca_el_estado:
@@ -3061,30 +3201,185 @@ marca_el_estado:
 	ret			;51d8
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x51d9..0x52ce  (245 bytes)
-DATA_51D9:
-	defb 0d9h,023h,07eh,0ebh,0cbh,046h,006h,001h,020h,002h,006h,0ffh,03ah,003h,0e0h,04fh	; 51d9  .#~..F.. ...:..O
-	defb 017h,0e6h,00ch,0f6h,004h,0a1h,04fh,0e6h,007h,081h,0c6h,078h,0cbh,078h,020h,002h	; 51e9  ......O....x.x .
-	defb 0c6h,03ch,04fh,0ebh,07eh,080h,077h,023h,071h,023h,023h,023h,0c6h,010h,077h,023h	; 51f9  .<O.~.w#q###..w#
-	defb 079h,0c6h,004h,077h,0c9h,0cdh,0cah,051h,0c0h,07eh,0eeh,001h,077h,0c9h,0cdh,0cah	; 5209  y..w...Q.~..w...
-	defb 051h,028h,012h,07eh,021h,041h,052h,0cdh,052h,040h,0ebh,01ah,086h,077h,04fh,07dh	; 5219  Q(.~!AR.R@...wO}
-	defb 0c6h,004h,06fh,071h,0c9h,03ah,051h,0e0h,0feh,008h,0d0h,0feh,003h,038h,005h,03ah	; 5229  ..oq.:Q......8.:
-	defb 060h,0e0h,00fh,0d8h,07eh,0eeh,001h,077h,0c9h,000h,003h,003h,002h,002h,002h,001h	; 5239  `...~..w........
-	defb 001h,001h,001h,001h,001h,001h,001h,000h,000h,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh	; 5249  ................
-	defb 0ffh,0feh,0feh,0feh,0fdh,0fdh,0cdh,0cah,051h,028h,01eh,02bh,03eh,002h,001h,0d4h	; 5259  ........Q(.+>...
-	defb 008h,0cbh,046h,020h,005h,03eh,006h,001h,09ch,004h,083h,05fh,023h,07eh,0feh,030h	; 5269  ..F .>....._#~.0
-	defb 0d0h,079h,0cbh,056h,028h,001h,080h,012h,0c9h,0cbh,0b6h,0c9h,0d9h,03ah,00bh,0e0h	; 5279  .y.V(........:..
-	defb 0feh,007h,0c0h,0cdh,0cbh,051h,0c8h,07eh,03dh,028h,036h,0ebh,01ah,05fh,001h,0a8h	; 5289  .....Q.~=(6.._..
-	defb 0a4h,03eh,0feh,0cbh,043h,028h,005h,001h,0e4h,0e0h,03eh,000h,023h,086h,077h,057h	; 5299  .>..C(....>.#.wW
-	defb 02bh,07eh,0d6h,010h,023h,023h,070h,023h,023h,077h,023h,072h,023h,071h,07bh,0feh	; 52a9  +~..##p##w#r#q{.
-	defb 002h,0c0h,021h,058h,0e0h,07eh,02bh,077h,0cdh,097h,058h,03eh,007h,0cdh,09ch,079h	; 52b9  ..!X.~+w..X>...y
-	defb 0c9h,001h,094h,090h,0ebh	; 52c9
+; EL CARRO RODANDO: el bit 0 de su estado dice hacia donde va -+1 o -1- y el contador de cuadros elige el patron de la rueda, de modo que parezca que gira. Al final deja los dos sprites que forman el carro, uno dieciseis pixeles debajo del otro.
+; ----------------------------------------------------------------------
+carro_estado_2_rodando:
+	exx			;51d9   ; al juego alternativo
+	inc hl			;51da
+	ld a,(hl)			;51db   ; el plazo
+	ex de,hl			;51dc
+	bit 0,(hl)		;51dd   ; el bit 0 dice hacia donde va
+	ld b,001h		;51df   ; un pixel a la derecha
+	jr nz,elige_el_patron_de_la_rueda		;51e1
+	ld b,0ffh		;51e3   ; o uno a la izquierda
+elige_el_patron_de_la_rueda:
+	ld a,(0e003h)		;51e5   ; el contador de cuadros
+	ld c,a			;51e8
+	rla			;51e9
+	and 00ch		;51ea   ; dos bits
+	or 004h		;51ec
+	and c			;51ee
+	ld c,a			;51ef
+	and 007h		;51f0
+	add a,c			;51f2
+	add a,078h		;51f3   ; desde el patron 0x78
+	bit 7,b		;51f5   ; y si va al reves
+	jr nz,L_51FB		;51f7
+	add a,03ch		;51f9   ; 0x3C mas alla: los patrones del otro sentido
+L_51FB:
+	ld c,a			;51fb
+	ex de,hl			;51fc
+	ld a,(hl)			;51fd
+	add a,b			;51fe   ; la columna, corrida
+deja_los_dos_sprites:
+	ld (hl),a			;51ff
+	inc hl			;5200
+	ld (hl),c			;5201   ; el patron
+	inc hl			;5202
+	inc hl			;5203
+	inc hl			;5204
+	add a,010h		;5205   ; dieciseis pixeles mas abajo: el segundo sprite
+	ld (hl),a			;5207
+	inc hl			;5208
+	ld a,c			;5209
+	add a,004h		;520a   ; y su patron, cuatro mas alla
+	ld (hl),a			;520c
+	ret			;520d
+carro_estado_3_da_la_vuelta:
+	call carro_estado_1_cuenta_atras		;520e   ; gasta el plazo
+	ret nz			;5211   ; si todavia le queda, nada
+	ld a,(hl)			;5212
+	xor 001h		;5213   ; y al agotarse, se da la vuelta
+	ld (hl),a			;5215
+	ret			;5216
+carro_estado_4_sube_o_baja:
+	call carro_estado_1_cuenta_atras		;5217   ; gasta el plazo
+	jr z,mira_si_toca_darse_la_vuelta		;521a
+	ld a,(hl)			;521c
+	ld hl,l5241h		;521d   ; el arco del carro, un byte antes
+	call suma_a_a_hl		;5220
+	ex de,hl			;5223
+	ld a,(de)			;5224
+	add a,(hl)			;5225   ; el desplazamiento, a la fila
+	ld (hl),a			;5226
+	ld c,a			;5227
+	ld a,l			;5228
+	add a,004h		;5229   ; y cuatro bytes mas alla, el segundo sprite
+	ld l,a			;522b
+	ld (hl),c			;522c
+	ret			;522d
+mira_si_toca_darse_la_vuelta:
+	ld a,(0e051h)		;522e   ; el numero de fase
+	cp 008h		;5231   ; de la ocho en adelante, no
+	ret nc			;5233
+	cp 003h		;5234   ; por debajo de la tres, siempre
+	jr c,L_523D		;5236
+	ld a,(0e060h)		;5238   ; y en medio, segun el bit 0 de (0xE060)
+	rrca			;523b
+	ret c			;523c
+L_523D:
+	ld a,(hl)			;523d
+	xor 001h		;523e   ; se da la vuelta
+	ld (hl),a			;5240
+L_5241:
+	ret			;5241
+
+; ----------------------------------------------------------------------
+; DATOS arco_del_carro: 29 desplazamientos, de +3 a -3 pasando por cero.
+;   0x521D los apunta con `ld hl,05241h`, un byte ANTES, porque la rutina hace
+;   `inc hl` antes de leer
+;   0x5242..0x525f  (29 bytes)
+DATA_arco_del_carro:
+	defb 000h,003h,003h,002h,002h,002h,001h,001h,001h,001h,001h,001h,001h,001h,000h,000h	; 5242  ................
+	defb 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0feh,0feh,0feh,0fdh,0fdh	; 5252  .............
 
 ; ======================================================================
-; CODIGO 0x52ce..0x52dd  (15 bytes)
+; CODIGO 0x525f..0x53ce  (367 bytes)
 ; ======================================================================
 
 
+carro_estado_5_marca_la_celda:
+	call carro_estado_1_cuenta_atras		;525f   ; gasta el plazo
+	jr z,borra_el_bit_6_del_estado		;5262
+	dec hl			;5264
+	ld a,002h		;5265   ; un paso
+	ld bc,008d4h		;5267   ; y dos patrones
+	bit 0,(hl)		;526a   ; el bit 0: el sentido
+	jr nz,aplica_el_desplazamiento		;526c
+	ld a,006h		;526e   ; o tres pasos
+	ld bc,0049ch		;5270   ; y los otros dos patrones
+aplica_el_desplazamiento:
+	add a,e			;5273
+	ld e,a			;5274
+	inc hl			;5275
+	ld a,(hl)			;5276
+	cp 030h		;5277   ; de 0x30 en adelante no cabe
+	ret nc			;5279
+	ld a,c			;527a
+	bit 2,(hl)		;527b   ; el bit 2 elige el segundo
+	jr z,L_5280		;527d
+	add a,b			;527f
+L_5280:
+	ld (de),a			;5280   ; y se marca la celda
+	ret			;5281
+borra_el_bit_6_del_estado:
+	res 6,(hl)		;5282   ; el bit 6: ya resuelto, se apaga
+	ret			;5284
+
+; ----------------------------------------------------------------------
+; EL CHOQUE CON EL PANADERO: solo se mira cuando (0xE00B) vale 7. Si el carro esta en su ultimo paso, se vuelca; si no, sigue corriendo y se repintan sus dos sprites con el color que le toque.
+; ----------------------------------------------------------------------
+carro_estado_6_choca_con_el_panadero:
+	exx			;5285   ; al juego alternativo
+	ld a,(0e00bh)		;5286   ; el reloj de la escena
+	cp 007h		;5289   ; solo con el valor 7
+	ret nz			;528b
+	call gasta_el_plazo_sin_cambiar_de_juego		;528c   ; gasta el plazo sin cambiar de juego
+	ret z			;528f
+	ld a,(hl)			;5290
+	dec a			;5291   ; el ultimo paso
+	jr z,carro_volcado_con_el_otro_color		;5292   ; y entonces se vuelca
+	ex de,hl			;5294
+	ld a,(de)			;5295
+	ld e,a			;5296
+	ld bc,0a4a8h		;5297   ; dos colores
+	ld a,0feh		;529a
+	bit 0,e		;529c   ; el bit 0: el sentido
+	jr z,corre_el_carro_y_lo_repinta		;529e
+	ld bc,0e0e4h		;52a0   ; o los otros dos
+	ld a,000h		;52a3
+corre_el_carro_y_lo_repinta:
+	inc hl			;52a5
+	add a,(hl)			;52a6   ; el paso, sumado a la fila
+	ld (hl),a			;52a7
+	ld d,a			;52a8
+	dec hl			;52a9
+	ld a,(hl)			;52aa
+	sub 010h		;52ab   ; dieciseis pixeles antes
+	inc hl			;52ad
+	inc hl			;52ae
+	ld (hl),b			;52af   ; el color
+	inc hl			;52b0
+	inc hl			;52b1
+	ld (hl),a			;52b2
+	inc hl			;52b3
+	ld (hl),d			;52b4
+	inc hl			;52b5
+	ld (hl),c			;52b6
+	ld a,e			;52b7
+	cp 002h		;52b8   ; el paso 2
+	ret nz			;52ba
+	ld hl,0e058h		;52bb
+	ld a,(hl)			;52be
+	dec hl			;52bf
+	ld (hl),a			;52c0
+	call pinta_las_puertas		;52c1   ; se repintan las puertas
+	ld a,007h		;52c4   ; y suena el aviso
+	call pide_un_sonido		;52c6
+	ret			;52c9
+carro_volcado_con_el_otro_color:
+	ld bc,09094h		;52ca   ; los colores del volcado
+	ex de,hl			;52cd
 
 ; ----------------------------------------------------------------------
 ; PONER EL SEGUNDO SPRITE DE UN CARRO, dieciseis pixeles mas alla: se copian la fila, la columna corrida y el color al hueco siguiente. Un carro son dos sprites.
@@ -3104,24 +3399,93 @@ pon_el_segundo_sprite_del_carro:
 	inc hl			;52da
 	ld (hl),c			;52db
 	ret			;52dc
+carro_estado_7_un_paso_arriba_o_abajo:
+	exx			;52dd   ; al juego alternativo
+	ld a,(de)			;52de
+	ld c,0f8h		;52df   ; ocho pixeles hacia arriba
+	rra			;52e1   ; el bit 0: el sentido
+	jr nc,suma_el_paso_a_la_fila		;52e2
+	ld c,008h		;52e4   ; o los ocho hacia abajo
+suma_el_paso_a_la_fila:
+	inc hl			;52e6
+	ld a,c			;52e7
+	add a,(hl)			;52e8   ; sumados a la fila
+	ld (hl),a			;52e9
+	add a,010h		;52ea   ; y dieciseis mas, al segundo sprite
+	ld (0e09dh),a		;52ec
+	ret			;52ef
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x52dd..0x534f  (114 bytes)
-DATA_52DD:
-	defb 0d9h,01ah,00eh,0f8h,01fh,030h,002h,00eh,008h,023h,079h,086h,077h,0c6h,010h,032h	; 52dd  .....0...#y.w..2
-	defb 09dh,0e0h,0c9h,0d9h,03ah,00bh,0e0h,0feh,007h,0c0h,013h,0ebh,035h,0ebh,0cah,06dh	; 52ed  ....:.......5..m
-	defb 053h,07dh,0c6h,006h,06fh,0cdh,0cfh,056h,0e6h,03fh,020h,00fh,0e5h,02dh,03eh,008h	; 52fd  S}..o..V.? ..->.
-	defb 086h,077h,07dh,0d6h,004h,06fh,03eh,008h,086h,077h,0e1h,021h,063h,0e0h,006h,008h	; 530d  .w}..o>..w.!c...
-	defb 03ah,029h,0e1h,0beh,028h,006h,023h,023h,023h,010h,0f8h,0c9h,0ebh,021h,02ah,0e1h	; 531d  :)..(.###....!*.
-	defb 01ah,036h,060h,023h,077h,01bh,01ah,0e6h,007h,03ch,0cbh,03fh,087h,04fh,087h,081h	; 532d  .6`#w....<.?.O..
-	defb 021h,010h,040h,0cdh,052h,040h,023h,022h,02ch,0e1h,0afh,012h,013h,012h,01bh,01bh	; 533d  !.@.R@#",.......
-	defb 012h,0c9h	; 534d
-
-; ======================================================================
-; CODIGO 0x534f..0x538c  (61 bytes)
-; ======================================================================
-
-
+; CAMINO DEL HORNO: gasta el plazo y, al agotarse, vuelca el carro. Mientras dura, cada 0x40 cuadros lo sube ocho pixeles y busca su hueco en la lista de ocho de 0xE063 para dejarlo apuntado en 0xE12A.
+; ----------------------------------------------------------------------
+carro_estado_8_camino_del_horno:
+	exx			;52f0   ; al juego alternativo
+	ld a,(0e00bh)		;52f1   ; el reloj de la escena
+	cp 007h		;52f4   ; solo con el valor 7
+	ret nz			;52f6
+	inc de			;52f7
+	ex de,hl			;52f8
+	dec (hl)			;52f9   ; un cuadro menos del plazo
+	ex de,hl			;52fa
+	jp z,vuelca_el_carro		;52fb   ; agotado: se vuelca
+	ld a,l			;52fe
+	add a,006h		;52ff   ; seis bytes mas alla
+	ld l,a			;5301
+	call parpadea_el_patron		;5302   ; el patron que parpadea
+	and 03fh		;5305   ; uno de cada 0x40 cuadros
+	jr nz,busca_el_carro_en_la_lista_de_ocho		;5307
+	push hl			;5309
+	dec l			;530a
+	ld a,008h		;530b
+	add a,(hl)			;530d   ; ocho pixeles mas
+	ld (hl),a			;530e
+	ld a,l			;530f
+	sub 004h		;5310
+	ld l,a			;5312
+	ld a,008h		;5313
+	add a,(hl)			;5315   ; y al otro sprite lo mismo
+	ld (hl),a			;5316
+	pop hl			;5317
+busca_el_carro_en_la_lista_de_ocho:
+	ld hl,0e063h		;5318   ; la lista de ocho
+	ld b,008h		;531b   ; ocho entradas
+	ld a,(0e129h)		;531d
+recorre_la_lista_de_ocho:
+	cp (hl)			;5320   ; esta?
+	jr z,apunta_el_carro_en_0xE12A		;5321
+	inc hl			;5323   ; tres bytes por entrada
+	inc hl			;5324
+	inc hl			;5325
+	djnz recorre_la_lista_de_ocho		;5326
+	ret			;5328
+apunta_el_carro_en_0xE12A:
+	ex de,hl			;5329
+	ld hl,0e12ah		;532a
+	ld a,(de)			;532d
+	ld (hl),060h		;532e   ; el patron 0x60
+	inc hl			;5330
+	ld (hl),a			;5331
+	dec de			;5332
+	ld a,(de)			;5333
+	and 007h		;5334   ; tres bits
+	inc a			;5336
+	srl a		;5337
+	add a,a			;5339
+	ld c,a			;533a   ; por seis
+	add a,a			;533b
+	add a,c			;533c
+	ld hl,04010h		;533d   ; la tabla de indices
+	call suma_a_a_hl		;5340
+	inc hl			;5343
+	ld (0e12ch),hl		;5344   ; y queda apuntado en 0xE12C
+	xor a			;5347
+	ld (de),a			;5348   ; se borran los tres bytes
+	inc de			;5349
+	ld (de),a			;534a
+	dec de			;534b
+	dec de			;534c
+	ld (de),a			;534d
+	ret			;534e
 
 ; ----------------------------------------------------------------------
 ; BUSCAR EL CARRO QUE ESTE EN EL ESTADO 0x10, entre los dos de 0xE0A1 y 0xE0A9. Si su fila esta fuera de la banda 0x30..0xE0 se le clava el patron 0x47.
@@ -3146,6 +3510,7 @@ L_5366:
 	cp 0b0h		;5369   ; y mide 0xB0
 	ret c			;536b
 	dec hl			;536c
+vuelca_el_carro:
 	ld (hl),047h		;536d   ; el patron de fuera de sitio
 	inc hl			;536f
 	ld a,(hl)			;5370
@@ -3153,9 +3518,9 @@ L_5366:
 	ld (hl),a			;5373
 	add a,010h		;5374
 	ld c,a			;5376
-	call hueco_del_carro		;5377
+	call hueco_del_carro		;5377   ; su hueco de sprite
 	ld a,(de)			;537a
-	and 0feh		;537b
+	and 0feh		;537b   ; se apaga el bit 0 del estado
 	ld (de),a			;537d
 	inc hl			;537e
 	inc hl			;537f
@@ -3166,26 +3531,49 @@ L_5366:
 	dec hl			;5385
 	dec hl			;5386
 	dec hl			;5387
-	call arranca_el_carro_en_el_estado_2		;5388
+	call arranca_el_carro_en_el_estado_2		;5388   ; y vuelve a arrancar en el estado 2
 	ret			;538b
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x538c..0x53b6  (42 bytes)
-DATA_538C:
-	defb 0d9h,03ah,00bh,0e0h,0e6h,003h,0c0h,013h,0ebh,035h,0ebh,028h,031h,01ah,0d9h,021h	; 538c  .:.......5.(1..!
-	defb 0cdh,053h,0cdh,052h,040h,07eh,0d9h,04fh,077h,023h,046h,01ah,0feh,002h,028h,00ah	; 539c  .S.R@~.Ow#F...(.
-	defb 038h,00dh,023h,023h,023h,079h,0c6h,010h,077h,0c9h	; 53ac  8.###y..w.
-
-; ======================================================================
-; CODIGO 0x53b6..0x53ca  (20 bytes)
-; ======================================================================
-
-
+; EL CARRO YA VOLCADO: uno de cada cuatro cuadros gasta el plazo, y con lo que queda saca de la tabla de 0x53CE el patron que le toca. Segun la fase, el carro volcado se dibuja con un sprite o con los dos.
+; ----------------------------------------------------------------------
+carro_estado_9_volcado:
+	exx			;538c   ; al juego alternativo
+	ld a,(0e00bh)		;538d   ; el reloj de la escena
+	and 003h		;5390   ; uno de cada cuatro cuadros
+	ret nz			;5392
+	inc de			;5393
+	ex de,hl			;5394
+	dec (hl)			;5395   ; un cuadro menos del plazo
+	ex de,hl			;5396
+	jr z,sale_del_estado_9		;5397   ; agotado: se sale del estado
+	ld a,(de)			;5399
+	exx			;539a
+	ld hl,053cdh		;539b   ; la tabla de patrones del volcado
+	call suma_a_a_hl		;539e
+	ld a,(hl)			;53a1
+	exx			;53a2
+	ld c,a			;53a3
+	ld (hl),a			;53a4
+	inc hl			;53a5
+	ld b,(hl)			;53a6
+	ld a,(de)			;53a7
+	cp 002h		;53a8   ; la fase 2
+	jr z,coloca_el_carro_volcado		;53aa
+	jr c,coloca_los_dos_sprites_del_volcado		;53ac   ; por debajo, el otro camino
+	inc hl			;53ae
+	inc hl			;53af
+	inc hl			;53b0
+	ld a,c			;53b1
+	add a,010h		;53b2   ; dieciseis mas: el segundo sprite
+	ld (hl),a			;53b4
+	ret			;53b5
 coloca_el_carro_volcado:
 	ld a,b			;53b6
 	sub 010h		;53b7   ; dieciseis menos
 	ld b,a			;53b9
 	ld (hl),a			;53ba
+coloca_los_dos_sprites_del_volcado:
 	inc hl			;53bb
 	ld (hl),098h		;53bc   ; el patron 0x98
 	inc hl			;53be
@@ -3198,11 +3586,18 @@ coloca_el_carro_volcado:
 	inc hl			;53c6
 	ld (hl),09ch		;53c7   ; y su patron
 	ret			;53c9
+sale_del_estado_9:
+	dec de			;53ca
+	jp L_55A4		;53cb
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x53ca..0x53d4  (10 bytes)
-DATA_53CA:
-	defb 01bh,0c3h,0a4h,055h,047h,034h,038h,040h,04ah,056h	; 53ca  ...UG48@JV
+; DATOS patrones_del_carro_volcado: 0x47 0x34 0x38 0x40 0x4A 0x56. 0x539B la
+;   apunta con `ld hl,053cdh`, un byte ANTES: 0x53CD es el ultimo byte del
+;   `jp` de 0x53CB, o sea que la tabla de verdad empieza en 0x53CE y el indice
+;   que llega vale 1 o mas
+;   0x53ce..0x53d4  (6 bytes)
+DATA_patrones_del_carro_volcado:
+	defb 047h,034h,038h,040h,04ah,056h	; 53ce
 
 ; ======================================================================
 ; CODIGO 0x53d4..0x572d  (857 bytes)
@@ -3558,6 +3953,7 @@ L_559A:
 	call pide_un_sonido		;559f
 	pop hl			;55a2
 	pop de			;55a3
+L_55A4:
 	ld a,(0e002h)		;55a4
 	bit 6,a		;55a7   ; el bit 6: estamos en partida
 	ld a,000h		;55a9
@@ -3768,6 +4164,7 @@ L_56A4:
 	inc hl			;56cc
 	ld (hl),c			;56cd
 	inc hl			;56ce
+parpadea_el_patron:
 	ld a,(0e003h)		;56cf   ; el contador de cuadros
 	bit 3,a		;56d2   ; su bit 3
 	ld c,0e8h		;56d4   ; un patron
@@ -3834,9 +4231,16 @@ L_5724:
 	ret			;572c
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x572d..0x5735  (8 bytes)
-DATA_572D:
-	defb 008h,020h,00ah,014h,00bh,016h,000h,010h	; 572d  . ......
+; DATOS caja_0x572D: los cuatro bytes de una caja de choque; 0x5705 la elige
+;   0x572d..0x5731  (4 bytes)
+DATA_caja_0x572D:
+	defb 008h,020h,00ah,014h	; 572d
+
+; ----------------------------------------------------------------------
+; DATOS caja_0x5731: los de la otra; 0x570C la elige cuando el tipo es 0x10
+;   0x5731..0x5735  (4 bytes)
+DATA_caja_0x5731:
+	defb 00bh,016h,000h,010h	; 5731
 
 ; ======================================================================
 ; CODIGO 0x5735..0x575a  (37 bytes)
@@ -3864,8 +4268,9 @@ mira_el_panadero_contra_el_carro:
 	ret			;5759
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x575a..0x575e  (4 bytes)
-DATA_575A:
+; DATOS caja_0x575A: la caja del carro; 0x573D se la pasa a caja_parametrizada
+;   0x575a..0x575e  (4 bytes)
+DATA_caja_0x575A:
 	defb 008h,020h,020h,025h	; 575a
 
 ; ======================================================================
@@ -3943,10 +4348,19 @@ L_5799:
 	ret			;57bb
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x57bc..0x57da  (30 bytes)
-DATA_57BC:
-	defb 010h,011h,020h,024h,040h,03dh,000h,004h,000h,004h,002h,000h,004h,002h,002h,004h	; 57bc  .. $@=..........
-	defb 004h,000h,000h,004h,002h,002h,000h,002h,004h,000h,002h,004h,000h,002h	; 57cc  ..............
+; DATOS mascaras_de_las_puertas: tres parejas; 0x57A1 la llama "la segunda,
+;   encadenada" y saca de ella el mapa de ocupacion en C y el valor en B
+;   0x57bc..0x57c2  (6 bytes)
+DATA_mascaras_de_las_puertas:
+	defb 010h,011h,020h,024h,040h,03dh	; 57bc
+
+; ----------------------------------------------------------------------
+; DATOS tabla_de_puertas: 24 bytes; 0x579A la llama "la primera tabla" y de
+;   ella sale el indice con el que entra en la de arriba
+;   0x57c2..0x57da  (24 bytes)
+DATA_tabla_de_puertas:
+	defb 000h,004h,000h,004h,002h,000h,004h,002h,002h,004h,004h,000h,000h,004h,002h,002h	; 57c2  ................
+	defb 000h,002h,004h,000h,002h,004h,000h,002h	; 57d2  ........
 
 ; ======================================================================
 ; CODIGO 0x57da..0x58f9  (287 bytes)
@@ -4141,8 +4555,11 @@ L_58F5:
 	jr L_58D8		;58f7
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x58f9..0x58fc  (3 bytes)
-DATA_58F9:
+; DATOS tres_puertas: los tres bytes 0x11 0x24 0x3D, que son los segundos de
+;   las tres parejas de 0x57BC; 0x5897 los pasa en DE para recorrer "tres
+;   puertas"
+;   0x58f9..0x58fc  (3 bytes)
+DATA_tres_puertas:
 	defb 011h,024h,03dh	; 58f9
 
 ; ======================================================================
@@ -4205,9 +4622,18 @@ L_593B:
 	ret			;5945
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5946..0x5952  (12 bytes)
-DATA_5946:
-	defb 000h,000h,000h,000h,000h,000h,000h,0c8h,0c9h,000h,0cah,0cbh	; 5946  ............
+; DATOS tira_de_tres: seis bytes a cero: dos filas de tres celdas que 0x591B
+;   vuelca para BORRAR
+;   0x5946..0x594c  (6 bytes)
+DATA_tira_de_tres:
+	defb 000h,000h,000h,000h,000h,000h	; 5946
+
+; ----------------------------------------------------------------------
+; DATOS tira_de_dos: 0x592C la carga con `ld hl,0594ch` y un `inc hl` detras,
+;   asi que la tira util empieza en 0x594D
+;   0x594c..0x5952  (6 bytes)
+DATA_tira_de_dos:
+	defb 000h,0c8h,0c9h,000h,0cah,0cbh	; 594c
 
 ; ======================================================================
 ; CODIGO 0x5952..0x5a50  (254 bytes)
@@ -4366,8 +4792,10 @@ L_5A3E:
 	ret			;5a4f
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5a50..0x5a62  (18 bytes)
-DATA_5A50:
+; DATOS desplazamientos: seis ternas; 0x5A0F las indexa y suma la primera a la
+;   posicion
+;   0x5a50..0x5a62  (18 bytes)
+DATA_desplazamientos:
 	defb 009h,000h,0f7h,009h,000h,0f7h,00ch,008h,000h,0fah,0f2h,000h,00dh,004h,000h,0fch	; 5a50  ................
 	defb 0f6h,0eah	; 5a60
 
@@ -4502,8 +4930,10 @@ L_5B1A:
 	jp L_4381		;5b3b
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5b3e..0x5b5e  (32 bytes)
-DATA_5B3E:
+; DATOS sprites_iniciales: los 32 bytes que 0x5B1A copia con `ld bc,00020h` al
+;   bufer de sprites de 0xE080
+;   0x5b3e..0x5b5e  (32 bytes)
+DATA_sprites_iniciales:
 	defb 077h,0dbh,048h,08fh,07fh,0dbh,050h,08fh,07eh,0dbh,04ch,089h,08fh,0dbh,054h,087h	; 5b3e  w.H...P.~.L...T.
 	defb 067h,0d0h,014h,006h,06fh,0b0h,010h,006h,06fh,090h,00ch,006h,06fh,070h,008h,008h	; 5b4e  g...o...o...op..
 
@@ -4785,8 +5215,10 @@ coloca_los_dos_sprites_del_remate:
 	jp vuelca_los_atributos		;5d23
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5d26..0x5d2c  (6 bytes)
-DATA_5D26:
+; DATOS tres_parejas_de_patrones: 0x50/0x52, 0x52/0x54 y 0x54/0x56, pegadas
+;   delante del guion de 0x5D2C
+;   0x5d26..0x5d2c  (6 bytes)
+DATA_tres_parejas_de_patrones:
 	defb 050h,052h,052h,054h,054h,056h	; 5d26
 
 ; ----------------------------------------------------------------------
@@ -4795,16 +5227,16 @@ DATA_5D26:
 DATA_guion_0x5D2C:
 	defb 0f9h,039h,0dch,0e6h,0e7h,0feh,01ah,03ah,0ddh,0ffh	; 5d2c  .9.....:..
 
-; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5d36..0x5d3e  (8 bytes)
-DATA_5D36:
-	defb 021h,004h,0e0h,035h,0c0h,0c3h,081h,043h	; 5d36  !..5...C
-
 ; ======================================================================
-; CODIGO 0x5d3e..0x5d72  (52 bytes)
+; CODIGO 0x5d36..0x5d72  (60 bytes)
 ; ======================================================================
 
 
+L_5D36:
+	ld hl,0e004h		;5d36
+	dec (hl)			;5d39
+	ret nz			;5d3a
+	jp L_4381		;5d3b
 
 ; ----------------------------------------------------------------------
 ; EL PAN QUE SALE, con DOS tablas encadenadas: la de 0x5D72 da un indice y con el se entra en la de 0x5D82, que trae el guion. Se pinta con el interprete de rotulos por la puerta de la mascara 0xFF.
@@ -4841,9 +5273,17 @@ L_5D64:
 	ret			;5d71
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5d72..0x5d8e  (28 bytes)
-DATA_5D72:
+; DATOS tabla_encadenada_1: dieciseis bytes; 0x5D57 la llama "la primera
+;   tabla" y de ella sale el indice de la siguiente
+;   0x5d72..0x5d82  (16 bytes)
+DATA_tabla_encadenada_1:
 	defb 003h,006h,003h,006h,003h,006h,003h,006h,009h,000h,009h,000h,009h,000h,009h,000h	; 5d72  ................
+
+; ----------------------------------------------------------------------
+; DATOS tabla_encadenada_2: cuatro ternas (0xD2 0xD5 0xFF, 0xD8 0xD5 0xFF,
+;   0xD2 0xD9 0xFF, 0xD8 0xD9 0xFF); 0x5D5E la llama "la segunda, encadenada"
+;   0x5d82..0x5d8e  (12 bytes)
+DATA_tabla_encadenada_2:
 	defb 0d2h,0d5h,0ffh,0d8h,0d5h,0ffh,0d2h,0d9h,0ffh,0d8h,0d9h,0ffh	; 5d82  ............
 
 ; ----------------------------------------------------------------------
@@ -4874,8 +5314,12 @@ DATA_guion_0x5DB1:
 	defb 021h,02dh,029h,000h,011h,019h,018h,014h,0ffh	; 5e21  !-)......
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5e2a..0x5e37  (13 bytes)
-DATA_5E2A:
+; DATOS rotulo_game_over: el guion que 0x42B9 pinta. Dice "GAME  OVER" en
+;   0x396B y sigue -por la puerta 0xFE- en el guion de 0x5E37, que pone
+;   "PLAYER 1" en 0x392C. El texto va en claro porque la fuente coloca cada
+;   letra en su codigo ASCII menos 0x20: 'A' es 0x21 y '0' es 0x10
+;   0x5e2a..0x5e37  (13 bytes)
+DATA_rotulo_game_over:
 	defb 06bh,039h,027h,021h,02dh,025h,000h,000h,02fh,036h,025h,032h,0feh	; 5e2a  k9'!-%../6%2.
 
 ; ----------------------------------------------------------------------
@@ -4893,9 +5337,18 @@ DATA_guion_0x5E42:
 	defb 024h,027h,025h,000h,020h,0ffh	; 5e52
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x5e58..0x6051  (505 bytes)
-DATA_5E58:
+; DATOS rotulo_demonstration: el guion que pone "DEMONSTRATION" en 0x3909 y
+;   cierra con 0xFF. Igual que el de 0x5E2A, el texto va en claro: la fuente
+;   coloca cada letra en su codigo ASCII menos 0x20
+;   0x5e58..0x5e68  (16 bytes)
+DATA_rotulo_demonstration:
 	defb 009h,039h,024h,025h,02dh,02fh,02eh,033h,034h,032h,021h,034h,029h,02fh,02eh,0ffh	; 5e58  .9$%-/.342!4)/..
+
+; ----------------------------------------------------------------------
+; DATOS bloque_0x5E68: 142 bytes comprimidos -> 346 a la VRAM; lo carga
+;   0x4A0F, "el bloque comprimido del decorado"
+;   0x5e68..0x5ef6  (142 bytes)
+DATA_bloque_0x5E68:
 	defb 060h,039h,020h,06ch,080h,060h,038h,019h,09bh,085h,000h,0b0h,0b0h,0b0h,0b1h,004h	; 5e68  `9 l.`8.........
 	defb 000h,084h,0c3h,000h,0c5h,0c7h,003h,000h,082h,0cbh,0cdh,004h,000h,082h,0cfh,0d1h	; 5e78  ................
 	defb 004h,000h,096h,0d2h,0d4h,000h,0c2h,000h,0aah,0ach,0adh,0b2h,0b7h,000h,0beh,0beh	; 5e88  ................
@@ -4904,32 +5357,55 @@ DATA_5E58:
 	defb 096h,005h,09ah,001h,098h,004h,0c1h,001h,0d5h,008h,0c0h,00ch,068h,001h,097h,005h	; 5eb8  ............h...
 	defb 000h,001h,099h,00dh,068h,00ch,000h,001h,0c5h,005h,0c7h,001h,0c6h,00dh,000h,080h	; 5ec8  ....h...........
 	defb 0e3h,03ah,09ah,023h,02fh,02dh,029h,023h,000h,022h,021h,02bh,025h,032h,039h,000h	; 5ed8  .:.#/-)#."!+%29.
-	defb 000h,01ah,02bh,02fh,02eh,021h,02dh,029h,000h,011h,019h,018h,014h,000h,040h,038h	; 5ee8  ..+/.!-)......@8
-	defb 02ah,001h,001h,04ah,01fh,001h,001h,04bh,015h,001h,040h,058h,006h,000h,083h,059h	; 5ef8  *..J...K..@X...Y
-	defb 000h,059h,01dh,000h,083h,059h,000h,059h,01ch,000h,085h,0efh,0f0h,0f1h,0f2h,0f3h	; 5f08  .Y...Y.Y........
-	defb 005h,000h,083h,040h,048h,044h,013h,000h,085h,0f4h,0f5h,0f6h,0f7h,0f8h,005h,000h	; 5f18  ...@HD..........
-	defb 083h,041h,049h,045h,003h,000h,001h,0e9h,019h,000h,083h,042h,04ah,046h,003h,000h	; 5f28  .AIE.......BJF..
-	defb 08ah,0eah,000h,0ebh,0ebh,0ebh,000h,0ech,0ech,0edh,0edh,00fh,000h,086h,04ch,043h	; 5f38  ..............LC
-	defb 04bh,047h,04ch,000h,00bh,04dh,02fh,000h,082h,0e0h,0e1h,006h,000h,082h,0e0h,0e1h	; 5f48  KGL..M/.........
-	defb 003h,000h,001h,0e8h,012h,000h,08eh,0e2h,0e3h,000h,000h,0e4h,0e5h,000h,000h,0e4h	; 5f58  ................
-	defb 0e5h,000h,000h,0deh,0dfh,011h,000h,08fh,0d0h,0dah,0dbh,0d0h,0d0h,0dah,0dbh,0d0h	; 5f68  ................
-	defb 0d0h,0dah,0dbh,0d0h,0d0h,0dah,0dbh,004h,0d0h,00dh,000h,08fh,0d1h,0d2h,0d5h,0d1h	; 5f78  ................
-	defb 0d1h,0d2h,0d5h,0d1h,0d1h,0d2h,0d5h,0d1h,0d1h,0d2h,0d5h,004h,0d1h,00eh,000h,08eh	; 5f88  ................
-	defb 0d3h,0d6h,000h,000h,0d3h,0d6h,000h,000h,0d3h,0d6h,000h,000h,0d3h,0d6h,004h,000h	; 5f98  ................
-	defb 00eh,0f9h,08eh,0d4h,0d7h,0fah,0fah,0d4h,0d7h,0fah,0fah,0d4h,0d7h,0fah,0fah,0d4h	; 5fa8  ................
-	defb 0d7h,004h,0fah,020h,0fbh,027h,001h,08eh,022h,02fh,02eh,035h,033h,001h,001h,016h	; 5fb8  ... .'.."/.53...
-	defb 010h,010h,037h,010h,010h,038h,004h,010h,027h,001h,000h,04ch,038h,001h,040h,005h	; 5fc8  ..7..8..'..L8.@.
-	defb 043h,018h,001h,089h,04ch,001h,041h,00fh,045h,046h,047h,048h,049h,016h,001h,084h	; 5fd8  C...L.A.EFGHI...
-	defb 04eh,04dh,04fh,042h,005h,044h,000h,047h,038h,082h,01ch,01eh,021h,001h,001h,04ch	; 5fe8  NMOB.D.G8...!..L
-	defb 01ch,001h,085h,01bh,01dh,04eh,04dh,04fh,000h,008h,008h,008h,008h,008h,008h,008h	; 5ff8  .....NMO........
-	defb 008h,008h,008h,008h,008h,008h,008h,009h,008h,008h,008h,008h,008h,008h,004h,014h	; 6008  ................
-	defb 004h,004h,004h,004h,004h,004h,004h,004h,004h,004h,008h,008h,008h,008h,009h,018h	; 6018  ................
-	defb 008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h	; 6028  ................
-	defb 008h,004h,004h,004h,004h,004h,004h,014h,004h,008h,008h,008h,008h,008h,008h,008h	; 6038  ................
-	defb 008h,008h,008h,009h,018h,008h,008h,008h,008h	; 6048  .........
+	defb 000h,01ah,02bh,02fh,02eh,021h,02dh,029h,000h,011h,019h,018h,014h,000h	; 5ee8  ..+/.!-)......
+
+; ----------------------------------------------------------------------
+; DATOS bloque_0x5EF6: 221 bytes comprimidos -> 768 a la VRAM; lo carga 0x5AE8
+;   0x5ef6..0x5fd3  (221 bytes)
+DATA_bloque_0x5EF6:
+	defb 040h,038h,02ah,001h,001h,04ah,01fh,001h,001h,04bh,015h,001h,040h,058h,006h,000h	; 5ef6  @8*..J...K..@X..
+	defb 083h,059h,000h,059h,01dh,000h,083h,059h,000h,059h,01ch,000h,085h,0efh,0f0h,0f1h	; 5f06  .Y.Y...Y.Y......
+	defb 0f2h,0f3h,005h,000h,083h,040h,048h,044h,013h,000h,085h,0f4h,0f5h,0f6h,0f7h,0f8h	; 5f16  .....@HD........
+	defb 005h,000h,083h,041h,049h,045h,003h,000h,001h,0e9h,019h,000h,083h,042h,04ah,046h	; 5f26  ...AIE.......BJF
+	defb 003h,000h,08ah,0eah,000h,0ebh,0ebh,0ebh,000h,0ech,0ech,0edh,0edh,00fh,000h,086h	; 5f36  ................
+	defb 04ch,043h,04bh,047h,04ch,000h,00bh,04dh,02fh,000h,082h,0e0h,0e1h,006h,000h,082h	; 5f46  LCKGL..M/.......
+	defb 0e0h,0e1h,003h,000h,001h,0e8h,012h,000h,08eh,0e2h,0e3h,000h,000h,0e4h,0e5h,000h	; 5f56  ................
+	defb 000h,0e4h,0e5h,000h,000h,0deh,0dfh,011h,000h,08fh,0d0h,0dah,0dbh,0d0h,0d0h,0dah	; 5f66  ................
+	defb 0dbh,0d0h,0d0h,0dah,0dbh,0d0h,0d0h,0dah,0dbh,004h,0d0h,00dh,000h,08fh,0d1h,0d2h	; 5f76  ................
+	defb 0d5h,0d1h,0d1h,0d2h,0d5h,0d1h,0d1h,0d2h,0d5h,0d1h,0d1h,0d2h,0d5h,004h,0d1h,00eh	; 5f86  ................
+	defb 000h,08eh,0d3h,0d6h,000h,000h,0d3h,0d6h,000h,000h,0d3h,0d6h,000h,000h,0d3h,0d6h	; 5f96  ................
+	defb 004h,000h,00eh,0f9h,08eh,0d4h,0d7h,0fah,0fah,0d4h,0d7h,0fah,0fah,0d4h,0d7h,0fah	; 5fa6  ................
+	defb 0fah,0d4h,0d7h,004h,0fah,020h,0fbh,027h,001h,08eh,022h,02fh,02eh,035h,033h,001h	; 5fb6  ..... .'.."/.53.
+	defb 001h,016h,010h,010h,037h,010h,010h,038h,004h,010h,027h,001h,000h	; 5fc6  ....7..8..'..
+
+; ----------------------------------------------------------------------
+; DATOS bloque_0x5FD3: 28 bytes comprimidos -> 146 a la VRAM; lo carga 0x5CF5
+;   0x5fd3..0x5fef  (28 bytes)
+DATA_bloque_0x5FD3:
+	defb 04ch,038h,001h,040h,005h,043h,018h,001h,089h,04ch,001h,041h,00fh,045h,046h,047h	; 5fd3  L8.@.C...L.A.EFG
+	defb 048h,049h,016h,001h,084h,04eh,04dh,04fh,042h,005h,044h,000h	; 5fe3  HI...NMOB.D.
+
+; ----------------------------------------------------------------------
+; DATOS bloque_0x5FEF: 18 bytes comprimidos -> 140 a la VRAM; lo carga 0x5CB1
+;   0x5fef..0x6001  (18 bytes)
+DATA_bloque_0x5FEF:
+	defb 047h,038h,082h,01ch,01eh,021h,001h,001h,04ch,01ch,001h,085h,01bh,01dh,04eh,04dh	; 5fef  G8...!..L.....NM
+	defb 04fh,000h	; 5fff
+
+; ----------------------------------------------------------------------
+; DATOS lista_de_movimientos_grabados: los 80 bytes de la demostracion. 0x47BD
+;   los indexa y devuelve cada uno como si fuese la lectura del mando: es el
+;   guion que "juega" solo mientras el bit 6 de (0xE002) esta a cero
+;   0x6001..0x6051  (80 bytes)
+DATA_lista_de_movimientos_grabados:
+	defb 008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,009h,008h	; 6001  ................
+	defb 008h,008h,008h,008h,008h,004h,014h,004h,004h,004h,004h,004h,004h,004h,004h,004h	; 6011  ................
+	defb 004h,008h,008h,008h,008h,009h,018h,008h,008h,008h,008h,008h,008h,008h,008h,008h	; 6021  ................
+	defb 008h,008h,008h,008h,008h,008h,008h,008h,004h,004h,004h,004h,004h,004h,014h,004h	; 6031  ................
+	defb 008h,008h,008h,008h,008h,008h,008h,008h,008h,008h,009h,018h,008h,008h,008h,008h	; 6041  ................
 
 ; ======================================================================
-; CODIGO 0x6051..0x60b0  (95 bytes)
+; CODIGO 0x6051..0x61f5  (420 bytes)
 ; ======================================================================
 
 
@@ -4978,16 +5454,26 @@ rellena_la_franja_del_titulo:
 	ret			;60af
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x60b0..0x60c7  (23 bytes)
-DATA_60B0:
-	defb 011h,000h,038h,03eh,000h,001h,000h,003h,0cdh,040h,040h,03ch,013h,00bh,06fh,078h	; 60b0  ..8>.....@@<..ox
-	defb 0b1h,07dh,020h,0f4h,018h,0feh,0c9h	; 60c0
-
-; ======================================================================
-; CODIGO 0x60c7..0x61f5  (302 bytes)
-; ======================================================================
-
-
+; EL VISOR DE PATRONES QUE SE QUEDO DENTRO. Llena las 768 celdas de la tabla de nombres con los indices 0, 1, 2... para ver de golpe todos los patrones cargados, y remata con `jr $`, o sea que se queda colgado ahi para siempre. No es una rutina del juego: es la herramienta de quien lo estaba haciendo. Nadie la llama -ni el trazado entra, ni ninguna instruccion la carga, ni la palabra 0x60B0 aparece en los 16.384 bytes-, y el `ret` del final tampoco se alcanza porque el `jr $` no deja pasar.
+; ----------------------------------------------------------------------
+visor_de_patrones_de_pruebas:
+	ld de,03800h		;60b0   ; la tabla de nombres
+	ld a,000h		;60b3   ; se empieza por el patron 0
+	ld bc,00300h		;60b5   ; las 768 celdas
+recorre_las_768_celdas:
+	call escribe_en_vram		;60b8   ; el indice, a la VRAM
+	inc a			;60bb   ; y el siguiente
+	inc de			;60bc   ; en la celda de al lado
+	dec bc			;60bd
+	ld l,a			;60be   ; A se guarda en L mientras se mira la cuenta
+	ld a,b			;60bf
+	or c			;60c0
+	ld a,l			;60c1
+	jr nz,recorre_las_768_celdas		;60c2   ; hasta agotar las 768
+L_60C4:
+	jr L_60C4		;60c4   ; y aqui se queda: `jr $`, un bucle sobre si mismo
+L_60C6:
+	ret			;60c6   ; el `ret` al que no se llega
 
 ; ----------------------------------------------------------------------
 ; MONTAR UN TERCIO DE PANTALLA. Empieza escribiendo dieciseis grupos de ocho bytes con el mismo valor, que va subiendo de uno en uno -0, 1, 2...-: una rampa de patrones generada sin tabla. Luego se le encajan encima cinco bloques a desplazamientos fijos (0x400, 0x680, 0x398, 0x6000 y 0x400 mas).
@@ -5218,8 +5704,10 @@ DATA_bloque_0x61F5:
 	defb 000h,002h,0c0h,006h,000h,002h,030h,006h,000h,002h,00ch,006h,000h,002h,003h,000h	; 6485  ......0.........
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x6495..0x650d  (120 bytes)
-DATA_6495:
+; DATOS bloque_0x6495 (tramo): 130 bytes comprimidos; lo carga 0x609E con
+;   cabecera y reparte 224 bytes entre 0x3368 y 0x1368
+;   0x6495..0x650d  (120 bytes)  de 0x6495..0x6517 (130 bytes)
+DATA_bloque_0x6495:
 	defb 068h,033h,0f0h,07fh,029h,03ch,057h,01fh,002h,00bh,03fh,0e1h,040h,081h,060h,0c0h	; 6495  h3..)<W...?.@.`.
 	defb 000h,080h,0e1h,0fah,0aah,0f2h,0aeh,010h,0feh,010h,0ffh,012h,01fh,014h,00fh,006h	; 64a5  ................
 	defb 01fh,00eh,01ah,000h,0cfh,080h,080h,080h,0c0h,05fh,0c0h,00fh,0c1h,00ah,007h,00ah	; 64b5  ........._......
@@ -5237,8 +5725,9 @@ DATA_bloque_0x650D:
 	defb 088h,002h,002h,002h,002h,003h,0ech,0ech,0ech,000h	; 650d  ..........
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x6517..0x6521  (10 bytes)
-DATA_6517:
+; DATOS bloque_0x6517: 10 bytes comprimidos -> 8 a la VRAM; lo carga 0x6187
+;   0x6517..0x6521  (10 bytes)
+DATA_bloque_0x6517:
 	defb 088h,005h,005h,005h,005h,007h,0e4h,0e4h,0e4h,000h	; 6517  ..........
 
 ; ----------------------------------------------------------------------
@@ -5261,27 +5750,36 @@ DATA_bloque_0x6566:
 	defb 07fh,03eh,004h,0ffh,000h	; 6576
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x657b..0x66a5  (298 bytes)
-DATA_657B:
+; DATOS bloque_0x657B: 100 bytes comprimidos -> 104 a la VRAM; lo carga
+;   0x615E. Su cola, desde 0x65CB, la vuelve a usar 0x6171 por su cuenta
+;   0x657b..0x65df  (100 bytes)
+DATA_bloque_0x657B:
 	defb 090h,01fh,0dbh,0fdh,0ffh,0ffh,0ffh,07fh,07fh,0c0h,070h,0b8h,0f8h,0f8h,0f8h,0f0h	; 657b  ..........p.....
 	defb 0f0h,004h,000h,084h,01bh,07dh,07eh,0feh,004h,000h,084h,0b0h,0dch,0ech,0eeh,0b0h	; 658b  .....}~.........
 	defb 0feh,0ffh,0ffh,0ffh,0ffh,055h,07fh,07fh,0eeh,0feh,0feh,0feh,0feh,054h,0feh,0feh	; 659b  .....U.......T..
 	defb 000h,000h,000h,01bh,07dh,07dh,0feh,0feh,000h,000h,000h,0b0h,0dch,0eeh,0eeh,0eeh	; 65ab  ....}}..........
 	defb 0feh,0ffh,0ffh,0ffh,0d5h,0aah,07fh,07fh,0efh,0ffh,0ffh,0ffh,055h,0abh,0feh,0feh	; 65bb  ............U...
 	defb 088h,07ch,0feh,0feh,0feh,07ch,07ch,07ch,0ffh,005h,000h,001h,03eh,003h,07fh,003h	; 65cb  .|...|||....>...
-	defb 03eh,004h,0ffh,000h,000h,024h,0c0h,030h,048h,048h,000h,048h,048h,048h,030h,000h	; 65db  >....$.0HH.HHH0.
-	defb 008h,008h,000h,008h,008h,008h,000h,030h,008h,008h,030h,040h,040h,040h,030h,030h	; 65eb  .......0..0@@@00
-	defb 008h,008h,030h,008h,008h,008h,030h,000h,048h,048h,030h,008h,008h,008h,000h,030h	; 65fb  ..0...0.HH0....0
-	defb 040h,040h,030h,008h,008h,008h,030h,030h,040h,040h,030h,048h,048h,048h,030h,030h	; 660b  @@0...00@@0HHH00
-	defb 008h,008h,000h,008h,008h,008h,000h,0c0h,030h,048h,048h,030h,048h,048h,048h,030h	; 661b  ........0HH0HHH0
-	defb 030h,048h,048h,030h,008h,008h,008h,030h,040h,0c2h,0c2h,040h,042h,002h,002h,000h	; 662b  0HH0...0@..@B...
-	defb 040h,0c0h,0c0h,040h,040h,000h,000h,000h,009h,015h,015h,01dh,015h,000h,000h,000h	; 663b  @..@@...........
-	defb 000h,000h,000h,040h,0c0h,0c0h,040h,040h,000h,000h,000h,019h,015h,015h,019h,011h	; 664b  ...@..@@........
-	defb 000h,002h,002h,040h,0c2h,0c2h,042h,040h,0b0h,00ch,012h,092h,000h,012h,092h,012h	; 665b  ...@..B@........
-	defb 00ch,000h,002h,082h,000h,002h,082h,002h,000h,00ch,002h,082h,00ch,010h,090h,010h	; 666b  ................
-	defb 00ch,00ch,002h,082h,00ch,002h,082h,002h,00ch,000h,012h,092h,00ch,002h,082h,002h	; 667b  ................
-	defb 000h,00ch,010h,090h,00ch,002h,082h,002h,00ch,004h,000h,082h,07fh,0e0h,00ah,0f8h	; 668b  ................
-	defb 004h,000h,082h,0feh,007h,00ah,01fh,010h,000h,000h	; 669b  ..........
+	defb 03eh,004h,0ffh,000h	; 65db
+
+; ----------------------------------------------------------------------
+; DATOS bloque_0x65DF: 198 bytes comprimidos -> 224 a la VRAM en 0x2400; lo
+;   carga 0x6063, "el bloque del decorado"
+;   0x65df..0x66a5  (198 bytes)
+DATA_bloque_0x65DF:
+	defb 000h,024h,0c0h,030h,048h,048h,000h,048h,048h,048h,030h,000h,008h,008h,000h,008h	; 65df  .$.0HH.HHH0.....
+	defb 008h,008h,000h,030h,008h,008h,030h,040h,040h,040h,030h,030h,008h,008h,030h,008h	; 65ef  ...0..0@@@00..0.
+	defb 008h,008h,030h,000h,048h,048h,030h,008h,008h,008h,000h,030h,040h,040h,030h,008h	; 65ff  ..0.HH0....0@@0.
+	defb 008h,008h,030h,030h,040h,040h,030h,048h,048h,048h,030h,030h,008h,008h,000h,008h	; 660f  ..00@@0HHH00....
+	defb 008h,008h,000h,0c0h,030h,048h,048h,030h,048h,048h,048h,030h,030h,048h,048h,030h	; 661f  ....0HH0HHH00HH0
+	defb 008h,008h,008h,030h,040h,0c2h,0c2h,040h,042h,002h,002h,000h,040h,0c0h,0c0h,040h	; 662f  ...0@..@B...@..@
+	defb 040h,000h,000h,000h,009h,015h,015h,01dh,015h,000h,000h,000h,000h,000h,000h,040h	; 663f  @..............@
+	defb 0c0h,0c0h,040h,040h,000h,000h,000h,019h,015h,015h,019h,011h,000h,002h,002h,040h	; 664f  ..@@...........@
+	defb 0c2h,0c2h,042h,040h,0b0h,00ch,012h,092h,000h,012h,092h,012h,00ch,000h,002h,082h	; 665f  ..B@............
+	defb 000h,002h,082h,002h,000h,00ch,002h,082h,00ch,010h,090h,010h,00ch,00ch,002h,082h	; 666f  ................
+	defb 00ch,002h,082h,002h,00ch,000h,012h,092h,00ch,002h,082h,002h,000h,00ch,010h,090h	; 667f  ................
+	defb 00ch,002h,082h,002h,00ch,004h,000h,082h,07fh,0e0h,00ah,0f8h,004h,000h,082h,0feh	; 668f  ................
+	defb 007h,00ah,01fh,010h,000h,000h	; 669f
 
 ; ----------------------------------------------------------------------
 ; DATOS bloque_0x66A5: 430 bytes comprimidos -> 608 en VRAM (1 tramos: ?); lo
@@ -5317,8 +5815,11 @@ DATA_bloque_0x66A5:
 	defb 000h,030h,030h,003h,003h,00ch,00ch,000h,000h,030h,030h,000h,000h,000h	; 6845  .00......00...
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x6853..0x6ab4  (609 bytes)
-DATA_6853:
+; DATOS bloque_0x6853: 553 bytes comprimidos -> 688 a la VRAM; lo carga 0x607B
+;   con descomprime_a_los_tres_tercios, o sea a los tres tercios de la
+;   pantalla
+;   0x6853..0x6a7c  (553 bytes)
+DATA_bloque_0x6853:
 	defb 008h,080h,008h,000h,090h,000h,00ch,00dh,00fh,00eh,00fh,00dh,00ch,000h,0c0h,0c0h	; 6853  ................
 	defb 000h,060h,060h,0e0h,0c0h,004h,000h,08ch,004h,00eh,00fh,006h,000h,000h,030h,078h	; 6863  .``...........0x
 	defb 07ch,07eh,03ch,018h,00eh,000h,004h,0fch,086h,0f0h,0f6h,0f0h,0f6h,0f0h,0f6h,005h	; 6873  |~<.............
@@ -5353,11 +5854,17 @@ DATA_6853:
 	defb 0ffh,003h,0fbh,003h,003h,003h,0fbh,004h,003h,003h,0fbh,084h,0feh,0ffh,0ffh,0c7h	; 6a43  ................
 	defb 003h,0c3h,001h,0c7h,003h,0ffh,001h,0cfh,002h,0c7h,002h,0c3h,099h,07ch,0bch,0beh	; 6a53  .............|..
 	defb 0deh,0dfh,0cfh,0cfh,087h,087h,003h,003h,083h,083h,0c3h,0c3h,0e3h,01fh,01eh,03eh	; 6a63  ...............>
-	defb 03ch,07ch,0f8h,0f8h,0f0h,0f0h,007h,0e0h,000h,010h,0b0h,001h,0a0h,007h,0f0h,001h	; 6a73  <|..............
-	defb 0a0h,007h,0f0h,001h,0a0h,007h,0f0h,001h,0a0h,007h,0f0h,018h,0c0h,083h,070h,040h	; 6a83  ..............p@
-	defb 070h,005h,000h,083h,070h,040h,070h,005h,00fh,083h,070h,040h,070h,015h,0f0h,018h	; 6a93  p...p@p...p@p...
-	defb 080h,088h,0f0h,000h,070h,000h,000h,070h,000h,0f0h,003h,0ach,005h,0a0h,020h,0f0h	; 6aa3  ....p..p...... .
-	defb 000h	; 6ab3
+	defb 03ch,07ch,0f8h,0f8h,0f0h,0f0h,007h,0e0h,000h	; 6a73  <|.......
+
+; ----------------------------------------------------------------------
+; DATOS bloque_0x6A7C: 56 bytes comprimidos -> 184 a la VRAM; lo carga 0x60DF,
+;   tambien a los tres tercios
+;   0x6a7c..0x6ab4  (56 bytes)
+DATA_bloque_0x6A7C:
+	defb 010h,0b0h,001h,0a0h,007h,0f0h,001h,0a0h,007h,0f0h,001h,0a0h,007h,0f0h,001h,0a0h	; 6a7c  ................
+	defb 007h,0f0h,018h,0c0h,083h,070h,040h,070h,005h,000h,083h,070h,040h,070h,005h,00fh	; 6a8c  .....p@p...p@p..
+	defb 083h,070h,040h,070h,015h,0f0h,018h,080h,088h,0f0h,000h,070h,000h,000h,070h,000h	; 6a9c  .p@p.......p..p.
+	defb 0f0h,003h,0ach,005h,0a0h,020h,0f0h,000h	; 6aac  ..... ..
 
 ; ----------------------------------------------------------------------
 ; DATOS bloque_0x6AB4 (tramo): 19 bytes comprimidos -> 104 en VRAM (1 tramos:
@@ -5374,11 +5881,22 @@ DATA_bloque_0x6ABA:
 	defb 007h,060h,001h,0c0h,00ch,060h,001h,0f0h,001h,0e0h,002h,0f0h,000h	; 6aba  .`...`.......
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x6ac7..0x6af4  (45 bytes)
-DATA_6AC7:
+; DATOS bloque_0x6AC7: 39 bytes comprimidos -> 104 a la VRAM; lo carga 0x6138.
+;   Su cola, desde 0x6ADD, la usa 0x614B
+;   0x6ac7..0x6aee  (39 bytes)
+DATA_bloque_0x6AC7:
 	defb 010h,0b0h,015h,0a0h,003h,0b0h,005h,0a0h,003h,0b0h,014h,060h,002h,06ah,002h,0a0h	; 6ac7  ...........`.j..
 	defb 004h,060h,002h,06ah,002h,0a0h,005h,080h,002h,0a0h,001h,0c0h,00ah,060h,002h,0a0h	; 6ad7  .`.j.........`..
-	defb 001h,0f0h,001h,0e0h,002h,0f0h,000h,000h,004h,070h,0f0h,040h,0f0h	; 6ae7  .........p.@.
+	defb 001h,0f0h,001h,0e0h,002h,0f0h,000h	; 6ae7
+
+; ----------------------------------------------------------------------
+; DATOS cabecera_del_bloque_0x6AEE: 0x6069 carga 0x6AEE CON cabecera y el
+;   descompresor no para hasta 0x6B14; de 0x6AF4 en adelante los bytes ya
+;   estan contados como el bloque que carga 0x61BD, asi que lo que falta por
+;   asignar es solo esta cabeza
+;   0x6aee..0x6af4  (6 bytes)
+DATA_cabecera_del_bloque_0x6AEE:
+	defb 000h,004h,070h,0f0h,040h,0f0h	; 6aee
 
 ; ----------------------------------------------------------------------
 ; DATOS bloque_0x6AF4: 32 bytes comprimidos -> 48 en VRAM (1 tramos: ?); lo
@@ -5415,8 +5933,9 @@ DATA_bloque_0x6B34:
 	defb 0a0h,000h	; 6be4
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x6be6..0x6d26  (320 bytes)
-DATA_6BE6:
+; DATOS bloque_0x6BE6: 179 bytes comprimidos -> 608 a la VRAM; lo carga 0x61A2
+;   0x6be6..0x6c99  (179 bytes)
+DATA_bloque_0x6BE6:
 	defb 02dh,075h,008h,040h,083h,074h,054h,054h,005h,040h,083h,074h,054h,054h,005h,040h	; 6be6  -u.@.tTT.@.tTT.@
 	defb 083h,074h,054h,054h,005h,040h,083h,074h,054h,054h,083h,040h,040h,074h,005h,054h	; 6bf6  .tTT.@.tTT.@@t.T
 	defb 083h,040h,040h,074h,009h,054h,001h,074h,005h,040h,001h,074h,02dh,054h,05ch,074h	; 6c06  .@@t.T.t.@.t-T\t
@@ -5428,15 +5947,37 @@ DATA_6BE6:
 	defb 004h,070h,004h,0b0h,006h,070h,007h,050h,001h,057h,007h,050h,001h,057h,015h,050h	; 6c66  .p...p.P.W.P.W.P
 	defb 005h,054h,082h,040h,070h,010h,040h,006h,054h,008h,0f5h,008h,005h,008h,004h,083h	; 6c76  .T.@p.@.T.......
 	defb 0b0h,0bah,0bah,006h,0b0h,002h,0bah,005h,0b0h,084h,000h,00ah,00ah,00bh,004h,000h	; 6c86  ................
-	defb 020h,0a0h,000h,000h,045h,050h,04fh,010h,01fh,010h,04fh,010h,0a0h,006h,000h,082h	; 6c96   ...EPO...O.....
-	defb 00fh,007h,006h,000h,082h,0f0h,070h,002h,0f0h,007h,0f8h,001h,074h,002h,0f8h,005h	; 6ca6  ......p.....t...
-	defb 008h,001h,0f5h,003h,0f8h,003h,0f0h,084h,00fh,007h,00fh,0f8h,004h,008h,084h,0f0h	; 6cb6  ................
-	defb 070h,0f8h,0f8h,00ch,080h,084h,00fh,007h,00fh,00fh,004h,000h,028h,071h,00bh,070h	; 6cc6  p...........(q.p
-	defb 085h,004h,007h,005h,005h,004h,003h,00ch,006h,000h,002h,00ch,00dh,0c0h,010h,0a0h	; 6cd6  ................
-	defb 018h,0a0h,008h,0afh,002h,007h,006h,0a0h,002h,007h,008h,0a0h,00eh,0aeh,008h,0a0h	; 6ce6  ................
-	defb 008h,0afh,018h,0a0h,006h,0a0h,00ah,0bah,006h,0a0h,002h,0b0h,001h,0f0h,007h,0c0h	; 6cf6  ................
-	defb 088h,0f0h,00ch,0f0h,00ch,0f0h,00ch,0f0h,005h,007h,0e0h,001h,040h,000h,090h,0a0h	; 6d06  ............@...
-	defb 080h,0a0h,0a0h,080h,0a0h,0a0h,080h,0a0h,0a0h,080h,0a0h,0a0h,080h,0a0h,0a0h,000h	; 6d16  ................
+	defb 020h,0a0h,000h	; 6c96
+
+; ----------------------------------------------------------------------
+; DATOS bloque_0x6C99: 123 bytes comprimidos -> 448 a la VRAM en 0x4500; lo
+;   carga 0x6081
+;   0x6c99..0x6d14  (123 bytes)
+DATA_bloque_0x6C99:
+	defb 000h,045h,050h,04fh,010h,01fh,010h,04fh,010h,0a0h,006h,000h,082h,00fh,007h,006h	; 6c99  .EPO...O........
+	defb 000h,082h,0f0h,070h,002h,0f0h,007h,0f8h,001h,074h,002h,0f8h,005h,008h,001h,0f5h	; 6ca9  ...p.....t......
+	defb 003h,0f8h,003h,0f0h,084h,00fh,007h,00fh,0f8h,004h,008h,084h,0f0h,070h,0f8h,0f8h	; 6cb9  .............p..
+	defb 00ch,080h,084h,00fh,007h,00fh,00fh,004h,000h,028h,071h,00bh,070h,085h,004h,007h	; 6cc9  .........(q.p...
+	defb 005h,005h,004h,003h,00ch,006h,000h,002h,00ch,00dh,0c0h,010h,0a0h,018h,0a0h,008h	; 6cd9  ................
+	defb 0afh,002h,007h,006h,0a0h,002h,007h,008h,0a0h,00eh,0aeh,008h,0a0h,008h,0afh,018h	; 6ce9  ................
+	defb 0a0h,006h,0a0h,00ah,0bah,006h,0a0h,002h,0b0h,001h,0f0h,007h,0c0h,088h,0f0h,00ch	; 6cf9  ................
+	defb 0f0h,00ch,0f0h,00ch,0f0h,005h,007h,0e0h,001h,040h,000h	; 6d09  .........@.
+
+; ----------------------------------------------------------------------
+; DATOS tanda_de_dieciseis: los dieciseis bytes que 0x608D vuelca DIECINUEVE
+;   veces seguidas, cada vez dieciseis celdas mas alla: el `pop hl` no
+;   interviene, es el `ld hl,06d14h` de dentro del bucle el que los devuelve
+;   al principio en cada vuelta
+;   0x6d14..0x6d24  (16 bytes)
+DATA_tanda_de_dieciseis:
+	defb 090h,0a0h,080h,0a0h,0a0h,080h,0a0h,0a0h,080h,0a0h,0a0h,080h,0a0h,0a0h,080h,0a0h	; 6d14  ................
+
+; ----------------------------------------------------------------------
+; DATOS dos_bytes_0x6D24: 0xA0 0x00, entre la tanda de arriba y el bloque
+;   comprimido de 0x6D26
+;   0x6d24..0x6d26  (2 bytes)
+DATA_dos_bytes_0x6D24:
+	defb 0a0h,000h	; 6d24
 
 ; ----------------------------------------------------------------------
 ; DATOS bloque_0x6D26: 304 bytes comprimidos -> 368 en VRAM (1 tramos: ?); lo
@@ -5464,27 +6005,34 @@ DATA_bloque_0x6D26:
 	defb 018h,0ffh,004h,000h,088h,008h,022h,000h,041h,000h,022h,008h,000h,004h,0ffh,000h	; 6e46  ......".A.".....
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x6e56..0x6f7d  (295 bytes)
-DATA_6E56:
+; DATOS bloque_0x6E56: 99 bytes comprimidos -> 208 a la VRAM; lo carga 0x61E0
+;   0x6e56..0x6eb9  (99 bytes)
+DATA_bloque_0x6E56:
 	defb 001h,0ffh,004h,003h,004h,007h,089h,00fh,00fh,01fh,01fh,03fh,07fh,07fh,03fh,03fh	; 6e56  ...........?..??
 	defb 003h,01fh,003h,00fh,004h,007h,085h,003h,003h,023h,0ffh,0ffh,004h,0c0h,004h,0e0h	; 6e66  .........#......
 	defb 098h,0f0h,0f0h,0f8h,0f8h,0fch,0feh,0feh,0fch,0fch,0f8h,0f8h,0f8h,0f0h,0f0h,0f0h	; 6e76  ................
 	defb 0e0h,0e0h,0e0h,0d0h,0c0h,0c0h,0c4h,0ffh,000h,00ah,07eh,001h,000h,008h,07eh,001h	; 6e86  ..........~...~.
 	defb 000h,009h,07eh,002h,0ffh,006h,000h,005h,0ffh,085h,040h,0ffh,001h,0ffh,008h,050h	; 6e96  ..~.......@....P
 	defb 000h,090h,07eh,0bdh,0dbh,0e7h,0e7h,0dbh,0bdh,07eh,010h,028h,010h,010h,028h,010h	; 6ea6  ..~......~.(..(.
-	defb 010h,028h,000h,0d0h,000h,000h,000h,000h,000h,000h,003h,007h,00fh,01fh,01fh,03fh	; 6eb6  .(.............?
-	defb 03fh,03fh,03fh,01fh,01fh,03fh,079h,0e0h,000h,000h,000h,000h,000h,000h,000h,000h	; 6ec6  ???..?y.........
-	defb 078h,0feh,0ffh,0ffh,0ffh,0ffh,0feh,03ch,000h,000h,000h,000h,0ffh,0ffh,087h,0fbh	; 6ed6  x......<........
-	defb 0fbh,0f3h,0efh,0ffh,0ffh,0dfh,00dh,0bdh,045h,07fh,047h,0ffh,0ffh,0fbh,0a1h,0b6h	; 6ee6  ........E.G.....
-	defb 0b4h,0bah,07dh,0ffh,0ffh,0ffh,0ffh,05bh,0ddh,05dh,0efh,0ffh,0c0h,0e0h,0f0h,0f0h	; 6ef6  ..}....[.]......
-	defb 0f0h,0f0h,0e0h,0c0h,0b0h,000h,0c3h,0ffh,099h,000h,000h,066h,099h,07eh,0dbh,0dbh	; 6f06  ...........f.~..
-	defb 0dbh,07eh,07eh,03ch,042h,000h,0c3h,0ffh,099h,000h,066h,066h,099h,0bdh,0c3h,0e7h	; 6f16  .~~<B.....ff....
-	defb 0c3h,0e7h,07eh,03ch,024h,00fh,007h,007h,003h,000h,000h,000h,000h,0f0h,0e0h,0e0h	; 6f26  ..~<$...........
-	defb 0c0h,000h,000h,000h,000h,0c0h,0f4h,0f7h,0f4h,0f7h,0f6h,0f5h,0f4h,07fh,03fh,07fh	; 6f36  ..............?.
-	defb 03fh,063h,07bh,03bh,0f6h,0fch,0ffh,0dah,0dah,0c2h,0dah,0dah,0ffh,07fh,0ffh,02bh	; 6f46  ?c{;...........+
-	defb 0ebh,023h,0f7h,037h,0feh,0fch,0ffh,0b5h,095h,0a5h,0a5h,0b5h,0ffh,07fh,0ffh,091h	; 6f56  .#.7............
-	defb 077h,071h,077h,091h,0feh,0fch,0ffh,08ah,0bah,08ah,0bah,0bah,0ffh,07fh,0ffh,0d1h	; 6f66  wqw.............
-	defb 057h,091h,097h,0d1h,0feh,0fch,000h	; 6f76
+	defb 010h,028h,000h	; 6eb6
+
+; ----------------------------------------------------------------------
+; DATOS bloque_0x6EB9: 196 bytes comprimidos -> 192 a la VRAM; lo carga 0x61D7
+;   0x6eb9..0x6f7d  (196 bytes)
+DATA_bloque_0x6EB9:
+	defb 0d0h,000h,000h,000h,000h,000h,000h,003h,007h,00fh,01fh,01fh,03fh,03fh,03fh,03fh	; 6eb9  ............????
+	defb 01fh,01fh,03fh,079h,0e0h,000h,000h,000h,000h,000h,000h,000h,000h,078h,0feh,0ffh	; 6ec9  ..?y.........x..
+	defb 0ffh,0ffh,0ffh,0feh,03ch,000h,000h,000h,000h,0ffh,0ffh,087h,0fbh,0fbh,0f3h,0efh	; 6ed9  ....<...........
+	defb 0ffh,0ffh,0dfh,00dh,0bdh,045h,07fh,047h,0ffh,0ffh,0fbh,0a1h,0b6h,0b4h,0bah,07dh	; 6ee9  .....E.G.......}
+	defb 0ffh,0ffh,0ffh,0ffh,05bh,0ddh,05dh,0efh,0ffh,0c0h,0e0h,0f0h,0f0h,0f0h,0f0h,0e0h	; 6ef9  ....[.].........
+	defb 0c0h,0b0h,000h,0c3h,0ffh,099h,000h,000h,066h,099h,07eh,0dbh,0dbh,0dbh,07eh,07eh	; 6f09  ........f.~...~~
+	defb 03ch,042h,000h,0c3h,0ffh,099h,000h,066h,066h,099h,0bdh,0c3h,0e7h,0c3h,0e7h,07eh	; 6f19  <B.....ff......~
+	defb 03ch,024h,00fh,007h,007h,003h,000h,000h,000h,000h,0f0h,0e0h,0e0h,0c0h,000h,000h	; 6f29  <$..............
+	defb 000h,000h,0c0h,0f4h,0f7h,0f4h,0f7h,0f6h,0f5h,0f4h,07fh,03fh,07fh,03fh,063h,07bh	; 6f39  ...........?.?c{
+	defb 03bh,0f6h,0fch,0ffh,0dah,0dah,0c2h,0dah,0dah,0ffh,07fh,0ffh,02bh,0ebh,023h,0f7h	; 6f49  ;...........+.#.
+	defb 037h,0feh,0fch,0ffh,0b5h,095h,0a5h,0a5h,0b5h,0ffh,07fh,0ffh,091h,077h,071h,077h	; 6f59  7............wqw
+	defb 091h,0feh,0fch,0ffh,08ah,0bah,08ah,0bah,0bah,0ffh,07fh,0ffh,0d1h,057h,091h,097h	; 6f69  .............W..
+	defb 0d1h,0feh,0fch,000h	; 6f79
 
 ; ----------------------------------------------------------------------
 ; DATOS bloque_0x6F7D: 125 bytes comprimidos -> 368 en VRAM (1 tramos: ?); lo
@@ -5511,8 +6059,9 @@ DATA_bloque_0x6FFA:
 	defb 000h	; 702a
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x702b..0x7061  (54 bytes)
-DATA_702B:
+; DATOS bloque_0x702B: 54 bytes comprimidos -> 192 a la VRAM; lo carga 0x61DB
+;   0x702b..0x7061  (54 bytes)
+DATA_bloque_0x702B:
 	defb 050h,0f1h,0b0h,061h,061h,06fh,06fh,06fh,06fh,0efh,09fh,091h,06eh,09eh,06eh,091h	; 702b  P..aaoooo...n.n.
 	defb 061h,061h,0f1h,061h,061h,06fh,06fh,06fh,0efh,0efh,09fh,09ah,08ah,08ah,089h,089h	; 703b  aa.aaooo........
 	defb 061h,061h,0f1h,061h,0e1h,061h,0e1h,0e1h,0e1h,0e1h,0e1h,061h,0e1h,061h,0e1h,0e1h	; 704b  aa.a.a.....a.a..
@@ -5556,8 +6105,11 @@ L_7091:
 	ret			;7095
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x7096..0x70d6  (64 bytes)
-DATA_7096:
+; DATOS sprites_iniciales_0x7096: 64 bytes que 0x7061 copia enteros al bufer
+;   de 0xE080; 0x4D82 usa solo los dieciseis primeros y 0x4D8D los doce que
+;   empiezan en 0x70CA
+;   0x7096..0x70d6  (64 bytes)
+DATA_sprites_iniciales_0x7096:
 	defb 087h,040h,048h,00fh,097h,040h,050h,00fh,08fh,040h,04ch,009h,0a7h,040h,054h,007h	; 7096  .@H..@P..@L..@T.
 	defb 0e0h,000h,000h,00fh,028h,01ch,014h,00fh,0e0h,0e0h,0e0h,00eh,0e0h,0e0h,0e0h,00eh	; 70a6  ....(...........
 	defb 0e0h,0e0h,0e0h,00ah,0e0h,0e0h,0e0h,00ah,0e0h,0e0h,0e0h,008h,0e0h,0e0h,0e0h,008h	; 70b6  ................
@@ -5605,8 +6157,10 @@ monta_el_fondo_del_recuento:
 	jp copia_las_franjas_del_decorado		;7121
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x7124..0x715c  (56 bytes)
-DATA_7124:
+; DATOS poses_del_panadero: catorce poses de cuatro bytes; 0x4C51 las indexa y
+;   de cada una salen los patrones de los cuatro sprites que forman la figura
+;   0x7124..0x715c  (56 bytes)
+DATA_poses_del_panadero:
 	defb 018h,020h,01ch,024h,018h,028h,01ch,02ch,018h,030h,01ch,034h,018h,038h,01ch,03ch	; 7124  . .$.(.,.0.4.8.<
 	defb 018h,040h,01ch,03ch,018h,044h,01ch,03ch,048h,050h,04ch,054h,048h,058h,04ch,05ch	; 7134  .@.<.D.<HPLTHXL\
 	defb 048h,060h,04ch,064h,048h,068h,04ch,06ch,048h,070h,04ch,06ch,048h,074h,04ch,06ch	; 7144  H`LdHhLlHpLlHtLl
@@ -5652,8 +6206,11 @@ DATA_bloque_0x71D1:
 	defb 0f0h,000h	; 72f1
 
 ; ----------------------------------------------------------------------
-; DATOS sin identificar  0x72f3..0x799c  (1705 bytes)
-DATA_72F3:
+; DATOS bloque_0x72F3: el bloque comprimido que 0x70E8 carga entero; 0x711B
+;   vuelve a entrar por su cola, en 0x753B, y ese segundo tramo es el que
+;   llega hasta 0x7604
+;   0x72f3..0x7604  (785 bytes)
+DATA_bloque_0x72F3:
 	defb 0c0h,05bh,0a3h,002h,003h,00fh,01fh,03bh,031h,021h,041h,0a9h,033h,05dh,003h,000h	; 72f3  .[.....;1!A.3]..
 	defb 000h,001h,001h,020h,060h,0b0h,0f5h,0ffh,0f7h,0fbh,0f7h,0ffh,0cfh,0ffh,07fh,07fh	; 7303  ... `...........
 	defb 0bch,030h,060h,000h,000h,07fh,008h,0ffh,0b8h,0dfh,08fh,003h,009h,016h,000h,000h	; 7313  .0`.............
@@ -5703,64 +6260,74 @@ DATA_72F3:
 	defb 0fch,0fch,0fch,0f0h,0f0h,0f0h,000h,000h,000h,000h,000h,000h,000h,000h,000h,0a0h	; 75d3  ................
 	defb 007h,00eh,01eh,03eh,036h,003h,019h,01fh,007h,000h,000h,000h,000h,000h,000h,000h	; 75e3  ...>6...........
 	defb 0f0h,0e0h,068h,048h,0cch,0dch,0f8h,0f0h,0f0h,000h,000h,000h,000h,000h,000h,000h	; 75f3  ..hH............
-	defb 000h,0aeh,08eh,094h,094h,094h,094h,094h,094h,08ch,068h,0aeh,0c4h,0c4h,0c4h,0c4h	; 7603  ..........h.....
-	defb 0c4h,0c4h,0c4h,08ch,068h,0a4h,0b1h,0b3h,0b3h,0b3h,0b4h,0c4h,0c4h,08ch,068h,000h	; 7613  ....h.........h.
-	defb 0b2h,000h,000h,05dh,088h,0c4h,08fh,08ch,068h,000h,0beh,0a0h,000h,06bh,000h,000h	; 7623  ...]....h....k..
-	defb 000h,0a3h,06ah,000h,000h,000h,000h,06bh,000h,000h,000h,000h,068h,000h,000h,000h	; 7633  ..j....k....h...
-	defb 000h,06bh,000h,000h,000h,000h,068h,000h,000h,000h,000h,05ch,000h,000h,000h,0a1h	; 7643  .k....h....\....
-	defb 068h,08ah,0bah,0c3h,0bah,0c4h,0c4h,0c4h,08fh,08ch,068h,0aeh,0b9h,0c3h,0b9h,0c4h	; 7653  h.........h.....
-	defb 094h,094h,094h,08ch,068h,0aeh,0b9h,0c3h,0b9h,0c4h,094h,094h,094h,08ch,068h,0aeh	; 7663  ....h.........h.
-	defb 0b9h,0c3h,0b9h,0c4h,094h,094h,094h,07ah,06dh,0aeh,0b9h,0c3h,0b9h,0c4h,094h,094h	; 7673  .......zm.......
-	defb 094h,08ch,06eh,0aeh,0b9h,08eh,0b9h,0c4h,08fh,0c3h,0c3h,08ch,06fh,0aeh,0b9h,0c4h	; 7683  ..n.........o...
-	defb 0b9h,08fh,0c2h,0c3h,0c2h,08ch,068h,0afh,0bbh,0c4h,0bbh,0c3h,0abh,0aah,0a8h,08ch	; 7693  ......h.........
-	defb 068h,000h,000h,000h,0afh,0c3h,0ach,0c3h,0a9h,08ch,068h,000h,000h,000h,05dh,000h	; 76a3  h.........h...].
-	defb 000h,000h,000h,0a3h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h	; 76b3  ....h...k.....h.
-	defb 000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h	; 76c3  ..k.....h...k...
-	defb 000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h	; 76d3  ..h...k.....h...
-	defb 06bh,000h,000h,000h,000h,000h,069h,000h,000h,000h,06bh,000h,000h,000h,000h,000h	; 76e3  k.....i...k.....
-	defb 06ah,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h	; 76f3  j...k.....h...k.
-	defb 000h,000h,000h,000h,068h,000h,000h,000h,05ch,086h,0c3h,08eh,000h,0a1h,068h,000h	; 7703  ....h...\.....h.
-	defb 000h,000h,08ah,092h,092h,092h,08eh,08ch,068h,08ah,0c3h,08eh,0c4h,0c4h,0c4h,0c4h	; 7713  ........h.......
-	defb 08fh,08ch,068h,0aeh,098h,09ah,09ah,09ah,09ah,09ah,09eh,08ch,070h,0aeh,099h,09bh	; 7723  ..h.........p...
-	defb 09bh,09bh,09bh,09bh,09fh,08ch,071h,0aeh,0c4h,0c4h,0c4h,0c4h,08fh,0c3h,0c3h,08ch	; 7733  ......q.........
-	defb 072h,0aeh,0c4h,0c0h,0c0h,0c1h,0c3h,0c3h,0c3h,08ch,073h,0aeh,0c4h,0c4h,08fh,0c3h	; 7743  r.........s.....
-	defb 0c2h,0c3h,0c2h,08ch,074h,0aeh,0c4h,0c1h,0bch,0bch,0abh,0aah,0a8h,08ch,068h,0afh	; 7753  ....t.........h.
-	defb 08fh,0c3h,0c3h,0c3h,0ach,0c3h,0a9h,08ch,068h,000h,000h,000h,05dh,000h,000h,000h	; 7763  ........h...]...
-	defb 000h,0a3h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h	; 7773  ..h...k.....h...
-	defb 06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h	; 7783  k.....h...k.....
-	defb 068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h	; 7793  h...k.....h...k.
-	defb 000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,069h,000h	; 77a3  ....h...k.....i.
-	defb 000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h	; 77b3  ..k.....h...k...
-	defb 000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h	; 77c3  ..h...k.....h...
-	defb 06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h	; 77d3  k.....h...k.....
-	defb 069h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,06ah,000h,000h,000h,06bh,000h	; 77e3  i...k.....j...k.
-	defb 000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h	; 77f3  ....h...k.....h.
-	defb 000h,000h,05ch,000h,000h,000h,000h,0a1h,068h,08ah,08eh,0c4h,0c4h,093h,0c4h,0c4h	; 7803  ..\.....h.......
-	defb 08fh,08ch,068h,0aeh,080h,083h,083h,093h,094h,094h,094h,08ch,068h,0aeh,081h,087h	; 7813  ..h.........h...
-	defb 0a5h,093h,094h,094h,094h,08ch,075h,0aeh,081h,087h,0a5h,093h,0c4h,0c4h,08fh,08ch	; 7823  ......u.........
-	defb 076h,0aeh,081h,087h,0a5h,093h,094h,094h,094h,08ch,077h,0aeh,081h,087h,0a5h,093h	; 7833  v.........w.....
-	defb 090h,091h,0c3h,08ch,078h,0aeh,081h,087h,0a5h,08bh,0c2h,0c3h,0c2h,08ch,079h,0afh	; 7843  ....x.........y.
-	defb 082h,083h,083h,08bh,0abh,0aah,0a8h,08ch,068h,000h,000h,000h,05dh,08dh,0ach,0c3h	; 7853  ........h...]...
-	defb 0a9h,08ch,068h,000h,000h,000h,06bh,000h,000h,000h,000h,0a3h,068h,000h,000h,000h	; 7863  ..h...k.....h...
-	defb 06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h	; 7873  k.....h...k.....
-	defb 068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h	; 7883  h...k.....h...k.
-	defb 000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,069h,000h	; 7893  ....h...k.....i.
-	defb 000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h	; 78a3  ..k.....h...k...
-	defb 000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h	; 78b3  ..h...k.....h...
-	defb 06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h	; 78c3  k.....h...k.....
-	defb 068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,069h,000h,000h,000h,06bh,000h	; 78d3  h...k.....i...k.
-	defb 000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h	; 78e3  ....h...k.....h.
-	defb 000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,05ch,000h,000h,000h	; 78f3  ..k.....h...\...
-	defb 000h,0a1h,068h,000h,08ah,0c3h,0c3h,08eh,0c4h,0c4h,08fh,08ch,068h,000h,0aeh,094h	; 7903  ..h.........h...
-	defb 084h,095h,0c4h,094h,094h,08ch,068h,000h,0aeh,0c3h,085h,096h,09dh,0c4h,08fh,08ch	; 7913  ......h.........
-	defb 068h,000h,0aeh,094h,085h,097h,09dh,094h,094h,08ch,068h,000h,0a2h,0bdh,085h,09ch	; 7923  h.........h.....
-	defb 09dh,08fh,0c3h,08ch,068h,000h,000h,000h,0a3h,09ch,0bfh,000h,000h,0a3h,068h,000h	; 7933  ....h.........h.
-	defb 000h,000h,000h,09ch,000h,067h,066h,065h,068h,000h,000h,000h,000h,060h,060h,060h	; 7943  .....gfeh....```
-	defb 060h,064h,068h,000h,000h,000h,000h,062h,062h,062h,062h,063h,068h,000h,000h,000h	; 7953  `dh....bbbbch...
-	defb 000h,062h,062h,062h,062h,063h,068h,000h,000h,000h,000h,062h,062h,062h,062h,063h	; 7963  .bbbbch....bbbbc
-	defb 068h,000h,000h,000h,000h,062h,062h,062h,062h,063h,068h,000h,000h,000h,000h,061h	; 7973  h....bbbbch....a
-	defb 061h,061h,061h,064h,068h,000h,000h,000h,000h,000h,000h,000h,000h,000h,068h,000h	; 7983  aaadh.........h.
-	defb 000h,000h,000h,000h,000h,000h,000h,000h,068h	; 7993  ........h
+	defb 000h	; 7603
+
+; ----------------------------------------------------------------------
+; DATOS mapa_de_la_panaderia: 92 columnas de diez celdas. No es una
+;   estimacion: 0x4D15 hace `A x 10 + 0x7604` -por eso el `add hl,hl / add
+;   hl,hl / add hl,hl / add hl,bc`, que es ocho mas dos-, lee DIEZ bytes y los
+;   va dejando una fila de pantalla (32 celdas) mas abajo cada vez. Y 92 por
+;   10 son los 920 bytes justos que hay hasta el codigo de 0x799C
+;   0x7604..0x799c  (920 bytes)
+DATA_mapa_de_la_panaderia:
+	defb 0aeh,08eh,094h,094h,094h,094h,094h,094h,08ch,068h,0aeh,0c4h,0c4h,0c4h,0c4h,0c4h	; 7604  .........h......
+	defb 0c4h,0c4h,08ch,068h,0a4h,0b1h,0b3h,0b3h,0b3h,0b4h,0c4h,0c4h,08ch,068h,000h,0b2h	; 7614  ...h.........h..
+	defb 000h,000h,05dh,088h,0c4h,08fh,08ch,068h,000h,0beh,0a0h,000h,06bh,000h,000h,000h	; 7624  ..]....h....k...
+	defb 0a3h,06ah,000h,000h,000h,000h,06bh,000h,000h,000h,000h,068h,000h,000h,000h,000h	; 7634  .j....k....h....
+	defb 06bh,000h,000h,000h,000h,068h,000h,000h,000h,000h,05ch,000h,000h,000h,0a1h,068h	; 7644  k....h....\....h
+	defb 08ah,0bah,0c3h,0bah,0c4h,0c4h,0c4h,08fh,08ch,068h,0aeh,0b9h,0c3h,0b9h,0c4h,094h	; 7654  .........h......
+	defb 094h,094h,08ch,068h,0aeh,0b9h,0c3h,0b9h,0c4h,094h,094h,094h,08ch,068h,0aeh,0b9h	; 7664  ...h.........h..
+	defb 0c3h,0b9h,0c4h,094h,094h,094h,07ah,06dh,0aeh,0b9h,0c3h,0b9h,0c4h,094h,094h,094h	; 7674  ......zm........
+	defb 08ch,06eh,0aeh,0b9h,08eh,0b9h,0c4h,08fh,0c3h,0c3h,08ch,06fh,0aeh,0b9h,0c4h,0b9h	; 7684  .n.........o....
+	defb 08fh,0c2h,0c3h,0c2h,08ch,068h,0afh,0bbh,0c4h,0bbh,0c3h,0abh,0aah,0a8h,08ch,068h	; 7694  .....h.........h
+	defb 000h,000h,000h,0afh,0c3h,0ach,0c3h,0a9h,08ch,068h,000h,000h,000h,05dh,000h,000h	; 76a4  .........h...]..
+	defb 000h,000h,0a3h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h	; 76b4  ...h...k.....h..
+	defb 000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h	; 76c4  .k.....h...k....
+	defb 000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh	; 76d4  .h...k.....h...k
+	defb 000h,000h,000h,000h,000h,069h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,06ah	; 76e4  .....i...k.....j
+	defb 000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h	; 76f4  ...k.....h...k..
+	defb 000h,000h,000h,068h,000h,000h,000h,05ch,086h,0c3h,08eh,000h,0a1h,068h,000h,000h	; 7704  ...h...\.....h..
+	defb 000h,08ah,092h,092h,092h,08eh,08ch,068h,08ah,0c3h,08eh,0c4h,0c4h,0c4h,0c4h,08fh	; 7714  .......h........
+	defb 08ch,068h,0aeh,098h,09ah,09ah,09ah,09ah,09ah,09eh,08ch,070h,0aeh,099h,09bh,09bh	; 7724  .h.........p....
+	defb 09bh,09bh,09bh,09fh,08ch,071h,0aeh,0c4h,0c4h,0c4h,0c4h,08fh,0c3h,0c3h,08ch,072h	; 7734  .....q.........r
+	defb 0aeh,0c4h,0c0h,0c0h,0c1h,0c3h,0c3h,0c3h,08ch,073h,0aeh,0c4h,0c4h,08fh,0c3h,0c2h	; 7744  .........s......
+	defb 0c3h,0c2h,08ch,074h,0aeh,0c4h,0c1h,0bch,0bch,0abh,0aah,0a8h,08ch,068h,0afh,08fh	; 7754  ...t.........h..
+	defb 0c3h,0c3h,0c3h,0ach,0c3h,0a9h,08ch,068h,000h,000h,000h,05dh,000h,000h,000h,000h	; 7764  .......h...]....
+	defb 0a3h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh	; 7774  .h...k.....h...k
+	defb 000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h	; 7784  .....h...k.....h
+	defb 000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h	; 7794  ...k.....h...k..
+	defb 000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,069h,000h,000h	; 77a4  ...h...k.....i..
+	defb 000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h	; 77b4  .k.....h...k....
+	defb 000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh	; 77c4  .h...k.....h...k
+	defb 000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,069h	; 77d4  .....h...k.....i
+	defb 000h,000h,000h,06bh,000h,000h,000h,000h,000h,06ah,000h,000h,000h,06bh,000h,000h	; 77e4  ...k.....j...k..
+	defb 000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h	; 77f4  ...h...k.....h..
+	defb 000h,05ch,000h,000h,000h,000h,0a1h,068h,08ah,08eh,0c4h,0c4h,093h,0c4h,0c4h,08fh	; 7804  .\.....h........
+	defb 08ch,068h,0aeh,080h,083h,083h,093h,094h,094h,094h,08ch,068h,0aeh,081h,087h,0a5h	; 7814  .h.........h....
+	defb 093h,094h,094h,094h,08ch,075h,0aeh,081h,087h,0a5h,093h,0c4h,0c4h,08fh,08ch,076h	; 7824  .....u.........v
+	defb 0aeh,081h,087h,0a5h,093h,094h,094h,094h,08ch,077h,0aeh,081h,087h,0a5h,093h,090h	; 7834  .........w......
+	defb 091h,0c3h,08ch,078h,0aeh,081h,087h,0a5h,08bh,0c2h,0c3h,0c2h,08ch,079h,0afh,082h	; 7844  ...x.........y..
+	defb 083h,083h,08bh,0abh,0aah,0a8h,08ch,068h,000h,000h,000h,05dh,08dh,0ach,0c3h,0a9h	; 7854  .......h...]....
+	defb 08ch,068h,000h,000h,000h,06bh,000h,000h,000h,000h,0a3h,068h,000h,000h,000h,06bh	; 7864  .h...k.....h...k
+	defb 000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h	; 7874  .....h...k.....h
+	defb 000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h	; 7884  ...k.....h...k..
+	defb 000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,069h,000h,000h	; 7894  ...h...k.....i..
+	defb 000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h	; 78a4  .k.....h...k....
+	defb 000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh	; 78b4  .h...k.....h...k
+	defb 000h,000h,000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h	; 78c4  .....h...k.....h
+	defb 000h,000h,000h,06bh,000h,000h,000h,000h,000h,069h,000h,000h,000h,06bh,000h,000h	; 78d4  ...k.....i...k..
+	defb 000h,000h,000h,068h,000h,000h,000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h	; 78e4  ...h...k.....h..
+	defb 000h,06bh,000h,000h,000h,000h,000h,068h,000h,000h,000h,05ch,000h,000h,000h,000h	; 78f4  .k.....h...\....
+	defb 0a1h,068h,000h,08ah,0c3h,0c3h,08eh,0c4h,0c4h,08fh,08ch,068h,000h,0aeh,094h,084h	; 7904  .h.........h....
+	defb 095h,0c4h,094h,094h,08ch,068h,000h,0aeh,0c3h,085h,096h,09dh,0c4h,08fh,08ch,068h	; 7914  .....h.........h
+	defb 000h,0aeh,094h,085h,097h,09dh,094h,094h,08ch,068h,000h,0a2h,0bdh,085h,09ch,09dh	; 7924  .........h......
+	defb 08fh,0c3h,08ch,068h,000h,000h,000h,0a3h,09ch,0bfh,000h,000h,0a3h,068h,000h,000h	; 7934  ...h.........h..
+	defb 000h,000h,09ch,000h,067h,066h,065h,068h,000h,000h,000h,000h,060h,060h,060h,060h	; 7944  ....gfeh....````
+	defb 064h,068h,000h,000h,000h,000h,062h,062h,062h,062h,063h,068h,000h,000h,000h,000h	; 7954  dh....bbbbch....
+	defb 062h,062h,062h,062h,063h,068h,000h,000h,000h,000h,062h,062h,062h,062h,063h,068h	; 7964  bbbbch....bbbbch
+	defb 000h,000h,000h,000h,062h,062h,062h,062h,063h,068h,000h,000h,000h,000h,061h,061h	; 7974  ....bbbbch....aa
+	defb 061h,061h,064h,068h,000h,000h,000h,000h,000h,000h,000h,000h,000h,068h,000h,000h	; 7984  aadh.........h..
+	defb 000h,000h,000h,000h,000h,000h,000h,068h	; 7994  .......h
 
 ; ======================================================================
 ; CODIGO 0x799c..0x7b5e  (450 bytes)

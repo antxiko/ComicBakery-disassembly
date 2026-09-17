@@ -27,6 +27,14 @@
 !tabla 0x4282   4   # desde 0x427F; cierra en 0x428A
 !tabla 0x432b   8   # desde 0x4328; cierra en 0x433B
 
+# Y una cuarta que NO va pegada detras de un `call`: 0x5126 la carga con
+# `ld hl,05138h` y entra por `despacha_con_hl`, que es el mismo remate
+# (`ld e,(hl) / inc hl / ld d,(hl) / ex de,hl / jp (hl)`). El indice es
+# `and 03eh` sobre el estado del carro, o sea que ya viene multiplicado por
+# dos. Cierra donde cierran todas: en su entrada mas baja, 0x514C, y a partir
+# de ahi los diez destinos son codigo que el trazado no alcanzaba.
+!tabla 0x5138  10   # desde 0x5126; cierra en 0x514C, su entrada mas baja
+
 # ======================================================================
 # LAS DIRECCIONES DE RETORNO EMPUJADAS A MANO
 # ======================================================================
@@ -41,3 +49,39 @@
 # 0x4831. El trazado no puede seguir un retorno fabricado.
 0x46A3   # retorno apilado por 0x4106
 0x4831   # retorno apilado por 0x410B
+
+# ======================================================================
+# LOS TRES TROZOS QUE NO ALCANZA NADIE
+# ======================================================================
+# 33 bytes en total. No son datos: desensamblan a instrucciones coherentes.
+# Lo que no hay es ninguna instruccion del cartucho que lleve a ellos: ni el
+# trazado entra, ni nadie los carga con una constante, ni la palabra de su
+# direccion aparece en los 16.384 bytes de la ROM.
+
+# `ld b,000h`, delante del `call prepara_escritura_vram` de 0x43DF, que si se
+# traza. Es la puerta que fuerza B=0 en el volcado de al lado; el cartucho
+# entra siempre por 0x43DF con B ya puesto.
+0x43DD   # codigo huerfano: la variante con B=0 de 0x43DF
+
+# `ld hl,0e004h / dec (hl) / ret nz / jp 04381h`: gastar un plazo y, al
+# llegar a cero, pasar al estado siguiente (0x4381 hace `ld hl,0e001h /
+# inc (hl) / ret`). El cartucho tiene esa cuenta atras escrita en otros
+# sitios; a esta copia no llega nadie.
+0x5D36   # codigo huerfano: una cuenta atras del plazo que nadie usa
+
+# Y la mas llamativa: un VISOR DE PATRONES que se quedo dentro.
+#
+#     ld de,03800h        ; la tabla de nombres
+#     ld a,000h
+#     ld bc,00300h        ; sus 768 celdas
+#     call escribe_en_vram
+#     inc a / inc de / dec bc / ... / jr nz
+#     jr $                ; y aqui se queda PARA SIEMPRE
+#     ret
+#
+# O sea: llena la pantalla entera con los patrones 0, 1, 2... para verlos
+# todos de golpe, y se cuelga en un bucle sobre si mismo. Eso no es una
+# rutina de juego, es una herramienta de quien lo estaba haciendo. El `ret`
+# del final tampoco se alcanza, porque el `jr $` no deja pasar.
+0x60B0   # codigo huerfano: el visor de patrones, con su `jr $` y todo
+0x60C6   # y su `ret`, al que el `jr $` de delante no deja llegar
