@@ -223,3 +223,150 @@ C 0x42e8 espera a que pare el sonido
 C 0x42ed el estado del otro jugador
 C 0x42f7 apaga el bit 6 de (0xE002)
 C 0x42fa dos vidas para el que entra
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+C 0x430d 32 cuadros de plazo
+L 0x4314 escena_15_fin_de_fase
+B 0x4314 ESCENA 15: el fin de fase. Si (0xE01B) vale uno -o sea, si no queda nada sonando salvo una voz- sube dos contadores; luego despacha por el sub-estado con su tabla de ocho pegada detras.
+C 0x4314 el contador de 0xE11D
+C 0x431a lo que queda sonando
+C 0x4325 el sub-estado
+C 0x4328 y su tabla de ocho
+L 0x433b remata_la_fase
+C 0x433e el plazo
+C 0x4342 la marca de "ya se enseno PLAYER 1"
+C 0x4348 una vida mas
+C 0x434d la fase siguiente, en BCD
+C 0x4351 limpia el estado de la fase
+L 0x435a limpia_el_estado_de_la_fase
+B 0x435a LIMPIAR EL ESTADO DE LA FASE: 30 bytes a cero desde 0xE05F, propagando el cero con `ldir` desde la propia celda. Dos instrucciones.
+C 0x4364 un cero
+C 0x4365 y el ldir lo arrastra
+L 0x4368 pierde_una_vida
+B 0x4368 PERDER UNA VIDA: suena el 0x8D, se dan 64 cuadros de plazo y, mientras corren, el bit 2 del propio plazo hace parpadear la pantalla -o sea, cada cuatro cuadros-.
+C 0x436e el sonido de perder
+C 0x4373 sesenta y cuatro cuadros
+C 0x4386 el plazo
+C 0x438d el bit 2: parpadeo de cuatro en cuatro cuadros
+C 0x4395 27 celdas que borrar
+L 0x43a7 prepara_escritura_vram
+B 0x43a7 PREPARAR EL PUERTO DE LA VRAM con SETWRT de la BIOS, y guardarse el puerto de datos en C' para que los bucles solo tengan que hacer `out (c),a`.
+C 0x43af el puerto de datos, de la tabla de la BIOS
+C 0x43b2 a C', donde lo esperan los bucles
+L 0x43b6 prepara_lectura_vram
+C 0x43bd el puerto de lectura
+L 0x43c3 limpia_la_pantalla
+C 0x43c6 la tabla de nombres
+C 0x43c9 sus 768 celdas
+L 0x43cd rellena_vram
+C 0x43d3 el byte, tal cual
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x43df vuelca_bloque
+B 0x43df VOLCAR BC BYTES DE MEMORIA A LA VRAM, tal cual.
+C 0x43e2 un byte
+C 0x43e4 y al puerto de datos
+L 0x43ee descomprime
+B 0x43ee EL DESCOMPRESOR DE ESTE CARTUCHO. La firma de sus rutinas NO coincide con la de Circus Charlie ni con la de Magical Tree -por eso costo encontrarlo-, pero el LENGUAJE es el mismo de los tres: los siete bits de abajo del byte de control son la cuenta, el bit 7 dice si se copia tal cual o se repite un solo byte, un 0x80 cambia de destino de VRAM y un 0x00 cierra el bloque.
+C 0x43ee el destino de VRAM, que va delante del bloque
+C 0x43f2 aqui entran los que ya lo traen en DE
+C 0x43f5 el byte de control
+C 0x43f6 los siete bits de abajo son la cuenta
+C 0x43f9 y el byte entero, para mirarle el bit 7
+C 0x43fb cuenta cero: fin o cambio de destino
+C 0x43fd si el byte es igual a su cuenta, el bit 7 esta a cero
+C 0x4400 bit 7 puesto: n bytes tal cual
+C 0x440b bit 7 a cero: UN byte repetido n veces
+C 0x4412 la espera que el VDP necesita entre byte y byte
+C 0x4418 cuenta cero y byte 0x80: detras viene otro destino
+L 0x441d copia_c_franjas
+C 0x4420 la fila de abajo, 32 celdas
+L 0x4429 copia_c_franjas_alternas
+C 0x442c 0xE0 hacia atras
+C 0x4436 y noventa y seis adelante
+L 0x443f refleja_una_franja
+B 0x443f REFLEJAR UNA FRANJA DE LA PANTALLA sobre si misma: lee cada byte de la VRAM, LE DA LA VUELTA A SUS OCHO BITS y lo escribe. Asi el dibujo de un lado sirve para el otro sin guardarlo dos veces.
+C 0x4440 dieciseis bytes
+C 0x4443 lee de la VRAM
+C 0x4447 con los bits al reves
+C 0x444a y de vuelta a la VRAM
+C 0x4452 treinta y dos atras
+C 0x4455 el bit 4 marca el final de la vuelta
+L 0x445b lee_byte_y_avanza
+C 0x445b el byte del bloque
+L 0x445e da_la_vuelta_a_los_bits
+B 0x445e DAR LA VUELTA A LOS OCHO BITS de un byte: `rr c` saca el de abajo y `rla` lo mete por arriba, ocho veces. Es el espejo de un patron de 8 pixeles.
+C 0x4460 ocho bits
+C 0x4462 sale por abajo
+C 0x4464 y entra por arriba
+
+# ======================================================================
+# LOS BLOQUES COMPRIMIDOS
+# ======================================================================
+# El descompresor es 0x43EE (el destino de VRAM va delante) / 0x43F2. Su
+# codigo NO coincide con el de los otros dos cartuchos de la tanda, pero el
+# LENGUAJE es el mismo: 0nnnnnnn b repite, 1nnnnnnn b*n copia, 0x80 cambia de
+# destino y 0x00 termina. Donde acaba cada bloque lo mide tools/rle.py
+# ejecutandolo.
+D 0x61f5 0x6495 bloque_0x61F5  672 bytes comprimidos -> 904 en VRAM (1 tramos: ?); lo carga 0x610F
+D 0x650d 0x6517 bloque_0x650D  10 bytes comprimidos -> 8 en VRAM (1 tramos: ?); lo carga 0x6194
+D 0x6521 0x657b bloque_0x6521  90 bytes comprimidos -> 104 en VRAM (1 tramos: ?); lo carga 0x616B
+D 0x6566 0x657b bloque_0x6566  21 bytes comprimidos -> 24 en VRAM (1 tramos: ?); lo carga 0x617E
+D 0x66a5 0x6853 bloque_0x66A5  430 bytes comprimidos -> 608 en VRAM (1 tramos: ?); lo carga 0x611C
+D 0x6ab4 0x6ac7 bloque_0x6AB4  19 bytes comprimidos -> 104 en VRAM (1 tramos: ?); lo carga 0x6145
+D 0x6aba 0x6ac7 bloque_0x6ABA  13 bytes comprimidos -> 24 en VRAM (1 tramos: ?); lo carga 0x6158
+D 0x6af4 0x6b14 bloque_0x6AF4  32 bytes comprimidos -> 48 en VRAM (1 tramos: ?); lo carga 0x61BD
+D 0x6b14 0x6b34 bloque_0x6B14  32 bytes comprimidos -> 48 en VRAM (1 tramos: ?); lo carga 0x61B6
+D 0x6b34 0x6be6 bloque_0x6B34  178 bytes comprimidos -> 608 en VRAM (1 tramos: ?); lo carga 0x61A7
+D 0x6d26 0x6e56 bloque_0x6D26  304 bytes comprimidos -> 368 en VRAM (1 tramos: ?); lo carga 0x6129
+D 0x6f7d 0x6ffa bloque_0x6F7D  125 bytes comprimidos -> 368 en VRAM (1 tramos: ?); lo carga 0x60F7
+D 0x6ffa 0x702b bloque_0x6FFA  49 bytes comprimidos -> 208 en VRAM (1 tramos: ?); lo carga 0x61E4
+D 0x715c 0x71d1 bloque_0x715C  117 bytes comprimidos -> 128 en VRAM (1 tramos: ?); lo carga 0x70D6
+D 0x71d1 0x72f3 bloque_0x71D1  290 bytes comprimidos -> 416 en VRAM (1 tramos: ?); lo carga 0x70DF
+
+
+# ======================================================================
+# COMENTARIOS DE LINEA
+# ======================================================================
+L 0x4469 vuelca_y_guarda_copia
+B 0x4469 VOLCAR A LA VRAM Y GUARDAR COPIA EN RAM a la vez, con el mismo byte: la copia va 0xA8 paginas mas alla. Asi el cartucho puede consultar despues lo que hay escrito sin volver a leer del VDP.
+C 0x446c la copia va a la pagina +0xA8
+C 0x4472 al VDP
+C 0x4475 y a la copia en RAM
+L 0x447b borra_el_tanteo
+B 0x447b BORRAR EL TANTEO del jugador que toque -0xE049 o 0xE046-, propagando un cero con `ldir` por 694 bytes, y volver a poner los ocho valores iniciales. Con dos jugadores, el bloque se duplica en el hueco del segundo.
+C 0x447b el tanteo de un jugador
+C 0x447e 694 bytes por delante
+C 0x4484 el bit 5: hay dos jugadores
+C 0x4489 entonces el otro tanteo
+C 0x4491 un cero
+C 0x4493 y el ldir lo arrastra
+C 0x4495 los ocho valores iniciales
+C 0x44a1 con un jugador, aqui se acaba
+C 0x44a5 y con dos, el estado se duplica
+L 0x44b6 baja_el_contador_y_barre
+B 0x44b6 EL BARRIDO DE LA PANTALLA con VAIVEN, que es un detalle bonito: `srl a / jr c / xor 01fh` hace que el indice de la fila vaya al derecho en media vuelta y al reves en la otra, de modo que la cortina barre en zigzag. Y el bit 7 del contador cambia el tramo: dos filas menos y 0x40 de desplazamiento.
+C 0x44b9 la bandera de 0xE11F
+C 0x44c1 el contador de cuadros
+C 0x44c4 siete bits del segundo contador
+C 0x44c8 si se paso de cero, se sale con el signo
+C 0x44c9 veinticuatro filas
+C 0x44cd el bit de abajo al acarreo
+C 0x44d1 y en media vuelta, al reves
+C 0x44d3 el bit 7 cambia de tramo
+C 0x44d7 dos filas menos
+C 0x44dc el patron 1, que aqui es la celda vacia
+C 0x44e1 la fila de abajo, 32 celdas
+C 0x44e8 dieciseis sprites
+C 0x44ed la fila 0xE0: fuera de la pantalla
+C 0x44f1 cuatro bytes por sprite
+L 0x44fb prepara_la_pantalla_de_fin
+C 0x44fd 0xD0 en los atributos de sprites
+C 0x450d 704 celdas
+C 0x4510 con el patron 1

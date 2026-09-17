@@ -38,8 +38,8 @@ import re
 import sys
 
 ORG_POR_DEFECTO = 0x4000
-CON_CABECERA = 0x45C9      # el bloque trae el destino de VRAM delante
-SIN_CABECERA = 0x45CD      # el destino llega en DE
+CON_CABECERA = 0x43EE      # el bloque trae el destino de VRAM delante
+SIN_CABECERA = 0x43F2      # el destino llega en DE
 
 
 def descomprime(rom, org, ini, con_cabecera=True):
