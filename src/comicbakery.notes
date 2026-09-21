@@ -618,6 +618,39 @@ L 0x48ce el_cuadro_de_la_partida
 B 0x48ce EL CUADRO DE LA PARTIDA, y es el indice del cartucho: VEINTISIETE llamadas seguidas, una por cada cosa que se mueve o se pinta, y al final el reloj. Lo que va primero se pinta antes, asi que el orden ES la profundidad.
 C 0x48d7 el contador de panes
 C 0x491f y el reloj, lo ultimo
+C 0x48ce EL CUADRO DE LA PARTIDA, y el orden importa: primero se apunta donde estan los carros, luego se miran las colisiones contra esa foto, y solo despues se mueve nada
+C 0x48d1 los carros contra el disparo
+C 0x48d4 y el panadero contra el carro
+C 0x48da que sube solo cuando toca
+C 0x48dd el panadero, con lo que haya leido el mando
+C 0x48e0 si esta saltando
+C 0x48e3 el indicador de la maquina
+C 0x48e6 el pan al horno
+C 0x48e9 los tres carros
+C 0x48ec el disparo contra el carro, que es la otra mitad de la pareja de 0x48D1
+C 0x48ef y el carro contra la cinta
+C 0x48f2 el reloj de la jornada puede soltar un carro nuevo
+C 0x48f5 los dos carros contra lo que haya
+C 0x48f8 MIRA POR DONDE VA LA MUSICA: este cartucho consulta el puntero de una voz para decidir, que no lo hace ninguno de sus dos hermanos
+C 0x48fb el premio extra, si toca
+C 0x4901 los ocho bichos
+C 0x4904 la fila de marcas
+C 0x4907 el aviso, parpadeando
+C 0x490a las tres cosas
+C 0x490d el gato
+C 0x4910 si el jugador dispara
+C 0x4913 el carro contra el panadero
+C 0x4916 y el que se sale, retirado
+C 0x4919 la cosa que sube
+C 0x491c el carro que ande en el estado 10
+C 0x4927 en los otros siete no se toca
+C 0x4929 el par de 0xE102 y 0xE103
+C 0x492d el de arriba a cero
+C 0x4930 y el que habia, al de abajo: los dos bytes se intercambian
+C 0x4931 el disparo avanza en todos los cuadros
+C 0x4934 y los atributos de sprite, al VDP
+C 0x493a otra vez el 7 del compas
+C 0x493d los panes de la cinta, una vez de cada ocho
 C 0x4922 el compas de ocho
 C 0x4925 solo cuando vale 7
 C 0x492c dos bytes de estado, intercambiados
@@ -641,6 +674,34 @@ C 0x4990 dos bits
 C 0x4992 sumados a la fase
 C 0x4994 y recortado
 C 0x4998 si sale cero, se fuerza uno
+C 0x494f el bloque de estado de la fase
+C 0x4955 copiados de una vez
+C 0x4957 a cero
+C 0x496e y estas dos, a uno
+C 0x4976 el de 0xE120, a cuatro
+C 0x497b el de 0xE101, a ocho
+C 0x4980 el de 0xE199, a veinte
+C 0x4985 y el de 0xE125, a 0xAE
+C 0x498d guardado en C
+C 0x4992 sumados al numero de fase
+C 0x4993 por dos
+C 0x499a el resultado, a 0xE19A
+C 0x499d el numero de fase otra vez
+C 0x499f la primera se monta sin mas
+C 0x49a1 y de la segunda en adelante, el mapa de ocupacion arranca con los cuatro huecos de arriba puestos
+C 0x49a6 la fila de marcas
+C 0x49ab la celda siguiente
+C 0x49ac y el destino, una mas alla
+C 0x49b4 treinta celdas con el mismo uno, propagado desde la primera
+C 0x49b8 la penultima
+C 0x49b9 y la ultima
+C 0x49bb el bloque A, al decorado
+C 0x49c1 el C
+C 0x49c7 y dos tandas que se repiten
+C 0x49d3 el bloque G
+C 0x49d6 el patron de relleno
+C 0x49d8 la franja del titulo
+C 0x49db y el bloque F
 C 0x499e la fase 1 no lleva desplazamiento
 L 0x49a6 monta_la_fase
 B 0x49a6 EL MONTAJE DE LA FASE. La lista de 0xE160 se rellena con `ldir` propagando un UNO -no un cero- desde la propia celda, y luego se cierra a mano con un 2 y un 3. Detras vienen ocho llamadas con parejas de coordenadas: es el decorado de la panaderia, montado por trozos.
@@ -1139,6 +1200,40 @@ C 0x5551 ocho de desplazamiento
 C 0x5553 el bit 0: por que lado se compara
 C 0x555b dieciseis
 C 0x555d y veinticuatro mas: la caja, en dos restas
+C 0x5525 en la primera no hay disparo
+C 0x5529 si esta a cero, no hay nada que mirar
+C 0x552c dos bytes mas alla
+C 0x5530 y lo mismo con el segundo
+C 0x5531 el estado del carro
+C 0x5535 el bit 0 del cruce al acarreo: si difieren, miran a lados distintos
+C 0x5536 y entonces no chocan
+C 0x5538 los bits 1 a 5 son el estado
+C 0x553c solo el 4 recibe el disparo
+C 0x5540 guardada en C
+C 0x5545 cruzada con la del carro
+C 0x5547 el bit 7 del cruce
+C 0x5548 iguales: se compara directo
+C 0x554b menos sesenta y cuatro
+C 0x554d y tiene que caber en ciento veintiocho
+C 0x554f si no, ni se mira
+C 0x5551 mas ocho: el centro de la figura
+C 0x5555 por el izquierdo, tal cual
+C 0x5557 y por el derecho, con los dos cambiados
+C 0x555a la distancia entre los dos
+C 0x555f fuera de la caja: no toca
+C 0x5562 se le marca al carro
+C 0x5566 el byte siguiente
+C 0x5567 y los dos patrones que le tocan
+C 0x556e los cinco bits del estado
+C 0x5570 el estado 10 tiene su propio camino
+C 0x5578 el bit 0 decide el sentido
+C 0x5579 sin acarreo, la primera pareja
+C 0x557e se guarda el puntero del carro
+C 0x557f la columna
+C 0x5581 y la fila
+C 0x5584 el atributo siguiente
+C 0x5585 el patron del primer sprite
+C 0x5588 la columna otra vez, para el segundo
 C 0x5560 el estado nuevo, 8
 C 0x556a y treinta cuadros de plazo
 
@@ -1186,6 +1281,31 @@ C 0x560b mas el ajuste
 C 0x560d cuatro bits
 C 0x5613 invertido y cruzado con el mapa de ocupacion
 C 0x5615 guardado en 0xE058
+C 0x55e2 con la bandera puesta no se mira la cinta
+C 0x55e3 el estado del carro
+C 0x55e6 y su posicion
+C 0x55ea los tres de abajo, que son la parte fina
+C 0x55ee de cuatro en adelante, no esta encarado a una celda
+C 0x55f2 con el bit 0 puesto ya esta ocupado
+C 0x55f7 solo el estado 4 llega a la cinta
+C 0x55f9 tres rotaciones: de posicion a numero de celda
+C 0x55fc los cinco bits que quedan
+C 0x5600 en C
+C 0x5601 y la pagina del bufer de pantalla, la 0xE2
+C 0x5603 la celda, leida del bufer
+C 0x5606 y si no es esa, no hay cinta debajo
+C 0x560a mas la celda
+C 0x560d los cuatro de arriba: el hueco
+C 0x560f al juego alternativo de registros, que el otro esta ocupado
+C 0x5610 el mapa de ocupacion
+C 0x5614 se apaga ese bit
+C 0x5618 y se vuelve
+C 0x561a el byte siguiente
+C 0x561b los dos patrones del carro
+C 0x5626 los cinco bits
+C 0x562a si ya esta en el 14, nada
+C 0x562c y si no, se le pone
+C 0x5632 a cero, mira a un lado
 C 0x561e el plazo, a seis
 C 0x5620 y el estado nuevo, 12
 L 0x5625 el_carro_llega_al_final
@@ -1316,6 +1436,36 @@ C 0x5861 la celda en la pantalla
 C 0x5864 cinco celdas
 C 0x5873 el sonido
 C 0x5878 y cincuenta puntos
+C 0x5829 uno de cada ocho cuadros se salta
+C 0x582a el estado del panadero
+C 0x582e ocupado en otra cosa: no mete nada
+C 0x5832 CONSULTA LO DIBUJADO: mira el patron que hay en la celda, no una variable de estado, que es una mania de este cartucho
+C 0x5835 y otro estado mas
+C 0x583d la posicion del panadero
+C 0x5840 mas dieciseis
+C 0x5842 y recortada a los tres bits de arriba: queda el hueco al que corresponde
+C 0x5845 el bit del hueco: si ya esta puesto es que hay pan
+C 0x5846 y entonces no cabe otro
+C 0x5848 se marca el hueco como ocupado
+C 0x584c dieciseis cuadros de plazo
+C 0x584f el otro mapa, el de la cinta
+C 0x5853 el complemento
+C 0x5854 borra ahi el mismo bit: lo que entra en el horno sale de la cinta
+C 0x5856 la pose 0x30
+C 0x585b y las puertas del horno
+C 0x585e el bloque de cinco celdas que se pinta
+C 0x586a y la fila de abajo, que es la misma direccion con el byte bajo a 0x8A
+C 0x5873 el sonido del pan
+C 0x5881 el estado de la cosa
+C 0x5884 con el bit 0 puesto, ya esta en marcha
+C 0x5885 los bits 1 a 5
+C 0x5889 en los demas no sigue
+C 0x588a la posicion de la cosa
+C 0x588e menos cuarenta
+C 0x5890 tiene que caber en ochenta
+C 0x5892 y si no, fuera
+C 0x5894 sigue en 0x5518
+C 0x589a la posicion del panadero
 C 0x5882 el bit 0
 C 0x5887 el estado 4
 C 0x588e cuarenta de desplazamiento
@@ -1577,10 +1727,31 @@ C 0x60cb de ocho bytes cada uno
 C 0x60cd el valor, repetido
 C 0x60d3 y uno mas para el grupo siguiente
 C 0x60d7 592 celdas
+C 0x60d0 la celda siguiente
+C 0x60d1 las ocho del grupo
+C 0x60d4 y los dieciseis grupos
+C 0x60da con el patron 0xF1, que en este cartucho es la celda de relleno
+C 0x60df el bloque de 0x6A7C va SIN situar el destino: se pega a lo que acaba de escribirse
+C 0x60e5 y a partir de aqui, cada bloque en su sitio: se recupera la base del tercio y se le suma el desplazamiento
+C 0x60e7 0x400 mas alla
+C 0x60ed el que elige descomprime_dos_veces
+C 0x60f7 el bloque de 0x6F7D
+C 0x6104 a cero: el indice con el que carga_el_bloque_b mira la fase
+C 0x610f el primero de los cuatro de patrones
+C 0x6117 0x400
+C 0x611c el segundo
+C 0x6124 0x680
+C 0x6129 el tercero
+C 0x6130 y el cuarto, en 0x398, que es el que cambia con la fase
+C 0x6135 se sale por 0x615E, que elige entre dos bloques
+C 0x613b el numero de fase elige, y NO es "si vale cero": el `dec a / rra` de abajo deja en el acarreo el bit 0 de (fase-1), asi que este bloque solo sale con la fase PAR Y MAYOR QUE CERO
+C 0x6141 uno menos
+C 0x6142 el bit 0 al acarreo
+C 0x6143 con acarreo, el de arriba
 C 0x60e7 0x400 mas alla
 C 0x60f2 0x680
 C 0x60ff 0x398
-C 0x6109 y 0x6000, que es la tabla de color
+C 0x6109 y 0x6000 mas, que enmascarado a catorce bits es la tabla de PATRONES: el VDP solo mira esos bits, asi que 0x6000 sobre la base de color 0x0000 cae en 0x2000
 
 
 # ======================================================================
