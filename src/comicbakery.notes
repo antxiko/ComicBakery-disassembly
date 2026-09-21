@@ -464,6 +464,28 @@ C 0x4669 +0x90: los de la otra mitad
 # COMENTARIOS DE LINEA
 # ======================================================================
 C 0x4671 la tabla de indices del reloj
+C 0x4655 la hora de la jornada
+C 0x4658 y el bufer donde se compone el reloj
+C 0x465b el byte, en BCD
+C 0x4660 al bufer
+C 0x4661 la celda anterior
+C 0x4662 el mismo byte otra vez
+C 0x4663 cuatro rotaciones: el nibble de arriba abajo
+C 0x4667 lo que queda
+C 0x466b al bufer
+C 0x466c la anterior
+C 0x466d el byte siguiente
+C 0x466f por dos
+C 0x4670 y uno mas: por tres, que es lo que ocupa cada entrada
+C 0x4674 indexada
+C 0x467a HACIA ATRAS, que es como el bufer se llena de derecha a izquierda
+C 0x467d la primera celda
+C 0x4684 volcadas de una vez
+C 0x46a6 la mascara
+C 0x46a8 sobre el contador de cuadros
+C 0x46aa en C
+C 0x46ab el bit 5 del modo: dos jugadores
+C 0x46ad con uno solo, no se desfasa
 C 0x4677 tres bytes
 C 0x467a copiados hacia atras
 C 0x467e la celda del reloj en la pantalla
@@ -543,6 +565,39 @@ C 0x47b4 el paso 79
 C 0x47bb apaga la senal de partida
 C 0x47bd la lista de movimientos grabados
 C 0x47c3 y de ahi sale lo que se "pulsa"
+C 0x477a y entonces se lee tambien el teclado
+C 0x477d el modo
+C 0x4785 donde se guarda
+C 0x4789 la de este cuadro ocupa su sitio
+C 0x478a el byte de antes
+C 0x478b y ahi va la anterior: asi se sabe que ha cambiado
+C 0x478c la direccion, filtrada
+C 0x478f a cero
+C 0x4790 uno menos
+C 0x4791 sin signo, se sale
+C 0x4794 la lectura
+C 0x4797 los dos que quedan
+C 0x4799 si hay alguno, se sale con cero
+C 0x479e a cero
+C 0x479f uno
+C 0x47a3 y si no, dos
+C 0x47a5 guardado
+C 0x47af solo con el compas a cero
+C 0x47b3 el paso
+C 0x47b6 en los demas no se toca
+C 0x47bb a cero
+C 0x47c0 indexada por el paso
+C 0x47c8 guardada en C
+C 0x47cc en E
+C 0x47ce ocupado: el mando no se atiende
+C 0x47cf la lectura otra vez
+C 0x47d2 ninguna: nada que hacer
+C 0x47d6 las dos: da la vuelta
+C 0x47d8 y una sola se guarda tal cual
+C 0x47da el estado
+C 0x47dd ya esta en ello
+C 0x47de el patron del giro
+C 0x47e1 desde parado, el primero
 L 0x47c5 filtra_la_direccion
 B 0x47c5 FILTRAR LA DIRECCION: las dos a la vez (0x0C) no valen, y si se estaba yendo a un lado y se pide el contrario, el `xor 08Ch` le da la vuelta al sentido de golpe.
 C 0x47c9 el estado de 0xE104
@@ -585,6 +640,33 @@ C 0x4850 se reinicia el plazo de la pantalla
 C 0x4853 solo la escena 5 responde al menu
 C 0x485c de 0x10 para arriba son botones
 C 0x4860 los cuatro modos de juego
+C 0x4836 guardado
+C 0x483d los dos juntos
+C 0x4841 y el teclado encima: se juega con cualquiera de los tres
+C 0x4845 lo de antes
+C 0x4846 lo de ahora ocupa su sitio
+C 0x4847 el byte siguiente
+C 0x4849 en B
+C 0x484c y si no hay ninguno, se sale: asi una tecla mantenida no cuenta dos veces
+C 0x484d los nuevos, en B
+C 0x484e a cero
+C 0x4853 la escena del menu
+C 0x4858 comparada con la de ahora
+C 0x4859 en las demas, solo se apunta la lectura
+C 0x485b los botones nuevos
+C 0x485e por debajo, son direcciones: mueven el cursor
+C 0x4863 la opcion elegida
+C 0x4869 el modo que le toca
+C 0x486d y la escena 8
+C 0x4870 escrita de una vez con el byte de al lado
+C 0x4874 se apunta y ya
+C 0x4879 se borra de donde estaba, que es la misma rutina que lo pinta
+C 0x487c los botones, de vuelta
+C 0x4880 en B
+C 0x4882 sin acarreo, no se pulso arriba
+C 0x4886 sin acarreo, tampoco abajo
+C 0x488a recortada a cuatro
+C 0x488c y guardada
 C 0x4863 indexados por la opcion elegida
 C 0x486a y el modo queda en (0xE002)
 C 0x486d a la escena 8, la que arranca sin remate apilado
@@ -1006,6 +1088,28 @@ C 0x4f6c por debajo de seis no
 C 0x4f72 el otro mapa de ocupacion
 C 0x4f7b se marca su bit
 C 0x4f7f y se mueven los dos contadores en sentidos contrarios
+C 0x4f5c guardado en C
+C 0x4f5d al juego alternativo, que el otro lleva el puntero del bicho
+C 0x4f62 y de vuelta
+C 0x4f63 ocupado: solo se le baja el plazo
+C 0x4f65 su estado
+C 0x4f66 el bit 0 al acarreo
+C 0x4f67 sin acarreo, se pinta y ya
+C 0x4f69 el byte de antes
+C 0x4f6b y vuelta
+C 0x4f6e todavia no ha llegado
+C 0x4f70 el bit del hueco
+C 0x4f77 si ya esta puesto ahi, la ficha se borra
+C 0x4f79 el bit otra vez
+C 0x4f7c guardado
+C 0x4f7e el contador de al lado
+C 0x4f80 dos veces
+C 0x4f83 y el otro, dos menos: lo que entra en uno sale del otro
+C 0x4f88 el primero de los tres
+C 0x4f8a a cero
+C 0x4f90 el plazo
+C 0x4f92 con el signo puesto, o sea al pasar de cero
+C 0x4f97 el de dos mas alla, uno mas
 L 0x4f88 borra_la_ficha_del_bicho
 C 0x4f89 los tres bytes, a cero
 L 0x4f90 baja_el_plazo_del_bicho
@@ -1071,6 +1175,41 @@ C 0x5069 restado de 0x80: de derecha a izquierda
 C 0x506e dos bits del indice
 C 0x5070 +0x55: el ajuste fino
 C 0x507c el patron del pan
+C 0x505f uno menos: el indice va de cero
+C 0x5060 guardado
+C 0x5063 los tres bits de arriba
+C 0x5065 por dos
+C 0x5069 restado de 0x80: las celdas se recorren de derecha a izquierda
+C 0x506b la pagina del bufer de pantalla
+C 0x506e los dos de abajo
+C 0x5072 menos lo que diga (hl)
+C 0x5073 negativo: ese no se pinta
+C 0x5076 y por encima de treinta y dos, tampoco
+C 0x507a sumado a la celda
+C 0x507e el pan, al bufer
+C 0x507f y el siguiente
+C 0x5082 la otra base, la 0x62
+C 0x5084 y doce en vez de los de arriba
+C 0x508b solo en el paso 2 de los ocho
+C 0x508e el estado del gato
+C 0x5092 si no es cero, ya va por su camino
+C 0x5096 el plazo, uno menos
+C 0x5097 y hasta que no llega a cero no sale
+C 0x5099 a que bicho va
+C 0x509a por tres, que es lo que ocupa cada uno
+C 0x509d la tabla de los bichos
+C 0x50a6 si ya lo esta, no se le manda otra vez
+C 0x50ab se le marca
+C 0x50ac y se le quita el bit 3
+C 0x50b2 por dos
+C 0x50b3 en C
+C 0x50b6 menos eso: cuanto mas avanzada la fase, menos plazo
+C 0x50b9 y no baja de ahi
+C 0x50bd el plazo, guardado
+C 0x50bf el byte anterior, uno mas
+C 0x50c0 sin el bit 2
+C 0x50c3 la posicion del decorado
+C 0x50c6 cuatro menos
 L 0x5082 pinta_los_panes_del_otro_lado
 C 0x5082 la otra base
 C 0x5084 y doce
@@ -1332,6 +1471,19 @@ C 0x567f tres rotaciones: la celda
 C 0x5685 +0xC0: el sitio en el bufer
 C 0x568b el patron 0x69 es lo que se busca
 C 0x5692 y las cuatro celdas de al lado, a cero
+C 0x567d la columna
+C 0x567e guardada en C
+C 0x5687 en L
+C 0x5688 y la pagina del bufer de pantalla
+C 0x568a la celda
+C 0x568d si no es esa, no hay nada
+C 0x568f la pagina de antes: el otro bufer
+C 0x5690 y una celda antes
+C 0x5691 a cero
+C 0x5692 se van juntando con OR
+C 0x5699 y solo si las cuatro estan vacias se sigue
+C 0x569b se tira el puntero guardado
+C 0x569f y se pasa al suyo
 C 0x569c el segundo carro
 C 0x569f dos bytes de estado
 
@@ -1352,6 +1504,35 @@ C 0x56cf el contador de cuadros
 C 0x56d2 su bit 3
 C 0x56d4 un patron
 C 0x56d8 o el otro: parpadea
+C 0x56a4 el estado
+C 0x56a5 se conservan el bit 0, el 6 y el 7
+C 0x56a9 y se guarda
+C 0x56aa el byte siguiente
+C 0x56b0 guardado como plazo
+C 0x56b1 la columna
+C 0x56b2 tres rotaciones: de pixel a celda
+C 0x56b5 los cinco bits que quedan
+C 0x56ba la celda absoluta
+C 0x56bb una menos
+C 0x56bc apuntada
+C 0x56bf los atributos
+C 0x56c0 el byte de antes
+C 0x56c4 la columna
+C 0x56c9 el atributo siguiente
+C 0x56cd la columna otra vez
+C 0x56ce y el byte del color
+C 0x56d2 uno de cada ocho cuadros
+C 0x56d6 con el bit puesto, el primero
+C 0x56da el que haya salido
+C 0x56dc los atributos de los carros
+C 0x56df y sus estados
+C 0x56e4 el estado
+C 0x56e7 apagado: ese no cuenta
+C 0x56e9 los cinco bits
+C 0x56ed en el 10 tampoco
+C 0x56f1 ni en el 8
+C 0x56f5 ni en el 14
+C 0x56f9 ni en el 0x12: son los cuatro en que el carro ya no esta en juego
 L 0x56dc mira_los_carros_contra_el_disparo
 B 0x56dc LOS TRES CARROS CONTRA EL DISPARO. Se saltan los estados 10, 8, 14 y 0x12 -los que ya estan resueltos- y, segun el estado sea 0x10 o no, se usa una caja u otra: la de 0x572D o la de 0x5731. Cuatro `cp` seguidos en vez de una tabla.
 C 0x56e2 tres carros
@@ -1409,6 +1590,28 @@ C 0x57e3 la marca de premio en juego
 C 0x57ed treinta y un pixeles de margen
 C 0x57f5 su plazo, uno menos
 C 0x57f9 el patron
+C 0x57df en los otros siete no se toca
+C 0x57e4 sin premio en juego no hay nada que mover
+C 0x57e6 la posicion del decorado
+C 0x57e9 el byte de antes
+C 0x57eb y vuelta
+C 0x57ec la distancia entre los dos
+C 0x57ef los atributos del premio
+C 0x57f3 fuera de margen: se va por el otro lado
+C 0x57f6 se cambian otra vez
+C 0x57f7 al llegar a cero, se acaba
+C 0x57fb el byte siguiente
+C 0x57fc tres veces por dos
+C 0x57ff guardada
+C 0x5800 el color
+C 0x5804 guardado: eso lo hace parpadear
+C 0x5805 el paso
+C 0x5808 en los demas ya esta
+C 0x5809 el mapa de ocupacion
+C 0x580c el bit del premio
+C 0x5810 se apaga
+C 0x5811 y se guarda
+C 0x5817 y se repintan las puertas
 C 0x57fc por ocho: la altura
 C 0x5802 y el bit 2 del color, al reves
 C 0x5806 el paso 3
@@ -1526,6 +1729,35 @@ C 0x5982 copiados
 C 0x5987 su ficha
 C 0x599a veinticuatro de desplazamiento
 C 0x59a2 el patron de la caida
+C 0x596b guardado
+C 0x596e la columna
+C 0x596f los tres sprites, colocados
+C 0x5972 se guardan los dos
+C 0x5974 la pose 0x34
+C 0x5979 el bloque de atributos
+C 0x597c y el de al lado
+C 0x5982 copiados tal cual
+C 0x5984 el estado del carro
+C 0x598a los dos patrones que le tocan
+C 0x598d el byte de antes
+C 0x5990 y el segundo sprite
+C 0x5993 se recuperan
+C 0x5995 los atributos otra vez
+C 0x5999 la columna
+C 0x599c guardada
+C 0x599d el byte siguiente
+C 0x599e la fila
+C 0x599f mas el paso
+C 0x59a0 guardada
+C 0x59a4 el color
+C 0x59a7 repintado
+C 0x59ad al VDP
+C 0x59b0 y se vuelve sin acarreo
+C 0x59b4 al primero
+C 0x59b9 al segundo
+C 0x59be y al tercero: los tres sprites van escalonados
+C 0x59c5 uno de cada cuatro
+C 0x59c8 el paso
 C 0x59a5 y su color
 C 0x59aa sesenta y cuatro
 L 0x59b2 coloca_los_tres_sprites
@@ -1586,6 +1818,36 @@ C 0x5acc el plazo, uno menos
 C 0x5ace ciento sesenta cuadros
 L 0x5ad6 la_pantalla_de_recuento
 C 0x5ae8 el bloque comprimido del recuento
+C 0x5ad9 con el signo puesto todavia queda cortina
+C 0x5ada el fondo
+C 0x5add la tabla
+C 0x5ae0 y los tres decorados
+C 0x5ae3 el valor que se le pasa
+C 0x5aeb a la VRAM
+C 0x5aee los panes de esta jornada
+C 0x5af4 guardados
+C 0x5af6 sin panes no hay cuenta que hacer
+C 0x5af8 la celda del recuento
+C 0x5afb un byte
+C 0x5b00 el byte siguiente
+C 0x5b01 y la celda siguiente
+C 0x5b05 en B, que es la cuenta del bucle
+C 0x5b06 con tope de nueve
+C 0x5b08 por debajo, tal cual
+C 0x5b0a y por encima, nueve
+C 0x5b0c guardado
+C 0x5b0f a cero
+C 0x5b10 mas seis
+C 0x5b12 ajustado a BCD: asi la suma sale en decimal sin dividir
+C 0x5b15 uno mas
+C 0x5b16 el total
+C 0x5b1d el bufer de atributos
+C 0x5b23 copiados
+C 0x5b25 los patrones del panadero
+C 0x5b28 y se le marca el bit 7
+C 0x5b2a los atributos
+C 0x5b2d su sitio en la VRAM
+C 0x5b36 a cero
 C 0x5af1 los panes que se llevaron
 C 0x5afd un byte, dos digitos
 C 0x5b02 el progreso
@@ -2173,6 +2435,30 @@ C 0x52b8 el paso 2
 C 0x52c1 se repintan las puertas
 C 0x52c4 y suena el aviso
 C 0x52ca los colores del volcado
+C 0x52a5 la fila
+C 0x52a7 y de vuelta
+C 0x52a8 guardada en D
+C 0x52a9 la columna
+C 0x52ad el atributo siguiente
+C 0x52af el color del primer sprite
+C 0x52b2 la columna corrida
+C 0x52b4 la fila
+C 0x52b6 y el color del segundo
+C 0x52b7 el estado
+C 0x52ba en los demas ya esta
+C 0x52bb la copia del mapa de ocupacion
+C 0x52c0 se devuelve a 0xE057
+C 0x52ce la fila
+C 0x52d0 y la columna
+C 0x52d3 el atributo siguiente
+C 0x52db y el color del segundo
+C 0x52de el estado del carro
+C 0x52e1 el bit 0 al acarreo
+C 0x52e2 sin acarreo, hacia arriba
+C 0x52e6 la fila
+C 0x52e9 y de vuelta
+C 0x52ec la del segundo sprite
+C 0x52f4 uno de cada ocho cuadros
 C 0x52dd al juego alternativo
 C 0x52df ocho pixeles hacia arriba
 C 0x52e1 el bit 0: el sentido
@@ -2198,6 +2484,39 @@ C 0x5334 tres bits
 C 0x533a por seis
 C 0x533d la tabla de indices
 C 0x5344 y queda apuntado en 0xE12C
+C 0x5330 el byte siguiente
+C 0x5331 y la posicion detras
+C 0x5332 se retrocede
+C 0x5334 los tres de abajo
+C 0x5336 uno mas
+C 0x5337 entre dos
+C 0x533a en C
+C 0x533b y lo demas hasta seis, que es lo que ocupa cada entrada
+C 0x5340 indexada
+C 0x5343 saltandose el primer byte
+C 0x5347 a cero
+C 0x5348 el primero de los tres
+C 0x534a el segundo
+C 0x534d y el tercero
+C 0x534f los sprites del carro
+C 0x5352 y su bloque de estado
+C 0x5358 los cinco bits
+C 0x535c ese es el que se busca
+C 0x535e el estado del siguiente
+C 0x5363 y el otro
+C 0x5366 la columna
+C 0x5367 menos 0x30
+C 0x5369 tiene que caber en 0xB0
+C 0x536b y si no, no ha salido
+C 0x536c el byte de antes
+C 0x536f y vuelta
+C 0x5370 la fila
+C 0x5371 cuatro menos: sube un poco
+C 0x5373 guardada
+C 0x5374 y dieciseis mas, la del segundo sprite
+C 0x537b para que deje de contar como activo
+C 0x5381 el patron del primero
+C 0x5384 y la fila del segundo
 C 0x5348 se borran los tres bytes
 C 0x5377 su hueco de sprite
 C 0x537b se apaga el bit 0 del estado
@@ -2209,6 +2528,27 @@ C 0x5395 un cuadro menos del plazo
 C 0x5397 agotado: se sale del estado
 C 0x539b la tabla de patrones del volcado
 C 0x53a8 la fase 2
+C 0x5392 en los otros tres no se toca
+C 0x5393 el byte del plazo
+C 0x5394 se cambian
+C 0x5396 y de vuelta
+C 0x5399 el paso del volcado
+C 0x539a al juego alternativo
+C 0x539e indexada por el paso
+C 0x53a1 el patron
+C 0x53a2 y se vuelve
+C 0x53a3 guardado en C
+C 0x53a4 al atributo
+C 0x53a5 el byte siguiente
+C 0x53a6 la fila, en B
+C 0x53a7 el paso otra vez
+C 0x53aa en la 2, un camino
+C 0x53ae tres atributos mas alla
+C 0x53b1 el patron
+C 0x53b4 guardada
+C 0x53b6 la fila
+C 0x53b9 en B
+C 0x53ba y al atributo
 C 0x53ac por debajo, el otro camino
 C 0x53b2 dieciseis mas: el segundo sprite
 

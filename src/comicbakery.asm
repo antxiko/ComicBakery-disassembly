@@ -1161,35 +1161,35 @@ L_463C:
 	ld a,001h		;4650
 	ld (0e00dh),a		;4652   ; se acaba la jornada
 pinta_el_reloj:
-	ld hl,0e079h		;4655
-	ld de,0e198h		;4658
-	ld a,(hl)			;465b
+	ld hl,0e079h		;4655   ; la hora de la jornada
+	ld de,0e198h		;4658   ; y el bufer donde se compone el reloj
+	ld a,(hl)			;465b   ; el byte, en BCD
 	and 00fh		;465c   ; el nibble bajo
 	add a,080h		;465e   ; +0x80: los digitos del reloj
-	ld (de),a			;4660
-	dec de			;4661
-	ld a,(hl)			;4662
-	rra			;4663   ; y el nibble alto
+	ld (de),a			;4660   ; al bufer
+	dec de			;4661   ; la celda anterior
+	ld a,(hl)			;4662   ; el mismo byte otra vez
+	rra			;4663   ; cuatro rotaciones: el nibble de arriba abajo
 	rra			;4664
 	rra			;4665
 	rra			;4666
-	and 00fh		;4667
+	and 00fh		;4667   ; lo que queda
 	add a,090h		;4669   ; +0x90: los de la otra mitad
-	ld (de),a			;466b
-	dec de			;466c
-	inc hl			;466d
+	ld (de),a			;466b   ; al bufer
+	dec de			;466c   ; la anterior
+	inc hl			;466d   ; el byte siguiente
 	ld a,(hl)			;466e
-	add a,a			;466f
-	add a,(hl)			;4670
+	add a,a			;466f   ; por dos
+	add a,(hl)			;4670   ; y uno mas: por tres, que es lo que ocupa cada entrada
 	ld hl,0468ah		;4671   ; la tabla de indices del reloj
-	call suma_a_a_hl		;4674
+	call suma_a_a_hl		;4674   ; indexada
 	ld bc,00003h		;4677   ; tres bytes
 	lddr		;467a   ; copiados hacia atras
 	ex de,hl			;467c
-	inc hl			;467d
+	inc hl			;467d   ; la primera celda
 	ld de,038edh		;467e   ; la celda del reloj en la pantalla
 	ld bc,00005h		;4681   ; cinco celdas
-	call vuelca_bloque		;4684
+	call vuelca_bloque		;4684   ; volcadas de una vez
 	ret			;4687
 
 ; ----------------------------------------------------------------------
@@ -1214,11 +1214,11 @@ DATA_indices_del_reloj:
 parpadea_el_turno:
 	ld hl,(0e002h)		;46a3   ; de un tiron: (0xE002) y el contador de cuadros
 	ld a,01fh		;46a6   ; los cinco bits de abajo
-	and h			;46a8
+	and h			;46a8   ; sobre el contador de cuadros
 	ret nz			;46a9   ; uno de cada 32 cuadros
-	ld c,a			;46aa
-	bit 5,h		;46ab
-	jr z,L_46B0		;46ad
+	ld c,a			;46aa   ; en C
+	bit 5,h		;46ab   ; el bit 5 del modo: dos jugadores
+	jr z,L_46B0		;46ad   ; con uno solo, no se desfasa
 	dec c			;46af   ; con dos jugadores, se desfasa
 L_46B0:
 	bit 7,l		;46b0   ; el bit 7 dice de quien es el turno
@@ -1367,31 +1367,31 @@ lee_un_puerto_del_psg:
 lee_los_mandos:
 	call lee_el_mando		;4775   ; el mando
 	bit 4,(hl)		;4778   ; el bit 4: se juega con teclado
-	call nz,lee_el_teclado		;477a
-	ld hl,0e002h		;477d
+	call nz,lee_el_teclado		;477a   ; y entonces se lee tambien el teclado
+	ld hl,0e002h		;477d   ; el modo
 	bit 6,(hl)		;4780   ; el bit 6: si esta a cero, manda la demostracion
 	call z,lee_el_guion_de_la_demostracion		;4782
-	ld hl,0e009h		;4785   ; la lectura de este cuadro
+	ld hl,0e009h		;4785   ; donde se guarda
 	ld c,(hl)			;4788   ; y la de antes se guarda al lado
-	ld (hl),a			;4789
-	dec hl			;478a
-	ld (hl),c			;478b
-	call filtra_la_direccion		;478c
-	xor a			;478f
-	dec e			;4790
-	jp p,L_47A5		;4791
-	ld a,(hl)			;4794
+	ld (hl),a			;4789   ; la de este cuadro ocupa su sitio
+	dec hl			;478a   ; el byte de antes
+	ld (hl),c			;478b   ; y ahi va la anterior: asi se sabe que ha cambiado
+	call filtra_la_direccion		;478c   ; la direccion, filtrada
+	xor a			;478f   ; a cero
+	dec e			;4790   ; uno menos
+	jp p,L_47A5		;4791   ; sin signo, se sale
+	ld a,(hl)			;4794   ; la lectura
 	rrca			;4795   ; dos bits de la lectura
 	rrca			;4796
-	and 003h		;4797
-	jr nz,L_47A5		;4799
+	and 003h		;4797   ; los dos que quedan
+	jr nz,L_47A5		;4799   ; si hay alguno, se sale con cero
 	ld a,(0e105h)		;479b   ; el estado de 0xE105
-	or a			;479e
-	ld a,001h		;479f
+	or a			;479e   ; a cero
+	ld a,001h		;479f   ; uno
 	jr z,L_47A5		;47a1
-	ld a,002h		;47a3
+	ld a,002h		;47a3   ; y si no, dos
 L_47A5:
-	ld (0e122h),a		;47a5
+	ld (0e122h),a		;47a5   ; guardado
 	ret			;47a8
 
 ; ----------------------------------------------------------------------
@@ -1400,18 +1400,18 @@ L_47A5:
 lee_el_guion_de_la_demostracion:
 	ld hl,0e12eh		;47a9   ; el paso de la demostracion
 	ld a,(0e00bh)		;47ac   ; el compas de ocho
-	or a			;47af
+	or a			;47af   ; solo con el compas a cero
 	jr nz,L_47B3		;47b0
 	inc (hl)			;47b2   ; y solo entonces avanza
 L_47B3:
-	ld a,(hl)			;47b3
+	ld a,(hl)			;47b3   ; el paso
 	cp 04fh		;47b4   ; el paso 79
-	jr nz,L_47BD		;47b6
+	jr nz,L_47BD		;47b6   ; en los demas no se toca
 	ld hl,0e053h		;47b8
-	ld (hl),000h		;47bb   ; apaga la senal de partida
+	ld (hl),000h		;47bb   ; a cero
 L_47BD:
 	ld hl,06001h		;47bd   ; la lista de movimientos grabados
-	call suma_a_a_hl		;47c0
+	call suma_a_a_hl		;47c0   ; indexada por el paso
 	ld a,(hl)			;47c3   ; y de ahi sale lo que se "pulsa"
 	ret			;47c4
 
@@ -1420,26 +1420,26 @@ L_47BD:
 ; ----------------------------------------------------------------------
 filtra_la_direccion:
 	ld hl,0e101h		;47c5
-	ld c,a			;47c8
+	ld c,a			;47c8   ; guardada en C
 	ld a,(0e104h)		;47c9   ; el estado de 0xE104
-	ld e,a			;47cc
+	ld e,a			;47cc   ; en E
 	or a			;47cd
-	ret nz			;47ce
-	ld a,c			;47cf
+	ret nz			;47ce   ; ocupado: el mando no se atiende
+	ld a,c			;47cf   ; la lectura otra vez
 	and 00ch		;47d0   ; los dos bits de direccion
-	jr z,L_47D8		;47d2
+	jr z,L_47D8		;47d2   ; ninguna: nada que hacer
 	cp 00ch		;47d4   ; las dos a la vez
-	jr z,L_47DA		;47d6
+	jr z,L_47DA		;47d6   ; las dos: da la vuelta
 L_47D8:
-	ld (hl),a			;47d8
+	ld (hl),a			;47d8   ; y una sola se guarda tal cual
 	ret			;47d9
 L_47DA:
-	ld a,(hl)			;47da
+	ld a,(hl)			;47da   ; el estado
 	bit 7,a		;47db   ; el bit 7: ya esta girando
-	ret nz			;47dd
-	ld b,088h		;47de
+	ret nz			;47dd   ; ya esta en ello
+	ld b,088h		;47de   ; el patron del giro
 	or a			;47e0
-	jr z,L_47E6		;47e1
+	jr z,L_47E6		;47e1   ; desde parado, el primero
 	xor 08ch		;47e3   ; y el xor le da la vuelta al sentido
 	ld b,a			;47e5
 L_47E6:
@@ -1510,60 +1510,60 @@ L_482F:
 atiende_el_menu:
 	ld e,08fh		;4831   ; el primer puerto de mando
 	call lee_un_puerto_del_psg		;4833
-	ld d,a			;4836
+	ld d,a			;4836   ; guardado
 	ld e,0cfh		;4837   ; y el segundo
 	call lee_un_puerto_del_psg		;4839
 	or d			;483c   ; se juntan
-	ld d,a			;483d
+	ld d,a			;483d   ; los dos juntos
 	call lee_el_teclado		;483e   ; mas el teclado
-	or d			;4841
+	or d			;4841   ; y el teclado encima: se juega con cualquiera de los tres
 	ld hl,0e040h		;4842   ; lo de ahora en (0xE040)
-	ld c,(hl)			;4845
-	ld (hl),a			;4846
-	inc hl			;4847
+	ld c,(hl)			;4845   ; lo de antes
+	ld (hl),a			;4846   ; lo de ahora ocupa su sitio
+	inc hl			;4847   ; el byte siguiente
 	ld (hl),c			;4848   ; y lo de antes justo detras
-	ld b,a			;4849
+	ld b,a			;4849   ; en B
 	xor c			;484a   ; los bits que han cambiado
 	and b			;484b   ; y de esos, los que ahora estan pulsados
-	ret z			;484c   ; nada nuevo, nada que hacer
-	ld b,a			;484d
-	ld a,000h		;484e
+	ret z			;484c   ; y si no hay ninguno, se sale: asi una tecla mantenida no cuenta dos veces
+	ld b,a			;484d   ; los nuevos, en B
+	ld a,000h		;484e   ; a cero
 	ld (0e004h),a		;4850   ; se reinicia el plazo de la pantalla
-	ld a,005h		;4853   ; solo la escena 5 responde al menu
+	ld a,005h		;4853   ; la escena del menu
 	ld hl,0e000h		;4855
-	cp (hl)			;4858
-	jr nz,L_4874		;4859
-	ld a,b			;485b
+	cp (hl)			;4858   ; comparada con la de ahora
+	jr nz,L_4874		;4859   ; en las demas, solo se apunta la lectura
+	ld a,b			;485b   ; los botones nuevos
 	cp 010h		;485c   ; de 0x10 para arriba son botones
-	jr c,mueve_el_cursor		;485e
+	jr c,mueve_el_cursor		;485e   ; por debajo, son direcciones: mueven el cursor
 	ld hl,0488eh		;4860   ; los cuatro modos de juego
 	ld a,(0e042h)		;4863   ; indexados por la opcion elegida
 	call suma_a_a_hl		;4866
-	ld a,(hl)			;4869
+	ld a,(hl)			;4869   ; el modo que le toca
 	ld (0e002h),a		;486a   ; y el modo queda en (0xE002)
 	ld hl,00008h		;486d   ; a la escena 8, la que arranca sin remate apilado
-	ld (0e000h),hl		;4870
+	ld (0e000h),hl		;4870   ; escrita de una vez con el byte de al lado
 	ret			;4873
 L_4874:
-	ld (hl),a			;4874
+	ld (hl),a			;4874   ; se apunta y ya
 	jp L_4378		;4875
 mueve_el_cursor:
 	push bc			;4878
 	call pinta_el_cursor		;4879   ; borra el cursor de donde estaba
-	pop af			;487c
+	pop af			;487c   ; los botones, de vuelta
 	ld hl,0e042h		;487d   ; la opcion elegida
-	ld b,(hl)			;4880
+	ld b,(hl)			;4880   ; en B
 	rra			;4881   ; el bit 0: arriba
-	jr nc,L_4885		;4882
+	jr nc,L_4885		;4882   ; sin acarreo, no se pulso arriba
 	dec b			;4884   ; una menos
 L_4885:
 	rra			;4885   ; el bit 1: abajo
-	jr nc,L_4889		;4886
+	jr nc,L_4889		;4886   ; sin acarreo, tampoco abajo
 	inc b			;4888   ; una mas
 L_4889:
 	ld a,b			;4889
-	and 003h		;488a
-	ld (hl),a			;488c
+	and 003h		;488a   ; recortada a cuatro
+	ld (hl),a			;488c   ; y guardada
 	ret			;488d
 
 ; ----------------------------------------------------------------------
@@ -2704,57 +2704,57 @@ mueve_un_bicho:
 	jr nz,L_4F5C		;4f58
 	ld a,040h		;4f5a
 L_4F5C:
-	ld c,a			;4f5c
-	exx			;4f5d
+	ld c,a			;4f5c   ; guardado en C
+	exx			;4f5d   ; al juego alternativo, que el otro lleva el puntero del bicho
 	ld hl,0e057h		;4f5e   ; el mapa de ocupacion
 	and (hl)			;4f61   ; si su bit ya esta puesto, no cabe
-	exx			;4f62
-	jr nz,baja_el_plazo_del_bicho		;4f63
-	ld a,(hl)			;4f65
-	rra			;4f66   ; el bit 0 del estado
-	jr nc,pinta_el_bicho		;4f67
-	dec hl			;4f69
+	exx			;4f62   ; y de vuelta
+	jr nz,baja_el_plazo_del_bicho		;4f63   ; ocupado: solo se le baja el plazo
+	ld a,(hl)			;4f65   ; su estado
+	rra			;4f66   ; el bit 0 al acarreo
+	jr nc,pinta_el_bicho		;4f67   ; sin acarreo, se pinta y ya
+	dec hl			;4f69   ; el byte de antes
 	ld a,(hl)			;4f6a
-	inc hl			;4f6b
+	inc hl			;4f6b   ; y vuelta
 	cp 006h		;4f6c   ; por debajo de seis no
-	jr c,pinta_el_bicho		;4f6e
-	ld a,c			;4f70
+	jr c,pinta_el_bicho		;4f6e   ; todavia no ha llegado
+	ld a,c			;4f70   ; el bit del hueco
 	exx			;4f71
 	ld hl,0e05fh		;4f72   ; el otro mapa de ocupacion
 	and (hl)			;4f75
 	exx			;4f76
-	jr nz,borra_la_ficha_del_bicho		;4f77
-	ld a,c			;4f79
+	jr nz,borra_la_ficha_del_bicho		;4f77   ; si ya esta puesto ahi, la ficha se borra
+	ld a,c			;4f79   ; el bit otra vez
 	exx			;4f7a
 	or (hl)			;4f7b   ; se marca su bit
-	ld (hl),a			;4f7c
+	ld (hl),a			;4f7c   ; guardado
 	exx			;4f7d
-	inc hl			;4f7e
+	inc hl			;4f7e   ; el contador de al lado
 	inc (hl)			;4f7f   ; y se mueven los dos contadores en sentidos contrarios
-	inc (hl)			;4f80
+	inc (hl)			;4f80   ; dos veces
 	dec hl			;4f81
 	dec hl			;4f82
-	dec (hl)			;4f83
+	dec (hl)			;4f83   ; y el otro, dos menos: lo que entra en uno sale del otro
 	dec (hl)			;4f84
 	inc hl			;4f85
 	jr pinta_el_bicho		;4f86
 borra_la_ficha_del_bicho:
-	dec hl			;4f88
+	dec hl			;4f88   ; el primero de los tres
 libera_el_bit_del_bicho:
 	xor a			;4f89   ; los tres bytes, a cero
-	ld (hl),a			;4f8a
+	ld (hl),a			;4f8a   ; a cero
 	inc hl			;4f8b
 	ld (hl),a			;4f8c
 	inc hl			;4f8d
 	ld (hl),a			;4f8e
 	ret			;4f8f
 baja_el_plazo_del_bicho:
-	dec hl			;4f90
+	dec hl			;4f90   ; el plazo
 	dec (hl)			;4f91   ; su plazo, uno menos
 	call m,avanza_el_paso_del_bicho		;4f92   ; y al pasar de cero, se atiende
 	inc hl			;4f95
 	inc hl			;4f96
-	inc (hl)			;4f97
+	inc (hl)			;4f97   ; el de dos mas alla, uno mas
 	dec hl			;4f98
 pinta_el_bicho:
 	dec hl			;4f99
@@ -2918,30 +2918,30 @@ L_505B:
 	ret m			;505d
 L_505E:
 	ld a,b			;505e
-	dec a			;505f
-	ld c,a			;5060
+	dec a			;505f   ; uno menos: el indice va de cero
+	ld c,a			;5060   ; guardado
 	rlca			;5061   ; dos rotaciones
 	rlca			;5062
-	and 070h		;5063
-	add a,a			;5065
+	and 070h		;5063   ; los tres bits de arriba
+	add a,a			;5065   ; por dos
 	ld e,a			;5066
 	ld a,080h		;5067
-	sub e			;5069   ; restado de 0x80: de derecha a izquierda
+	sub e			;5069   ; restado de 0x80: las celdas se recorren de derecha a izquierda
 	ld e,a			;506a
-	ld d,0e2h		;506b
+	ld d,0e2h		;506b   ; la pagina del bufer de pantalla
 	ld a,c			;506d
-	and 003h		;506e   ; dos bits del indice
+	and 003h		;506e   ; los dos de abajo
 	add a,055h		;5070   ; +0x55: el ajuste fino
-	sub (hl)			;5072
-	jp m,L_507F		;5073
-	cp 020h		;5076
+	sub (hl)			;5072   ; menos lo que diga (hl)
+	jp m,L_507F		;5073   ; negativo: ese no se pinta
+	cp 020h		;5076   ; y por encima de treinta y dos, tampoco
 	jr nc,L_507F		;5078
-	add a,e			;507a
+	add a,e			;507a   ; sumado a la celda
 	ld e,a			;507b
 	ld a,07dh		;507c   ; el patron del pan
-	ld (de),a			;507e
+	ld (de),a			;507e   ; el pan, al bufer
 L_507F:
-	djnz L_505E		;507f
+	djnz L_505E		;507f   ; y el siguiente
 	ret			;5081
 pinta_los_panes_del_otro_lado:
 	ld c,062h		;5082   ; la otra base
@@ -2955,44 +2955,44 @@ mueve_el_gato:
 	ld a,(0e00bh)		;5088   ; el compas de ocho
 	cp 002h		;508b   ; solo cuando vale 2
 	ret nz			;508d
-	ld hl,0e109h		;508e
+	ld hl,0e109h		;508e   ; el estado del gato
 	ld a,(hl)			;5091   ; su estado
-	or a			;5092
+	or a			;5092   ; si no es cero, ya va por su camino
 	jr nz,L_50BF		;5093
 	inc hl			;5095
 	dec (hl)			;5096   ; su plazo
-	ret nz			;5097
+	ret nz			;5097   ; y hasta que no llega a cero no sale
 	inc hl			;5098
-	ld a,(hl)			;5099
+	ld a,(hl)			;5099   ; a que bicho va
 	add a,a			;509a   ; el bicho al que va, por tres
 	add a,(hl)			;509b
 	ex de,hl			;509c
-	ld hl,0e062h		;509d
+	ld hl,0e062h		;509d   ; la tabla de los bichos
 	call suma_a_a_hl		;50a0
 	ld (0e126h),hl		;50a3   ; apuntado
 	bit 7,(hl)		;50a6   ; el bit 7: ya esta en marcha
 	ex de,hl			;50a8
 	jr nz,L_5100		;50a9
-	inc (hl)			;50ab
-	res 3,(hl)		;50ac
+	inc (hl)			;50ab   ; se le marca
+	res 3,(hl)		;50ac   ; y se le quita el bit 3
 	dec hl			;50ae
 	ld a,(0e051h)		;50af   ; el numero de fase
 	add a,a			;50b2   ; por dos
-	ld c,a			;50b3
+	ld c,a			;50b3   ; en C
 	ld a,03ch		;50b4   ; 0x3C menos eso
-	sub c			;50b6
+	sub c			;50b6   ; menos eso: cuanto mas avanzada la fase, menos plazo
 	cp 028h		;50b7   ; con suelo en 0x28
-	jr nc,L_50BD		;50b9
+	jr nc,L_50BD		;50b9   ; y no baja de ahi
 	ld a,028h		;50bb
 L_50BD:
-	ld (hl),a			;50bd
+	ld (hl),a			;50bd   ; el plazo, guardado
 	dec hl			;50be
 L_50BF:
-	inc (hl)			;50bf
-	res 2,(hl)		;50c0
+	inc (hl)			;50bf   ; el byte anterior, uno mas
+	res 2,(hl)		;50c0   ; sin el bit 2
 	ex de,hl			;50c2
-	ld hl,0e055h		;50c3
-	ld a,004h		;50c6
+	ld hl,0e055h		;50c3   ; la posicion del decorado
+	ld a,004h		;50c6   ; cuatro menos
 	sub (hl)			;50c8
 	ex de,hl			;50c9
 	jr c,L_50EE		;50ca
@@ -3349,30 +3349,30 @@ carro_estado_6_choca_con_el_panadero:
 	ld bc,0e0e4h		;52a0   ; o los otros dos
 	ld a,000h		;52a3
 corre_el_carro_y_lo_repinta:
-	inc hl			;52a5
+	inc hl			;52a5   ; la fila
 	add a,(hl)			;52a6   ; el paso, sumado a la fila
-	ld (hl),a			;52a7
-	ld d,a			;52a8
-	dec hl			;52a9
+	ld (hl),a			;52a7   ; y de vuelta
+	ld d,a			;52a8   ; guardada en D
+	dec hl			;52a9   ; la columna
 	ld a,(hl)			;52aa
 	sub 010h		;52ab   ; dieciseis pixeles antes
-	inc hl			;52ad
+	inc hl			;52ad   ; el atributo siguiente
 	inc hl			;52ae
-	ld (hl),b			;52af   ; el color
+	ld (hl),b			;52af   ; el color del primer sprite
 	inc hl			;52b0
 	inc hl			;52b1
-	ld (hl),a			;52b2
+	ld (hl),a			;52b2   ; la columna corrida
 	inc hl			;52b3
-	ld (hl),d			;52b4
+	ld (hl),d			;52b4   ; la fila
 	inc hl			;52b5
-	ld (hl),c			;52b6
-	ld a,e			;52b7
+	ld (hl),c			;52b6   ; y el color del segundo
+	ld a,e			;52b7   ; el estado
 	cp 002h		;52b8   ; el paso 2
-	ret nz			;52ba
-	ld hl,0e058h		;52bb
+	ret nz			;52ba   ; en los demas ya esta
+	ld hl,0e058h		;52bb   ; la copia del mapa de ocupacion
 	ld a,(hl)			;52be
 	dec hl			;52bf
-	ld (hl),a			;52c0
+	ld (hl),a			;52c0   ; se devuelve a 0xE057
 	call pinta_las_puertas		;52c1   ; se repintan las puertas
 	ld a,007h		;52c4   ; y suena el aviso
 	call pide_un_sonido		;52c6
@@ -3385,11 +3385,11 @@ carro_volcado_con_el_otro_color:
 ; PONER EL SEGUNDO SPRITE DE UN CARRO, dieciseis pixeles mas alla: se copian la fila, la columna corrida y el color al hueco siguiente. Un carro son dos sprites.
 ; ----------------------------------------------------------------------
 pon_el_segundo_sprite_del_carro:
-	ld d,(hl)			;52ce
+	ld d,(hl)			;52ce   ; la fila
 	inc hl			;52cf
-	ld a,(hl)			;52d0
+	ld a,(hl)			;52d0   ; y la columna
 	add a,010h		;52d1   ; dieciseis pixeles mas alla
-	inc hl			;52d3
+	inc hl			;52d3   ; el atributo siguiente
 	ld (hl),b			;52d4   ; el color
 	inc hl			;52d5
 	inc hl			;52d6
@@ -3397,22 +3397,22 @@ pon_el_segundo_sprite_del_carro:
 	inc hl			;52d8
 	ld (hl),a			;52d9   ; la columna corrida
 	inc hl			;52da
-	ld (hl),c			;52db
+	ld (hl),c			;52db   ; y el color del segundo
 	ret			;52dc
 carro_estado_7_un_paso_arriba_o_abajo:
 	exx			;52dd   ; al juego alternativo
-	ld a,(de)			;52de
+	ld a,(de)			;52de   ; el estado del carro
 	ld c,0f8h		;52df   ; ocho pixeles hacia arriba
 	rra			;52e1   ; el bit 0: el sentido
-	jr nc,suma_el_paso_a_la_fila		;52e2
+	jr nc,suma_el_paso_a_la_fila		;52e2   ; sin acarreo, hacia arriba
 	ld c,008h		;52e4   ; o los ocho hacia abajo
 suma_el_paso_a_la_fila:
-	inc hl			;52e6
+	inc hl			;52e6   ; la fila
 	ld a,c			;52e7
 	add a,(hl)			;52e8   ; sumados a la fila
-	ld (hl),a			;52e9
+	ld (hl),a			;52e9   ; y de vuelta
 	add a,010h		;52ea   ; y dieciseis mas, al segundo sprite
-	ld (0e09dh),a		;52ec
+	ld (0e09dh),a		;52ec   ; la del segundo sprite
 	ret			;52ef
 
 ; ----------------------------------------------------------------------
@@ -3463,60 +3463,60 @@ apunta_el_carro_en_0xE12A:
 	ld hl,0e12ah		;532a
 	ld a,(de)			;532d
 	ld (hl),060h		;532e   ; el patron 0x60
-	inc hl			;5330
-	ld (hl),a			;5331
-	dec de			;5332
+	inc hl			;5330   ; el byte siguiente
+	ld (hl),a			;5331   ; y la posicion detras
+	dec de			;5332   ; se retrocede
 	ld a,(de)			;5333
-	and 007h		;5334   ; tres bits
-	inc a			;5336
-	srl a		;5337
+	and 007h		;5334   ; los tres de abajo
+	inc a			;5336   ; uno mas
+	srl a		;5337   ; entre dos
 	add a,a			;5339
-	ld c,a			;533a   ; por seis
-	add a,a			;533b
+	ld c,a			;533a   ; en C
+	add a,a			;533b   ; y lo demas hasta seis, que es lo que ocupa cada entrada
 	add a,c			;533c
 	ld hl,04010h		;533d   ; la tabla de indices
-	call suma_a_a_hl		;5340
-	inc hl			;5343
+	call suma_a_a_hl		;5340   ; indexada
+	inc hl			;5343   ; saltandose el primer byte
 	ld (0e12ch),hl		;5344   ; y queda apuntado en 0xE12C
-	xor a			;5347
+	xor a			;5347   ; a cero
 	ld (de),a			;5348   ; se borran los tres bytes
 	inc de			;5349
-	ld (de),a			;534a
+	ld (de),a			;534a   ; el segundo
 	dec de			;534b
 	dec de			;534c
-	ld (de),a			;534d
+	ld (de),a			;534d   ; y el tercero
 	ret			;534e
 
 ; ----------------------------------------------------------------------
 ; BUSCAR EL CARRO QUE ESTE EN EL ESTADO 0x10, entre los dos de 0xE0A1 y 0xE0A9. Si su fila esta fuera de la banda 0x30..0xE0 se le clava el patron 0x47.
 ; ----------------------------------------------------------------------
 busca_el_carro_en_el_estado_10:
-	ld hl,0e0a1h		;534f
-	ld de,0e112h		;5352
+	ld hl,0e0a1h		;534f   ; los sprites del carro
+	ld de,0e112h		;5352   ; y su bloque de estado
 	ld b,002h		;5355   ; dos carros
 L_5357:
 	ld a,(de)			;5357
-	and 03eh		;5358   ; cinco bits del estado
+	and 03eh		;5358   ; los cinco bits
 	cp 010h		;535a   ; el estado 0x10
-	jr z,L_5366		;535c
-	inc de			;535e
+	jr z,L_5366		;535c   ; ese es el que se busca
+	inc de			;535e   ; el estado del siguiente
 	inc de			;535f
 	ld hl,0e0a9h		;5360   ; el otro carro
-	djnz L_5357		;5363
+	djnz L_5357		;5363   ; y el otro
 	ret			;5365
 L_5366:
-	ld a,(hl)			;5366
-	sub 030h		;5367   ; la banda util empieza en 0x30
-	cp 0b0h		;5369   ; y mide 0xB0
-	ret c			;536b
-	dec hl			;536c
+	ld a,(hl)			;5366   ; la columna
+	sub 030h		;5367   ; menos 0x30
+	cp 0b0h		;5369   ; tiene que caber en 0xB0
+	ret c			;536b   ; y si no, no ha salido
+	dec hl			;536c   ; el byte de antes
 vuelca_el_carro:
 	ld (hl),047h		;536d   ; el patron de fuera de sitio
-	inc hl			;536f
-	ld a,(hl)			;5370
-	sub 004h		;5371
-	ld (hl),a			;5373
-	add a,010h		;5374
+	inc hl			;536f   ; y vuelta
+	ld a,(hl)			;5370   ; la fila
+	sub 004h		;5371   ; cuatro menos: sube un poco
+	ld (hl),a			;5373   ; guardada
+	add a,010h		;5374   ; y dieciseis mas, la del segundo sprite
 	ld c,a			;5376
 	call hueco_del_carro		;5377   ; su hueco de sprite
 	ld a,(de)			;537a
@@ -3525,9 +3525,9 @@ vuelca_el_carro:
 	inc hl			;537e
 	inc hl			;537f
 	inc hl			;5380
-	ld (hl),047h		;5381
+	ld (hl),047h		;5381   ; el patron del primero
 	inc hl			;5383
-	ld (hl),c			;5384
+	ld (hl),c			;5384   ; y la fila del segundo
 	dec hl			;5385
 	dec hl			;5386
 	dec hl			;5387
@@ -3541,38 +3541,38 @@ carro_estado_9_volcado:
 	exx			;538c   ; al juego alternativo
 	ld a,(0e00bh)		;538d   ; el reloj de la escena
 	and 003h		;5390   ; uno de cada cuatro cuadros
-	ret nz			;5392
-	inc de			;5393
-	ex de,hl			;5394
+	ret nz			;5392   ; en los otros tres no se toca
+	inc de			;5393   ; el byte del plazo
+	ex de,hl			;5394   ; se cambian
 	dec (hl)			;5395   ; un cuadro menos del plazo
-	ex de,hl			;5396
+	ex de,hl			;5396   ; y de vuelta
 	jr z,sale_del_estado_9		;5397   ; agotado: se sale del estado
-	ld a,(de)			;5399
-	exx			;539a
+	ld a,(de)			;5399   ; el paso del volcado
+	exx			;539a   ; al juego alternativo
 	ld hl,053cdh		;539b   ; la tabla de patrones del volcado
-	call suma_a_a_hl		;539e
-	ld a,(hl)			;53a1
-	exx			;53a2
-	ld c,a			;53a3
-	ld (hl),a			;53a4
-	inc hl			;53a5
-	ld b,(hl)			;53a6
-	ld a,(de)			;53a7
+	call suma_a_a_hl		;539e   ; indexada por el paso
+	ld a,(hl)			;53a1   ; el patron
+	exx			;53a2   ; y se vuelve
+	ld c,a			;53a3   ; guardado en C
+	ld (hl),a			;53a4   ; al atributo
+	inc hl			;53a5   ; el byte siguiente
+	ld b,(hl)			;53a6   ; la fila, en B
+	ld a,(de)			;53a7   ; el paso otra vez
 	cp 002h		;53a8   ; la fase 2
-	jr z,coloca_el_carro_volcado		;53aa
+	jr z,coloca_el_carro_volcado		;53aa   ; en la 2, un camino
 	jr c,coloca_los_dos_sprites_del_volcado		;53ac   ; por debajo, el otro camino
-	inc hl			;53ae
+	inc hl			;53ae   ; tres atributos mas alla
 	inc hl			;53af
 	inc hl			;53b0
-	ld a,c			;53b1
+	ld a,c			;53b1   ; el patron
 	add a,010h		;53b2   ; dieciseis mas: el segundo sprite
-	ld (hl),a			;53b4
+	ld (hl),a			;53b4   ; guardada
 	ret			;53b5
 coloca_el_carro_volcado:
-	ld a,b			;53b6
+	ld a,b			;53b6   ; la fila
 	sub 010h		;53b7   ; dieciseis menos
-	ld b,a			;53b9
-	ld (hl),a			;53ba
+	ld b,a			;53b9   ; en B
+	ld (hl),a			;53ba   ; y al atributo
 coloca_los_dos_sprites_del_volcado:
 	inc hl			;53bb
 	ld (hl),098h		;53bc   ; el patron 0x98
@@ -4100,30 +4100,30 @@ L_5662:
 	add a,004h		;567a   ; cuatro bytes: el segundo sprite
 	ld l,a			;567c
 L_567D:
-	ld a,(hl)			;567d
-	ld c,a			;567e
+	ld a,(hl)			;567d   ; la columna
+	ld c,a			;567e   ; guardada en C
 	srl a		;567f   ; tres rotaciones: la celda
 	srl a		;5681
 	srl a		;5683
 	add a,0c0h		;5685   ; +0xC0: el sitio en el bufer
-	ld l,a			;5687
-	ld h,0e2h		;5688
-	ld a,(hl)			;568a
+	ld l,a			;5687   ; en L
+	ld h,0e2h		;5688   ; y la pagina del bufer de pantalla
+	ld a,(hl)			;568a   ; la celda
 	cp 069h		;568b   ; el patron 0x69 es lo que se busca
-	jr nz,L_569B		;568d
-	dec h			;568f
-	dec l			;5690
-	xor a			;5691
-	or (hl)			;5692   ; y las cuatro celdas de al lado, a cero
+	jr nz,L_569B		;568d   ; si no es esa, no hay nada
+	dec h			;568f   ; la pagina de antes: el otro bufer
+	dec l			;5690   ; y una celda antes
+	xor a			;5691   ; a cero
+	or (hl)			;5692   ; se van juntando con OR
 	inc hl			;5693
 	or (hl)			;5694
 	inc hl			;5695
 	or (hl)			;5696
 	inc hl			;5697
 	or (hl)			;5698
-	jr z,L_56A4		;5699
+	jr z,L_56A4		;5699   ; y solo si las cuatro estan vacias se sigue
 L_569B:
-	pop hl			;569b
+	pop hl			;569b   ; se tira el puntero guardado
 	ld hl,0e0a9h		;569c   ; el segundo carro
 	inc de			;569f   ; dos bytes de estado
 	inc de			;56a0
@@ -4134,66 +4134,66 @@ L_569B:
 ; EL CARRO DEJA SU PAN EN LA CINTA: se le pone el estado 0x10 y el progreso mas 0x10, y se escriben CUATRO patrones a mano -0x5B, 0xB0, 0x6B y uno que alterna entre 0xE8 y 0xAC con el bit 3 del contador de cuadros-. O sea que el pan recien puesto parpadea.
 ; ----------------------------------------------------------------------
 L_56A4:
-	ld a,(de)			;56a4
-	and 0c1h		;56a5
+	ld a,(de)			;56a4   ; el estado
+	and 0c1h		;56a5   ; se conservan el bit 0, el 6 y el 7
 	or 010h		;56a7   ; el estado nuevo, 0x10
-	ld (de),a			;56a9
-	inc de			;56aa
+	ld (de),a			;56a9   ; y se guarda
+	inc de			;56aa   ; el byte siguiente
 	ld a,(0e060h)		;56ab   ; el progreso
 	add a,010h		;56ae   ; mas dieciseis
-	ld (de),a			;56b0
-	ld a,c			;56b1
-	rra			;56b2   ; tres rotaciones: la celda
+	ld (de),a			;56b0   ; guardado como plazo
+	ld a,c			;56b1   ; la columna
+	rra			;56b2   ; tres rotaciones: de pixel a celda
 	rra			;56b3
 	rra			;56b4
-	and 01fh		;56b5
+	and 01fh		;56b5   ; los cinco bits que quedan
 	ld hl,0e055h		;56b7
-	add a,(hl)			;56ba   ; mas la posicion del decorado
-	dec a			;56bb
-	ld (0e129h),a		;56bc
-	pop hl			;56bf
-	dec hl			;56c0
+	add a,(hl)			;56ba   ; la celda absoluta
+	dec a			;56bb   ; una menos
+	ld (0e129h),a		;56bc   ; apuntada
+	pop hl			;56bf   ; los atributos
+	dec hl			;56c0   ; el byte de antes
 	ld (hl),05bh		;56c1   ; el primer patron
 	inc hl			;56c3
-	ld (hl),c			;56c4
+	ld (hl),c			;56c4   ; la columna
 	inc hl			;56c5
 	ld (hl),0b0h		;56c6   ; el segundo
 	inc hl			;56c8
-	inc hl			;56c9
+	inc hl			;56c9   ; el atributo siguiente
 	ld (hl),06bh		;56ca   ; el tercero
 	inc hl			;56cc
-	ld (hl),c			;56cd
-	inc hl			;56ce
+	ld (hl),c			;56cd   ; la columna otra vez
+	inc hl			;56ce   ; y el byte del color
 parpadea_el_patron:
 	ld a,(0e003h)		;56cf   ; el contador de cuadros
-	bit 3,a		;56d2   ; su bit 3
+	bit 3,a		;56d2   ; uno de cada ocho cuadros
 	ld c,0e8h		;56d4   ; un patron
-	jr nz,L_56DA		;56d6
+	jr nz,L_56DA		;56d6   ; con el bit puesto, el primero
 	ld c,0ach		;56d8   ; o el otro: parpadea
 L_56DA:
-	ld (hl),c			;56da
+	ld (hl),c			;56da   ; el que haya salido
 	ret			;56db
 
 ; ----------------------------------------------------------------------
 ; LOS TRES CARROS CONTRA EL DISPARO. Se saltan los estados 10, 8, 14 y 0x12 -los que ya estan resueltos- y, segun el estado sea 0x10 o no, se usa una caja u otra: la de 0x572D o la de 0x5731. Cuatro `cp` seguidos en vez de una tabla.
 ; ----------------------------------------------------------------------
 mira_los_carros_contra_el_disparo:
-	ld hl,0e098h		;56dc
-	ld de,0e110h		;56df
+	ld hl,0e098h		;56dc   ; los atributos de los carros
+	ld de,0e110h		;56df   ; y sus estados
 	ld b,003h		;56e2   ; tres carros
 L_56E4:
-	ld a,(de)			;56e4
+	ld a,(de)			;56e4   ; el estado
 	bit 7,a		;56e5   ; el bit 7: esta activo
-	jr z,L_5724		;56e7
-	and 03eh		;56e9
+	jr z,L_5724		;56e7   ; apagado: ese no cuenta
+	and 03eh		;56e9   ; los cinco bits
 	cp 00ah		;56eb   ; el estado 10
-	jr z,L_5724		;56ed
+	jr z,L_5724		;56ed   ; en el 10 tampoco
 	cp 008h		;56ef   ; el 8
-	jr z,L_5724		;56f1
+	jr z,L_5724		;56f1   ; ni en el 8
 	cp 00eh		;56f3   ; el 14
-	jr z,L_5724		;56f5
+	jr z,L_5724		;56f5   ; ni en el 14
 	cp 012h		;56f7   ; y el 0x12
-	jr z,L_5724		;56f9
+	jr z,L_5724		;56f9   ; ni en el 0x12: son los cuatro en que el carro ya no esta en juego
 	push bc			;56fb
 	push de			;56fc
 	push hl			;56fd
@@ -4374,45 +4374,45 @@ DATA_tabla_de_puertas:
 mueve_el_premio_extra:
 	ld a,(0e00bh)		;57da   ; el compas de ocho
 	sub 007h		;57dd   ; solo cuando vale 7
-	ret nz			;57df
+	ret nz			;57df   ; en los otros siete no se toca
 	ld hl,0e05bh		;57e0
 	or (hl)			;57e3   ; la marca de premio en juego
-	ret z			;57e4
+	ret z			;57e4   ; sin premio en juego no hay nada que mover
 	ex de,hl			;57e5
-	ld hl,0e055h		;57e6
-	dec de			;57e9
+	ld hl,0e055h		;57e6   ; la posicion del decorado
+	dec de			;57e9   ; el byte de antes
 	ld a,(de)			;57ea
-	inc de			;57eb
-	sub (hl)			;57ec
+	inc de			;57eb   ; y vuelta
+	sub (hl)			;57ec   ; la distancia entre los dos
 	cp 01fh		;57ed   ; treinta y un pixeles de margen
-	ld hl,0e0b0h		;57ef
+	ld hl,0e0b0h		;57ef   ; los atributos del premio
 	ex de,hl			;57f2
-	jr nc,L_581A		;57f3
+	jr nc,L_581A		;57f3   ; fuera de margen: se va por el otro lado
 	dec (hl)			;57f5   ; su plazo, uno menos
-	ex de,hl			;57f6
-	jr z,L_5821		;57f7
+	ex de,hl			;57f6   ; se cambian otra vez
+	jr z,L_5821		;57f7   ; al llegar a cero, se acaba
 	ld (hl),08fh		;57f9   ; el patron
-	inc hl			;57fb
+	inc hl			;57fb   ; el byte siguiente
 	add a,a			;57fc   ; por ocho: la altura
 	add a,a			;57fd
 	add a,a			;57fe
-	ld (hl),a			;57ff
-	inc hl			;5800
+	ld (hl),a			;57ff   ; guardada
+	inc hl			;5800   ; el color
 	ld a,(hl)			;5801
 	xor 004h		;5802   ; y el bit 2 del color, al reves
-	ld (hl),a			;5804
-	ld a,(de)			;5805
+	ld (hl),a			;5804   ; guardado: eso lo hace parpadear
+	ld a,(de)			;5805   ; el paso
 	cp 003h		;5806   ; el paso 3
-	ret nz			;5808
+	ret nz			;5808   ; en los demas ya esta
 L_5809:
-	ld hl,0e057h		;5809
-	ld a,(0e059h)		;580c
+	ld hl,0e057h		;5809   ; el mapa de ocupacion
+	ld a,(0e059h)		;580c   ; el bit del premio
 	cpl			;580f   ; el bit se libera del mapa de ocupacion
-	and (hl)			;5810
-	ld (hl),a			;5811
+	and (hl)			;5810   ; se apaga
+	ld (hl),a			;5811   ; y se guarda
 	ld a,007h		;5812   ; y el sonido
 	call pide_un_sonido		;5814
-	jp pinta_las_puertas		;5817
+	jp pinta_las_puertas		;5817   ; y se repintan las puertas
 L_581A:
 	ld (hl),000h		;581a
 	ld a,0e0h		;581c
@@ -4658,42 +4658,42 @@ el_panadero_cae:
 	ld c,0f8h		;5967   ; o al otro
 	ld a,092h		;5969   ; con el suyo
 L_596B:
-	ld (0e119h),a		;596b
-	ld a,b			;596e
-	call coloca_los_tres_sprites		;596f
-	push bc			;5972
+	ld (0e119h),a		;596b   ; guardado
+	ld a,b			;596e   ; la columna
+	call coloca_los_tres_sprites		;596f   ; los tres sprites, colocados
+	push bc			;5972   ; se guardan los dos
 	push hl			;5973
-	ld a,034h		;5974
+	ld a,034h		;5974   ; la pose 0x34
 	call pinta_la_pose_del_panadero		;5976   ; la pose de caida
-	ld hl,0e080h		;5979
-	ld de,0e090h		;597c
+	ld hl,0e080h		;5979   ; el bloque de atributos
+	ld de,0e090h		;597c   ; y el de al lado
 	ld bc,00004h		;597f   ; cuatro bytes de sprite
-	ldir		;5982   ; copiados
-	ld de,0e110h		;5984
+	ldir		;5982   ; copiados tal cual
+	ld de,0e110h		;5984   ; el estado del carro
 	ld hl,0e09ah		;5987   ; su ficha
-	call pone_los_dos_patrones_del_carro		;598a
-	ld hl,0e098h		;598d
-	call pon_el_segundo_sprite_del_carro		;5990
-	pop hl			;5993
+	call pone_los_dos_patrones_del_carro		;598a   ; los dos patrones que le tocan
+	ld hl,0e098h		;598d   ; el byte de antes
+	call pon_el_segundo_sprite_del_carro		;5990   ; y el segundo sprite
+	pop hl			;5993   ; se recuperan
 	pop bc			;5994
-	ld de,0e080h		;5995
+	ld de,0e080h		;5995   ; los atributos otra vez
 	ex de,hl			;5998
-	ld a,b			;5999
+	ld a,b			;5999   ; la columna
 	add a,018h		;599a   ; veinticuatro de desplazamiento
-	ld (hl),a			;599c
-	inc hl			;599d
-	ld a,(de)			;599e
-	add a,c			;599f
-	ld (hl),a			;59a0
+	ld (hl),a			;599c   ; guardada
+	inc hl			;599d   ; el byte siguiente
+	ld a,(de)			;599e   ; la fila
+	add a,c			;599f   ; mas el paso
+	ld (hl),a			;59a0   ; guardada
 	inc hl			;59a1
 	ld (hl),0fch		;59a2   ; el patron de la caida
-	inc hl			;59a4
+	inc hl			;59a4   ; el color
 	ld (hl),00ah		;59a5   ; y su color
-	call repinta_el_carro		;59a7
+	call repinta_el_carro		;59a7   ; repintado
 remata_la_caida:
 	ld bc,00040h		;59aa   ; sesenta y cuatro
-	call vuelca_bc_atributos		;59ad
-	or a			;59b0
+	call vuelca_bc_atributos		;59ad   ; al VDP
+	or a			;59b0   ; y se vuelve sin acarreo
 	ret			;59b1
 
 ; ----------------------------------------------------------------------
@@ -4701,11 +4701,11 @@ remata_la_caida:
 ; ----------------------------------------------------------------------
 coloca_los_tres_sprites:
 	add a,00fh		;59b2   ; quince mas
-	ld (0e084h),a		;59b4
+	ld (0e084h),a		;59b4   ; al primero
 	sub 006h		;59b7   ; seis menos
-	ld (0e088h),a		;59b9
+	ld (0e088h),a		;59b9   ; al segundo
 	add a,016h		;59bc   ; y veintidos mas
-	ld (0e08ch),a		;59be
+	ld (0e08ch),a		;59be   ; y al tercero: los tres sprites van escalonados
 	ret			;59c1
 
 ; ----------------------------------------------------------------------
@@ -4715,7 +4715,7 @@ avanza_la_caida:
 	ld a,(0e00bh)		;59c2   ; el compas de ocho
 	and 003h		;59c5   ; uno de cada cuatro
 	ret nz			;59c7
-	ld a,(0e119h)		;59c8
+	ld a,(0e119h)		;59c8   ; el paso
 	and 07fh		;59cb   ; siete bits del paso
 	call suena_en_los_pasos_marcados		;59cd
 	ld hl,0e119h		;59d0
@@ -4877,55 +4877,55 @@ L_5ACE:
 	jp L_4381		;5ad3
 la_pantalla_de_recuento:
 	call baja_el_contador_y_barre		;5ad6
-	ret p			;5ad9
-	call monta_el_fondo_del_recuento		;5ada
-	call monta_la_tabla_del_recuento		;5add
-	call monta_los_tres_decorados		;5ae0
-	ld a,0eeh		;5ae3
+	ret p			;5ad9   ; con el signo puesto todavia queda cortina
+	call monta_el_fondo_del_recuento		;5ada   ; el fondo
+	call monta_la_tabla_del_recuento		;5add   ; la tabla
+	call monta_los_tres_decorados		;5ae0   ; y los tres decorados
+	ld a,0eeh		;5ae3   ; el valor que se le pasa
 	call codigo_huerfano_4757		;5ae5
 	ld hl,05ef6h		;5ae8   ; el bloque comprimido del recuento
-	call descomprime		;5aeb
-	ld a,(0e07bh)		;5aee
+	call descomprime		;5aeb   ; a la VRAM
+	ld a,(0e07bh)		;5aee   ; los panes de esta jornada
 	ld hl,0e04fh		;5af1   ; los panes que se llevaron
-	ld (hl),a			;5af4
+	ld (hl),a			;5af4   ; guardados
 	or a			;5af5
-	jr z,L_5B1A		;5af6
-	ld de,03ad2h		;5af8
-	ld b,001h		;5afb
+	jr z,L_5B1A		;5af6   ; sin panes no hay cuenta que hacer
+	ld de,03ad2h		;5af8   ; la celda del recuento
+	ld b,001h		;5afb   ; un byte
 	call imprime_bcd		;5afd   ; un byte, dos digitos
-	inc hl			;5b00
-	inc de			;5b01
+	inc hl			;5b00   ; el byte siguiente
+	inc de			;5b01   ; y la celda siguiente
 	ld a,(0e060h)		;5b02   ; el progreso
-	ld b,a			;5b05
-	cp 009h		;5b06
-	jr c,L_5B0C		;5b08
-	ld a,009h		;5b0a
+	ld b,a			;5b05   ; en B, que es la cuenta del bucle
+	cp 009h		;5b06   ; con tope de nueve
+	jr c,L_5B0C		;5b08   ; por debajo, tal cual
+	ld a,009h		;5b0a   ; y por encima, nueve
 L_5B0C:
-	ld (0e19bh),a		;5b0c
+	ld (0e19bh),a		;5b0c   ; guardado
 
 ; ----------------------------------------------------------------------
 ; MULTIPLICAR POR SEIS EN BCD SIN MULTIPLICAR: se suma 6 con `daa` tantas veces como diga B. Es lo que vale cada pan en el recuento de la jornada.
 ; ----------------------------------------------------------------------
-	xor a			;5b0f
+	xor a			;5b0f   ; a cero
 L_5B10:
 	add a,006h		;5b10   ; seis, en BCD
-	daa			;5b12
+	daa			;5b12   ; ajustado a BCD: asi la suma sale en decimal sin dividir
 	djnz L_5B10		;5b13   ; tantas veces como panes
-	inc b			;5b15
-	ld (hl),a			;5b16
+	inc b			;5b15   ; uno mas
+	ld (hl),a			;5b16   ; el total
 	call imprime_bcd		;5b17   ; y se pinta el resultado
 L_5B1A:
 	ld hl,05b3eh		;5b1a
-	ld de,0e080h		;5b1d
+	ld de,0e080h		;5b1d   ; el bufer de atributos
 	ld bc,00020h		;5b20   ; treinta y dos bytes de sprites
-	ldir		;5b23
-	call pon_los_patrones_del_panadero		;5b25
-	set 7,(hl)		;5b28
-	ld hl,0e090h		;5b2a
-	ld de,03b10h		;5b2d
+	ldir		;5b23   ; copiados
+	call pon_los_patrones_del_panadero		;5b25   ; los patrones del panadero
+	set 7,(hl)		;5b28   ; y se le marca el bit 7
+	ld hl,0e090h		;5b2a   ; los atributos
+	ld de,03b10h		;5b2d   ; su sitio en la VRAM
 	ld bc,00010h		;5b30   ; dieciseis bytes a la VRAM
 	call vuelca_bloque		;5b33
-	ld a,000h		;5b36
+	ld a,000h		;5b36   ; a cero
 	ld (0e11eh),a		;5b38
 	jp L_4381		;5b3b
 
