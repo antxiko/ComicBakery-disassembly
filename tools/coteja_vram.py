@@ -11,7 +11,7 @@ de ATRIBUTOS de sprite (0x3B00) no se compara: lo que se compara es el
 decorado, que es lo que graficos.py dice reproducir.
 
 Uso: coteja_vram.py <rom> <vram.bin> <escena>
-     escena: logotipo | titulo | nivel | pista
+     escena: escena | escena-1 | escena-2
 """
 import os
 import sys
@@ -34,12 +34,16 @@ def main():
     rom = open(sys.argv[1], "rb").read()
     real = open(sys.argv[2], "rb").read()
     escena = sys.argv[3]
-    mio = {
-        "logotipo": graficos.escena_logotipo,
-        "titulo": graficos.escena_titulo,
-        "nivel": graficos.escena_nivel,
-        "pista": graficos.escena_pista,
-    }[escena](rom)
+    monta = {
+        "escena": graficos.vram_de_la_escena,
+        "escena-1": lambda r: graficos.vram_de_la_escena(r, fase=1),
+        "escena-2": lambda r: graficos.vram_de_la_escena(r, fase=2),
+    }
+    if escena not in monta:
+        print("  escena desconocida: %s (hay %s)"
+              % (escena, ", ".join(sorted(monta))))
+        return 2
+    mio = monta[escena](rom).b
 
     print("  %s contra %s" % (escena, os.path.basename(sys.argv[2])))
     print("  " + "-" * 58)
