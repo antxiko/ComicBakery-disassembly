@@ -99,6 +99,63 @@ class TablasDelDespachador(unittest.TestCase):
         self.assertEqual(self.entradas(0x4119, 16)[0], 0x4119 + 16 * 2)
 
 
+class LasDosPantallasDeMenu(unittest.TestCase):
+    """Las dos pantallas que graficos.py monta desde la ROM, y que NO son la
+    misma: la de LA CASA (el logotipo de KONAMI y su rotulo) y la de TITULO
+    (el menu con "COMIC BAKERY", ":KONAMI 1984" y "PLAY SELECT").
+
+    Contra los volcados del emulador las dos dan CERO bytes de diferencia en
+    las cuatro tablas (tools/coteja_vram.py, que necesita el volcado).
+    """
+
+    def monta(self, cual, *a, **k):
+        import graficos
+        graficos.ORG = ORG
+        return getattr(graficos, cual)(lee(), *a, **k)
+
+    def celda(self, v, fila, col):
+        return v.b[0x3800 + fila * 32 + col]
+
+    def test_el_logotipo_acaba_en_la_fila_4_columna_10(self):
+        """Diecisiete pasadas y el reflejo respecto de 0x3AAA lo dejan en
+        0x388A, que es la MISMA celda que en Circus Charlie y en Magical Tree.
+        Lo unico que cambia entre los tres es el patron por el que empieza:
+        0x40 aqui, 0x41 en Circus y 0x60 en Magical Tree."""
+        v = self.monta("vram_de_la_presentacion")
+        self.assertEqual([self.celda(v, 4, 10 + i) for i in range(3)],
+                         [0x40, 0x41, 0x42])
+        self.assertEqual([self.celda(v, 5, 10 + i) for i in range(11)],
+                         list(range(0x43, 0x4E)))
+        self.assertEqual([self.celda(v, 6, 10 + i) for i in range(12)],
+                         list(range(0x4E, 0x5A)))
+
+    def test_al_borrar_un_rotulo_se_escribe_el_patron_1(self):
+        """En este cartucho la celda vacia es la 1, no la 0 (0x40BF), al reves
+        que en sus dos hermanos. Si se borrara con ceros se veria el dibujo del
+        patron 0 por toda la franja."""
+        v = self.monta("vram_de_la_seleccion")
+        fuera = [self.celda(v, 11, c) for c in range(6, 25)]
+        self.assertEqual(set(fuera), {0x01})
+
+    def test_el_cursor_sale_de_una_ROTACION_y_no_de_una_division(self):
+        import graficos
+        self.assertEqual([graficos.donde_va_el_cursor(k) for k in range(4)],
+                         [0x3A05, 0x3A45, 0x3A85, 0x3AC5])
+        v = self.monta("vram_de_la_seleccion")
+        self.assertEqual(self.celda(v, 16, 5), 0x3E)
+        self.assertEqual(self.celda(v, 16, 6), 0x3F)
+
+    def test_el_bloque_de_la_fase_no_se_elige_con_fase_igual_a_cero(self):
+        """0x6138 y 0x615E hacen `dec a / rra / jr c`, o sea que el primer
+        bloque solo sale con la fase PAR Y MAYOR QUE CERO. Implementado como
+        "si fase == 0" -que es como estaba- el montaje se separa del cartucho
+        en 182 bytes de patrones y 63 de color."""
+        import graficos
+        self.assertEqual(
+            [graficos.elige_por_la_fase(f, "par", "otro") for f in range(6)],
+            ["otro", "otro", "par", "otro", "par", "otro"])
+
+
 class Guiones(unittest.TestCase):
     """El interprete de rotulos de 0x40AE, ejecutado.
 
