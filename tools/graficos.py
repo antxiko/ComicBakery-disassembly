@@ -512,6 +512,26 @@ def pantalla_entera(v, fn, esc=2, con_sprites=False):
     png(w, h, g, fn)
 
 
+def rotulo_del_juego(v, fn, esc=4):
+    """El "COMIC BAKERY" de la pantalla de titulo, recortado con el marco que
+    MIDE la tabla de nombres: el recuadro de las celdas no vacias de las siete
+    primeras filas (las de encima de "(c) KONAMI 1984", que va en la 8). Ley
+    de la serie: el rotulo se dibuja, no se captura."""
+    celdas = [(f, c) for f in range(8) for c in range(32)
+              if v.b[NOMBRES + f * 32 + c]]
+    f0, f1 = min(f for f, _ in celdas), max(f for f, _ in celdas)
+    c0, c1 = min(c for _, c in celdas), max(c for _, c in celdas)
+    alto, ancho = f1 - f0 + 1, c1 - c0 + 1
+    w, h = ancho * 8 * esc, alto * 8 * esc
+    px = lienzo(w, h, (0, 0, 0))
+    for f in range(alto):
+        for c in range(ancho):
+            pa, co = celda(v, v.b[NOMBRES + (f0 + f) * 32 + c0 + c], (f0 + f) // 8)
+            pinta_celda(px, w, c * 8 * esc, f * 8 * esc, pa, co, esc)
+    png(w, h, px, fn)
+    return f0, c0, alto, ancho
+
+
 def main():
     global ORG
     rom = open(sys.argv[1], "rb").read()
@@ -528,6 +548,8 @@ def main():
                     os.path.join(sal, "pantalla-titulo.png"))
 
     logotipo(v, os.path.join(sal, "logotipo-konami.png"))
+    print("rotulo: fila %d, columna %d, %dx%d celdas" % rotulo_del_juego(
+        vram_de_la_seleccion(rom, cursor=False), os.path.join(sal, "rotulo.png")))
     hoja(v, 0, os.path.join(sal, "tiles.png"))
     hoja(v, 2, os.path.join(sal, "tiles-tercio3.png"))
     rango(v, 0x10, 43, os.path.join(sal, "fuente.png"))
