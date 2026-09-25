@@ -80,6 +80,12 @@ test:
 imagenes: $(ROM)
 	@mkdir -p docs/imagenes
 	python3 tools/graficos.py $(ROM) $(ORG) docs/imagenes
+	python3 tools/figuras.py $(ROM) $(ORG) docs/imagenes
+
+# LAS FIGURAS Y LA PANADERIA contra openMSX. Los volcados los hace
+# tools/omsx_partida.tcl, una fase por arranque (el contador va en work/fase.txt).
+coteja_partida: $(ROM)
+	@python3 tools/coteja_partida.py $(ROM) $(WORK)/partida
 
 # LA WEB
 #
@@ -96,4 +102,4 @@ web: $(ROM)
 clean:
 	rm -rf $(WORK)/comicbakery.trace.json $(WORK)/comicbakery.blocks
 
-.PHONY: all comprueba trace listado verify sanity test densidad imagenes web clean
+.PHONY: all comprueba trace listado verify sanity test densidad imagenes coteja_partida web clean

@@ -678,19 +678,19 @@ L 0x48ce el_cuadro_de_la_partida
 B 0x48ce EL CUADRO DE LA PARTIDA, y es el indice del cartucho: VEINTISIETE llamadas seguidas, una por cada cosa que se mueve o se pinta, y al final el reloj. Lo que va primero se pinta antes, asi que el orden ES la profundidad.
 C 0x48d7 el contador de panes
 C 0x491f y el reloj, lo ultimo
-C 0x48ce EL CUADRO DE LA PARTIDA, y el orden importa: primero se apunta donde estan los carros, luego se miran las colisiones contra esa foto, y solo despues se mueve nada
-C 0x48d1 los carros contra el disparo
-C 0x48d4 y el panadero contra el carro
+C 0x48ce EL CUADRO DE LA PARTIDA, y el orden importa: primero se apunta donde estan los mapaches, luego se miran las colisiones contra esa foto, y solo despues se mueve nada
+C 0x48d1 los mapaches contra el disparo
+C 0x48d4 y el panadero contra el mapache
 C 0x48da que sube solo cuando toca
 C 0x48dd el panadero, con lo que haya leido el mando
 C 0x48e0 si esta saltando
 C 0x48e3 el indicador de la maquina
 C 0x48e6 el pan al horno
-C 0x48e9 los tres carros
-C 0x48ec el disparo contra el carro, que es la otra mitad de la pareja de 0x48D1
-C 0x48ef y el carro contra la cinta
-C 0x48f2 el reloj de la jornada puede soltar un carro nuevo
-C 0x48f5 los dos carros contra lo que haya
+C 0x48e9 los tres mapaches
+C 0x48ec el disparo contra el mapache, que es la otra mitad de la pareja de 0x48D1
+C 0x48ef y el mapache contra la cinta
+C 0x48f2 el reloj de la jornada puede soltar un mapache nuevo
+C 0x48f5 los dos mapaches contra lo que haya
 C 0x48f8 MIRA POR DONDE VA LA MUSICA: este cartucho consulta el puntero de una voz para decidir, que no lo hace ninguno de sus dos hermanos
 C 0x48fb el premio extra, si toca
 C 0x4901 los ocho bichos
@@ -699,10 +699,10 @@ C 0x4907 el aviso, parpadeando
 C 0x490a las tres cosas
 C 0x490d el gato
 C 0x4910 si el jugador dispara
-C 0x4913 el carro contra el panadero
+C 0x4913 el mapache contra el panadero
 C 0x4916 y el que se sale, retirado
 C 0x4919 la cosa que sube
-C 0x491c el carro que ande en el estado 10
+C 0x491c el mapache que ande en el estado 10
 C 0x4927 en los otros siete no se toca
 C 0x4929 el par de 0xE102 y 0xE103
 C 0x492d el de arriba a cero
@@ -1204,17 +1204,17 @@ C 0x50e3 y a la copia en RAM
 C 0x50e6 dos celdas mas
 C 0x50eb a la VRAM y a la copia a la vez
 C 0x50f7 los tres bytes de su ficha
-L 0x5117 mueve_los_tres_carros
-B 0x5117 LOS TRES CARROS de 0xE098, cada uno con su estado en 0xE110 y ocho bytes de separacion. El estado se recorta con `and 03eh` -cinco bits, sin el 0 ni el 6- y eso indexa la tabla de despacho de 0x5138 por la puerta de 0x4098: el mismo despachador de escenas, reutilizado para las piezas del decorado.
-C 0x5117 el primer carro
+L 0x5117 mueve_los_tres_mapaches
+B 0x5117 LOS TRES MAPACHES de 0xE098, cada uno con su estado en 0xE110 y ocho bytes de separacion. El estado se recorta con `and 03eh` -cinco bits, sin el 0 ni el 6- y eso indexa la tabla de despacho de 0x5138 por la puerta de 0x4098: el mismo despachador de escenas, reutilizado para las piezas del decorado.
+C 0x5117 el primer mapache
 C 0x511a y su estado
 C 0x511d tres
 C 0x5123 cinco bits del estado
-C 0x5126 la tabla de despacho de los carros
+C 0x5126 la tabla de despacho de los mapaches
 C 0x5129 y se salta al que toque
-C 0x5130 ocho bytes por carro
+C 0x5130 ocho bytes por mapache
 C 0x5133 y dos de estado
-L 0x51d1 marca_el_estado_del_carro
+L 0x51d1 marca_el_estado_del_mapache
 C 0x51d3 se dejan los bits 0, 6 y 7
 C 0x51d5 y se mete el estado nuevo
 
@@ -1222,47 +1222,47 @@ C 0x51d5 y se mete el estado nuevo
 # ======================================================================
 # COMENTARIOS DE LINEA
 # ======================================================================
-B 0x52ce PONER EL SEGUNDO SPRITE DE UN CARRO, dieciseis pixeles mas alla: se copian la fila, la columna corrida y el color al hueco siguiente. Un carro son dos sprites.
+B 0x52ce PONER EL SEGUNDO SPRITE DE UN MAPACHE, dieciseis pixeles mas alla: se copian la fila, la columna corrida y el color al hueco siguiente. Un mapache son dos sprites.
 C 0x52d1 dieciseis pixeles mas alla
 C 0x52d4 el color
 C 0x52d7 la fila
 C 0x52d9 la columna corrida
-L 0x534f busca_el_carro_en_el_estado_10
-B 0x534f BUSCAR EL CARRO QUE ESTE EN EL ESTADO 0x10, entre los dos de 0xE0A1 y 0xE0A9. Si su fila esta fuera de la banda 0x30..0xE0 se le clava el patron 0x47.
-C 0x5355 dos carros
+L 0x534f busca_el_mapache_en_el_estado_10
+B 0x534f BUSCAR EL MAPACHE QUE ESTE EN EL ESTADO 0x10, entre los dos de 0xE0A1 y 0xE0A9. Si su fila esta fuera de la banda 0x30..0xE0 se le clava el patron 0x47.
+C 0x5355 dos mapaches
 C 0x535a el estado 0x10
-C 0x5360 el otro carro
+C 0x5360 el otro mapache
 C 0x536d el patron de fuera de sitio
 
 
 # ======================================================================
 # COMENTARIOS DE LINEA
 # ======================================================================
-L 0x5446 guarda_la_columna_de_los_carros
-B 0x5446 GUARDAR LA COLUMNA DE LOS TRES CARROS ACTIVOS -los que tengan el bit 7- en 0xE116, para poder consultarla sin recorrer sus fichas. Tres punteros a la vez: DE por los sprites, BC por la copia y HL por los estados.
+L 0x5446 guarda_la_columna_de_los_mapaches
+B 0x5446 GUARDAR LA COLUMNA DE LOS TRES MAPACHES ACTIVOS -los que tengan el bit 7- en 0xE116, para poder consultarla sin recorrer sus fichas. Tres punteros a la vez: DE por los sprites, BC por la copia y HL por los estados.
 C 0x5452 el bit 7: esta activo
-C 0x5459 ocho bytes por carro
+C 0x5459 ocho bytes por mapache
 C 0x545d y dos de estado
-L 0x5464 retira_el_carro_que_se_sale
-B 0x5464 RETIRAR EL CARRO QUE SE SALE: si al sumarle 0x10 a su columna desborda, se le ponen a sus DOS sprites la fila 0xE0 -fuera de la pantalla- y su estado pasa a (0x00, 0x80).
+L 0x5464 retira_el_mapache_que_se_sale
+B 0x5464 RETIRAR EL MAPACHE QUE SE SALE: si al sumarle 0x10 a su columna desborda, se le ponen a sus DOS sprites la fila 0xE0 -fuera de la pantalla- y su estado pasa a (0x00, 0x80).
 C 0x546d el bit 7: esta activo
 C 0x5472 dieciseis mas
 C 0x5474 si no desborda, sigue dentro
 C 0x5478 0xE0: fuera de la pantalla
 C 0x547b y el segundo sprite, cuatro bytes mas alla
 C 0x5484 su estado nuevo
-C 0x548a ocho bytes por carro
+C 0x548a ocho bytes por mapache
 L 0x5492 mira_si_el_sonido_va_por_c3
-B 0x5492 UNA COMPROBACION CURIOSA: de la fase 2 en adelante y solo en las impares, mira si la VOZ de 0xE010 esta en uno y si el byte al que apunta su partitura es 0xC3. O sea, el juego cambia el estado de los carros mirando POR DONDE VA LA MUSICA: lo que pasa en pantalla va a compas con lo que suena.
+B 0x5492 UNA COMPROBACION CURIOSA: de la fase 2 en adelante y solo en las impares, mira si la VOZ de 0xE010 esta en uno y si el byte al que apunta su partitura es 0xC3. O sea, el juego cambia el estado de los mapaches mirando POR DONDE VA LA MUSICA: lo que pasa en pantalla va a compas con lo que suena.
 C 0x5492 el numero de fase
 C 0x5495 de la segunda en adelante
 C 0x5498 y solo las impares
 C 0x549a la voz de 0xE010
 C 0x549f por donde va su partitura
 C 0x54a4 el byte 0xC3 es la marca
-C 0x54ad tres carros
+C 0x54ad tres mapaches
 C 0x54b7 y se les pone el estado 0x20
-L 0x54c5 arranca_un_carro
+L 0x54c5 arranca_un_mapache
 C 0x54c6 cinco bits del estado
 C 0x54c8 el estado 4
 C 0x54cc el estado nuevo, 2
@@ -1275,24 +1275,24 @@ C 0x54d9 o la otra
 # ======================================================================
 C 0x54de cuatro bytes: el segundo sprite
 C 0x54e4 y el plazo, a 18
-L 0x54e8 arranca_un_carro_por_el_reloj
-B 0x54e8 ARRANCAR UN CARRO SEGUN EL CONTADOR DE CUADROS, y aqui el reparto es por VALOR EXACTO: el carro 1 sale cuando el contador esta a cero, el 2 cuando vale 0x80 y el 3 cuando vale 0x40. O sea, uno cada 128 cuadros, escalonados.
+L 0x54e8 arranca_un_mapache_por_el_reloj
+B 0x54e8 ARRANCAR UN MAPACHE SEGUN EL CONTADOR DE CUADROS, y aqui el reparto es por VALOR EXACTO: el mapache 1 sale cuando el contador esta a cero, el 2 cuando vale 0x80 y el 3 cuando vale 0x40. O sea, uno cada 128 cuadros, escalonados.
 C 0x54e8 el estado del salto
 C 0x54ed la direccion guardada
 C 0x54f8 el contador de cuadros
-C 0x54fb el valor cero: el primer carro
+C 0x54fb el valor cero: el primer mapache
 C 0x5503 el 0x80: el segundo
 C 0x550c y el 0x40: el tercero
 C 0x550f el bit 7: esta activo
 C 0x5513 cinco bits del estado
 C 0x5515 el estado 4
 C 0x5518 y pasa al 6
-L 0x5520 mira_el_disparo_contra_el_carro
-B 0x5520 EL DISPARO CONTRA UN CARRO, de la fase 2 en adelante. La caja no se compara con dos `cp`: se RESTA el margen dos veces -0x10 y luego 0x18- y basta con mirar el acarreo, que es mas corto. Si acierta, el carro pasa al estado 8 con un plazo de 30.
+L 0x5520 mira_el_disparo_contra_el_mapache
+B 0x5520 EL DISPARO CONTRA UN MAPACHE, de la fase 2 en adelante. La caja no se compara con dos `cp`: se RESTA el margen dos veces -0x10 y luego 0x18- y basta con mirar el acarreo, que es mas corto. Si acierta, el mapache pasa al estado 8 con un plazo de 30.
 C 0x5520 el numero de fase
 C 0x5523 de la segunda en adelante
 C 0x5526 la recarga
-C 0x5534 cruzado con el estado del carro
+C 0x5534 cruzado con el estado del mapache
 C 0x553a el estado 4
 C 0x553d la columna del disparo
 C 0x5553 el bit 0: por que lado se compara
@@ -1302,13 +1302,13 @@ C 0x5525 en la primera no hay disparo
 C 0x5529 si esta a cero, no hay nada que mirar
 C 0x552c dos bytes mas alla
 C 0x5530 y lo mismo con el segundo
-C 0x5531 el estado del carro
+C 0x5531 el estado del mapache
 C 0x5535 el bit 0 del cruce al acarreo: si difieren, miran a lados distintos
 C 0x5536 y entonces no chocan
 C 0x5538 los bits 1 a 5 son el estado
 C 0x553c solo el 4 recibe el disparo
 C 0x5540 guardada en C
-C 0x5545 cruzada con la del carro
+C 0x5545 cruzada con la del mapache
 C 0x5547 el bit 7 del cruce
 C 0x5548 iguales: se compara directo
 C 0x554b menos sesenta y cuatro
@@ -1319,14 +1319,14 @@ C 0x5555 por el izquierdo, tal cual
 C 0x5557 y por el derecho, con los dos cambiados
 C 0x555a la distancia entre los dos
 C 0x555f fuera de la caja: no toca
-C 0x5562 se le marca al carro
+C 0x5562 se le marca al mapache
 C 0x5566 el byte siguiente
 C 0x5567 y los dos patrones que le tocan
 C 0x556e los cinco bits del estado
 C 0x5570 el estado 10 tiene su propio camino
 C 0x5578 el bit 0 decide el sentido
 C 0x5579 sin acarreo, la primera pareja
-C 0x557e se guarda el puntero del carro
+C 0x557e se guarda el puntero del mapache
 C 0x557f la columna
 C 0x5581 y la fila
 C 0x5584 el atributo siguiente
@@ -1339,7 +1339,7 @@ C 0x556a y treinta cuadros de plazo
 # ======================================================================
 # COMENTARIOS DE LINEA
 # ======================================================================
-B 0x556d EL CARRO ALCANZADO: su estado 0x10 da 300 puntos y los demas 200 o 300 segun el valor, con el sonido 3. Y la espera que se le pone despues DEPENDE DE LA FASE: el numero de fase -con tope en 6- se rota cuatro veces y se niega, o sea que en las fases altas el carro vuelve mucho antes.
+B 0x556d EL MAPACHE ALCANZADO: su estado 0x10 da 300 puntos y los demas 200 o 300 segun el valor, con el sonido 3. Y la espera que se le pone despues DEPENDE DE LA FASE: el numero de fase -con tope en 6- se rota cuatro veces y se niega, o sea que en las fases altas el mapache vuelve mucho antes.
 C 0x5575 una pareja de patrones
 C 0x557b o la otra
 C 0x5582 dieciseis pixeles mas alla: el segundo sprite
@@ -1353,13 +1353,13 @@ C 0x55b7 cuatro rotaciones
 C 0x55bb y en negativo: la espera
 C 0x55be se marca el bit 6
 C 0x55c2 y el estado nuevo, 10
-L 0x55c8 el_carro_del_estado_10
+L 0x55c8 el_mapache_del_estado_10
 C 0x55c9 se dejan los dos bits de arriba
 C 0x55cb y el estado 0x12
 C 0x55d2 trescientos puntos
 C 0x55d8 y el sonido
-L 0x55de mira_el_carro_contra_la_cinta
-B 0x55de EL CARRO CONTRA LA CINTA. La columna del carro se rota tres veces -o sea, se divide entre ocho- y con 0x3E de desplazamiento indexa el bufer de 0xE2xx: si ahi hay un 0xB0, es que en esa celda hay algo. Otra vez el juego consultando lo que HAY DIBUJADO en vez de un mapa aparte.
+L 0x55de mira_el_mapache_contra_la_cinta
+B 0x55de EL MAPACHE CONTRA LA CINTA. La columna del mapache se rota tres veces -o sea, se divide entre ocho- y con 0x3E de desplazamiento indexa el bufer de 0xE2xx: si ahi hay un 0xB0, es que en esa celda hay algo. Otra vez el juego consultando lo que HAY DIBUJADO en vez de un mapa aparte.
 C 0x55de la bandera de 0xE05B
 C 0x55ec por debajo de cuatro
 C 0x55f0 el bit 0 del estado
@@ -1377,7 +1377,7 @@ C 0x560b mas el ajuste
 C 0x5613 invertido y cruzado con el mapa de ocupacion
 C 0x5615 guardado en 0xE058
 C 0x55e2 con la bandera puesta no se mira la cinta
-C 0x55e3 el estado del carro
+C 0x55e3 el estado del mapache
 C 0x55e6 y su posicion
 C 0x55ea los tres de abajo, que son la parte fina
 C 0x55ee de cuatro en adelante, no esta encarado a una celda
@@ -1396,26 +1396,26 @@ C 0x5610 el mapa de ocupacion
 C 0x5614 se apaga ese bit
 C 0x5618 y se vuelve
 C 0x561a el byte siguiente
-C 0x561b los dos patrones del carro
+C 0x561b los dos patrones del mapache
 C 0x562a si ya esta en el 14, nada
 C 0x562c y si no, se le pone
 C 0x5632 a cero, mira a un lado
 C 0x561e el plazo, a seis
 C 0x5620 y el estado nuevo, 12
-L 0x5625 el_carro_llega_al_final
-B 0x5625 EL CARRO QUE LLEGA AL FINAL: pasa al estado 14, deja el bit 0 puesto o no segun la direccion del panadero, y da 120 puntos con el sonido 3.
+L 0x5625 el_mapache_llega_al_final
+B 0x5625 EL MAPACHE QUE LLEGA AL FINAL: pasa al estado 14, deja el bit 0 puesto o no segun la direccion del panadero, y da 120 puntos con el sonido 3.
 C 0x5626 cinco bits del estado
 C 0x5628 el estado nuevo, 14
 C 0x562f la direccion del panadero
 C 0x5637 se limpia el bit 0
 C 0x563b ciento veinte puntos
-L 0x5646 mira_los_dos_carros_contra_algo
-B 0x5646 LOS DOS CARROS CONTRA LO QUE HAY EN LA CINTA, con la misma idea de antes: la columna del carro se divide entre ocho (`srl a` tres veces), se le suma 0xC0 y eso apunta al bufer de 0xE2xx. Si ahi hay un 0x69 y las CUATRO celdas de al lado estan a cero, la cosa cuenta.
+L 0x5646 mira_los_dos_mapaches_contra_algo
+B 0x5646 LOS DOS MAPACHES CONTRA LO QUE HAY EN LA CINTA, con la misma idea de antes: la columna del mapache se divide entre ocho (`srl a` tres veces), se le suma 0xC0 y eso apunta al bufer de 0xE2xx. Si ahi hay un 0x69 y las CUATRO celdas de al lado estan a cero, la cosa cuenta.
 C 0x5646 el compas de ocho
 C 0x5649 en el paso 7 no
 C 0x5650 cinco bits del estado
 C 0x5652 el estado 0x10
-C 0x565d dos carros
+C 0x565d dos mapaches
 C 0x5666 el estado 4
 C 0x566b el bit 2
 C 0x566f sesenta y cuatro menos
@@ -1437,14 +1437,14 @@ C 0x5691 a cero
 C 0x5692 se van juntando con OR
 C 0x5699 y solo si las cuatro estan vacias se sigue
 C 0x569b se tira el puntero guardado
-C 0x569c el segundo carro
+C 0x569c el segundo mapache
 C 0x569f dos bytes de estado
 
 
 # ======================================================================
 # COMENTARIOS DE LINEA
 # ======================================================================
-B 0x56a4 EL CARRO DEJA SU PAN EN LA CINTA: se le pone el estado 0x10 y el progreso mas 0x10, y se escriben CUATRO patrones a mano -0x5B, 0xB0, 0x6B y uno que alterna entre 0xE8 y 0xAC con el bit 3 del contador de cuadros-. O sea que el pan recien puesto parpadea.
+B 0x56a4 EL MAPACHE DEJA SU PAN EN LA CINTA: se le pone el estado 0x10 y el progreso mas 0x10, y se escriben CUATRO patrones a mano -0x5B, 0xB0, 0x6B y uno que alterna entre 0xE8 y 0xAC con el bit 3 del contador de cuadros-. O sea que el pan recien puesto parpadea.
 C 0x56a7 el estado nuevo, 0x10
 C 0x56ab el progreso
 C 0x56ae mas dieciseis
@@ -1474,7 +1474,7 @@ C 0x56ce y el byte del color
 C 0x56d2 uno de cada ocho cuadros
 C 0x56d6 con el bit puesto, el primero
 C 0x56da el que haya salido
-C 0x56dc los atributos de los carros
+C 0x56dc los atributos de los mapaches
 C 0x56df y sus estados
 C 0x56e4 el estado
 C 0x56e7 apagado: ese no cuenta
@@ -1482,10 +1482,10 @@ C 0x56e9 los cinco bits
 C 0x56ed en el 10 tampoco
 C 0x56f1 ni en el 8
 C 0x56f5 ni en el 14
-C 0x56f9 ni en el 0x12: son los cuatro en que el carro ya no esta en juego
-L 0x56dc mira_los_carros_contra_el_disparo
-B 0x56dc LOS TRES CARROS CONTRA EL DISPARO. Se saltan los estados 10, 8, 14 y 0x12 -los que ya estan resueltos- y, segun el estado sea 0x10 o no, se usa una caja u otra: la de 0x572D o la de 0x5731. Cuatro `cp` seguidos en vez de una tabla.
-C 0x56e2 tres carros
+C 0x56f9 ni en el 0x12: son los cuatro en que el mapache ya no esta en juego
+L 0x56dc mira_los_mapaches_contra_el_disparo
+B 0x56dc LOS TRES MAPACHES CONTRA EL DISPARO. Se saltan los estados 10, 8, 14 y 0x12 -los que ya estan resueltos- y, segun el estado sea 0x10 o no, se usa una caja u otra: la de 0x572D o la de 0x5731. Cuatro `cp` seguidos en vez de una tabla.
+C 0x56e2 tres mapaches
 C 0x56e5 el bit 7: esta activo
 C 0x56eb el estado 10
 C 0x56ef el 8
@@ -1497,9 +1497,9 @@ C 0x570c o la otra
 C 0x5710 cruzadas las direcciones
 C 0x5715 sesenta y cuatro menos
 C 0x5717 y la banda util
-C 0x5725 ocho bytes por carro
-L 0x5735 mira_el_panadero_contra_el_carro
-B 0x5735 EL PANADERO CONTRA UN CARRO. Con el bit 6 puesto el carro ya estaba resuelto y se va por otro lado; si no, se apaga la senal de partida y suena el 0x99.
+C 0x5725 ocho bytes por mapache
+L 0x5735 mira_el_panadero_contra_el_mapache
+B 0x5735 EL PANADERO CONTRA UN MAPACHE. Con el bit 6 puesto el mapache ya estaba resuelto y se va por otro lado; si no, se apaga la senal de partida y suena el 0x99.
 C 0x5735 la posicion del panadero
 C 0x573d su caja
 C 0x574a el bit 6: ya resuelto
@@ -1650,9 +1650,9 @@ C 0x5928 al llegar a cero, se acabo
 C 0x593c el segundo bloque, 0x23 mas arriba
 C 0x593f y de dos celdas
 L 0x5952 el_panadero_cae
-B 0x5952 EL PANADERO QUE CAE. La direccion la decide la distancia al carro: si no desborda va a un lado (0x08, patron 0x12) y si desborda al otro (0xF8, patron 0x92). Luego se copian sus cuatro bytes de sprite al hueco de 0xE090.
+B 0x5952 EL PANADERO QUE CAE. La direccion la decide la distancia al mapache: si no desborda va a un lado (0x08, patron 0x12) y si desborda al otro (0xF8, patron 0x92). Luego se copian sus cuatro bytes de sprite al hueco de 0xE090.
 C 0x5958 su posicion
-C 0x595d la del carro
+C 0x595d la del mapache
 C 0x5961 ocho a un lado
 C 0x5963 y su patron
 C 0x5967 o al otro
@@ -1675,7 +1675,7 @@ C 0x5974 la pose 0x34
 C 0x5979 el bloque de atributos
 C 0x597c y el de al lado
 C 0x5982 copiados tal cual
-C 0x5984 el estado del carro
+C 0x5984 el estado del mapache
 C 0x598a los dos patrones que le tocan
 C 0x598d el byte de antes
 C 0x5990 y el segundo sprite
@@ -2023,15 +2023,15 @@ L 0x70d6 monta_el_decorado_de_la_fase
 C 0x70d9 el destino en la VRAM
 C 0x70eb el tercer bloque
 C 0x70f4 una franja
-L 0x5411 mueve_los_carros_a_su_ritmo
-B 0x5411 EL AVANCE DE LOS CARROS: un pixel en general, pero OCHO cuando el compas de ocho vale 7 y el estado no es 4. O sea que cada ocho cuadros pegan un tiron.
+L 0x5411 mueve_los_mapaches_a_su_ritmo
+B 0x5411 EL AVANCE DE LOS MAPACHES: un pixel en general, pero OCHO cuando el compas de ocho vale 7 y el estado no es 4. O sea que cada ocho cuadros pegan un tiron.
 C 0x5412 el bit 7: esta activo
 C 0x5416 cinco bits del estado
 C 0x5418 un pixel
 C 0x541a el estado 4
 C 0x5421 el paso 7 del compas
 C 0x5425 ocho pixeles de tiron
-L 0x5431 corre_los_dos_sprites_del_carro
+L 0x5431 corre_los_dos_sprites_del_mapache
 C 0x5433 aplicado al primer sprite
 C 0x5436 cuatro bytes: el segundo
 C 0x543a y al segundo, igual
@@ -2043,7 +2043,7 @@ C 0x543a y al segundo, igual
 C 0x53db cinco bits del estado
 C 0x53dd el estado 0x12
 C 0x53e1 el patron de fuera de sitio
-C 0x54bb ocho bytes por carro
+C 0x54bb ocho bytes por mapache
 C 0x54bf y dos de estado
 C 0x7a32 el estado de esta voz
 C 0x7a39 dos registros por canal
@@ -2074,7 +2074,7 @@ C 0x4524 donde va el cursor
 C 0x4528 los dos patrones
 C 0x4df3 el contador de 0xE094
 C 0x4df7 por debajo de seis, dos mas
-C 0x543f ocho bytes por carro
+C 0x543f ocho bytes por mapache
 C 0x6138 un bloque
 C 0x613b el numero de fase elige
 C 0x6145 o el otro
@@ -2143,18 +2143,18 @@ L 0x4c1e salto_con_desplazamiento
 L 0x4e51 monta_el_bloque_del_decorado
 L 0x4f89 libera_el_bit_del_bicho
 L 0x51d2 marca_el_estado
-L 0x52ce pon_el_segundo_sprite_del_carro
-L 0x53b6 coloca_el_carro_volcado
-L 0x53d4 repinta_el_carro
-L 0x53f2 hueco_del_carro
-L 0x53ff mira_el_carro_contra_el_panadero
+L 0x52ce pon_el_segundo_sprite_del_mapache
+L 0x53b6 coloca_el_mapache_volcado
+L 0x53d4 repinta_el_mapache
+L 0x53f2 hueco_del_mapache
+L 0x53ff mira_el_mapache_contra_el_panadero
 
 
 # ======================================================================
 # COMENTARIOS DE LINEA
 # ======================================================================
-L 0x54cb arranca_el_carro_en_el_estado_2
-L 0x54d2 pone_los_dos_patrones_del_carro
+L 0x54cb arranca_el_mapache_en_el_estado_2
+L 0x54d2 pone_los_dos_patrones_del_mapache
 L 0x59aa remata_la_caida
 L 0x60a4 rellena_con_el_patron
 L 0x60a6 rellena_la_franja_del_titulo
@@ -2192,7 +2192,7 @@ D 0x44ae 0x44b6 valores_iniciales  los ocho bytes que 0x4495 lleva de un `ldir` 
 D 0x4688 0x46a3 indices_del_reloj  nueve entradas de tres bytes. 0x4671 apunta a 0x468A, que es el ULTIMO byte de la primera, porque las copia con `lddr`, o sea hacia atras: por eso la tabla empieza dos bytes antes de la direccion que aparece en el codigo
 D 0x474f 0x4757 registros_del_vdp  los ocho valores que 0x4733 copia a 0xE038 y 0x473E baja al VDP uno a uno con WRTVDP
 D 0x488e 0x4892 modos_de_juego  cuatro bytes, uno por opcion del menu; 0x4860 los indexa con la opcion de (0xE042) y deja el elegido en (0xE002). Son 0x40 0x60 0x50 0x70, los mismos cuatro y en el mismo orden que Magical Tree (RC-713)
-D 0x4a1f 0x4a28 estado_inicial_de_los_carros  los nueve bytes que 0x494C lleva de un `ldir` a 0xE110
+D 0x4a1f 0x4a28 estado_inicial_de_los_mapaches  los nueve bytes que 0x494C lleva de un `ldir` a 0xE110
 D 0x4bb3 0x4bbb umbrales  ocho valores que suben (0x03 0x07 0x11 0x1A 0x24 0x33 0x3C 0x4C); 0x4B72 los pasa en DE
 D 0x4cc3 0x4ccf arco_del_salto  doce desplazamientos que van de +8 a -8 pasando por cero; 0x4CA1 los indexa con el paso de (0xE104) y se los suma al primer sprite
 D 0x4ef6 0x4ef8 pareja_0x4EF6  los dos bytes que 0x4EED vuelca con `ld bc,00002h`
@@ -2200,12 +2200,12 @@ D 0x4ef8 0x4efc cuatro_indices  0x4EBE entra aqui con `suma_a_a_hl` y saca un by
 D 0x4efc 0x4f0e dieciocho_bytes_a_0xE181  los que 0x4DFE copia con `ld bc,00012h`
 D 0x5103 0x510f patrones_0x5103  doce bytes; 0x50D5 los indexa y escribe el primero en la fila 0x39 de la VRAM
 D 0x510f 0x5117 ocho_bytes_0x510F  0x502C los carga en DE
-D 0x5138 0x514c tabla_de_despacho_de_los_carros  diez punteros. La declara el .entries con `!tabla`: cierra en 0x514C, su entrada mas baja, y los diez destinos son las diez rutinas de estado del carro, que sin esto quedaban sin trazar
-D 0x5242 0x525f arco_del_carro  29 desplazamientos, de +3 a -3 pasando por cero. 0x521D los apunta con `ld hl,05241h`, un byte ANTES, porque la rutina hace `inc hl` antes de leer
-D 0x53ce 0x53d4 patrones_del_carro_volcado  0x47 0x34 0x38 0x40 0x4A 0x56. 0x539B la apunta con `ld hl,053cdh`, un byte ANTES: 0x53CD es el ultimo byte del `jp` de 0x53CB, o sea que la tabla de verdad empieza en 0x53CE y el indice que llega vale 1 o mas
+D 0x5138 0x514c tabla_de_despacho_de_los_mapaches  diez punteros. La declara el .entries con `!tabla`: cierra en 0x514C, su entrada mas baja, y los diez destinos son las diez rutinas de estado del mapache, que sin esto quedaban sin trazar
+D 0x5242 0x525f arco_del_mapache  29 desplazamientos, de +3 a -3 pasando por cero. 0x521D los apunta con `ld hl,05241h`, un byte ANTES, porque la rutina hace `inc hl` antes de leer
+D 0x53ce 0x53d4 patrones_del_mapache_volcado  0x47 0x34 0x38 0x40 0x4A 0x56. 0x539B la apunta con `ld hl,053cdh`, un byte ANTES: 0x53CD es el ultimo byte del `jp` de 0x53CB, o sea que la tabla de verdad empieza en 0x53CE y el indice que llega vale 1 o mas
 D 0x572d 0x5731 caja_0x572D  los cuatro bytes de una caja de choque; 0x5705 la elige
 D 0x5731 0x5735 caja_0x5731  los de la otra; 0x570C la elige cuando el tipo es 0x10
-D 0x575a 0x575e caja_0x575A  la caja del carro; 0x573D se la pasa a caja_parametrizada
+D 0x575a 0x575e caja_0x575A  la caja del mapache; 0x573D se la pasa a caja_parametrizada
 D 0x57bc 0x57c2 mascaras_de_las_puertas  tres parejas; 0x57A1 la llama "la segunda, encadenada" y saca de ella el mapa de ocupacion en C y el valor en B
 D 0x57c2 0x57da tabla_de_puertas  24 bytes; 0x579A la llama "la primera tabla" y de ella sale el indice con el que entra en la de arriba
 D 0x58f9 0x58fc tres_puertas  los tres bytes 0x11 0x24 0x3D, que son los segundos de las tres parejas de 0x57BC; 0x5897 los pasa en DE para recorrer "tres puertas"
@@ -2248,40 +2248,40 @@ D 0x7604 0x799c mapa_de_la_panaderia  92 columnas de diez celdas. No es una esti
 # ======================================================================
 # COMENTARIOS DE LINEA
 # ======================================================================
-L 0x514c carro_estado_0_quieto
-L 0x515a gasta_el_plazo_del_carro
-L 0x517c pone_los_dos_sprites_del_carro
-L 0x51ca carro_estado_1_cuenta_atras
+L 0x514c mapache_estado_0_quieto
+L 0x515a gasta_el_plazo_del_mapache
+L 0x517c pone_los_dos_sprites_del_mapache
+L 0x51ca mapache_estado_1_cuenta_atras
 L 0x51cb gasta_el_plazo_sin_cambiar_de_juego
-L 0x51d9 carro_estado_2_rodando
-L 0x51e5 elige_el_patron_de_la_rueda
+L 0x51d9 mapache_estado_2_rodando
+L 0x51e5 elige_el_paso_del_mapache
 L 0x51ff deja_los_dos_sprites
-L 0x520e carro_estado_3_da_la_vuelta
-L 0x5217 carro_estado_4_sube_o_baja
+L 0x520e mapache_estado_3_da_la_vuelta
+L 0x5217 mapache_estado_4_sube_o_baja
 L 0x522e mira_si_toca_darse_la_vuelta
-L 0x525f carro_estado_5_marca_la_celda
+L 0x525f mapache_estado_5_marca_la_celda
 L 0x5273 aplica_el_desplazamiento
 L 0x5282 borra_el_bit_6_del_estado
-L 0x5285 carro_estado_6_choca_con_el_panadero
-L 0x52a5 corre_el_carro_y_lo_repinta
-L 0x52ca carro_volcado_con_el_otro_color
-L 0x52dd carro_estado_7_un_paso_arriba_o_abajo
+L 0x5285 mapache_estado_6_choca_con_el_panadero
+L 0x52a5 corre_el_mapache_y_lo_repinta
+L 0x52ca mapache_volcado_con_el_otro_color
+L 0x52dd mapache_estado_7_un_paso_arriba_o_abajo
 L 0x52e6 suma_el_paso_a_la_fila
-L 0x52f0 carro_estado_8_camino_del_horno
-L 0x5318 busca_el_carro_en_la_lista_de_ocho
+L 0x52f0 mapache_estado_8_camino_del_horno
+L 0x5318 busca_el_mapache_en_la_lista_de_ocho
 L 0x5320 recorre_la_lista_de_ocho
-L 0x5329 apunta_el_carro_en_0xE12A
-L 0x536d vuelca_el_carro
-L 0x538c carro_estado_9_volcado
+L 0x5329 apunta_el_mapache_en_0xE12A
+L 0x536d vuelca_el_mapache
+L 0x538c mapache_estado_9_volcado
 L 0x53bb coloca_los_dos_sprites_del_volcado
 L 0x53ca sale_del_estado_9
 L 0x56cf parpadea_el_patron
-B 0x514c LAS DIEZ RUTINAS DE ESTADO DEL CARRO. El recorrido de 0x5117 pasa por los tres carros y, de cada uno, coge los cinco bits de su estado (`and 03eh`, que ya viene multiplicado por dos) y se salta a la entrada que toque de la tabla de 0x5138. Son diez, de la 0 a la 9, y se despachan con `jp (hl)`: por eso el trazado no llegaba a ninguna hasta declarar la tabla. Las tres primeras trabajan con el juego alternativo de registros -HL' apunta a la ficha del carro en 0xE098 y DE a su estado en 0xE110-, que es lo que explica los `exx` sueltos del principio de cada una.
-B 0x51ca EL PLAZO COMPARTIDO: gasta un cuadro del plazo del carro y, cuando llega a cero, le deja el estado 4. Tres estados distintos (3, 4 y 5) empiezan llamando aqui, asi que el plazo esta escrito UNA vez. La puerta de 0x51CB es la misma sin el `exx` de delante, para quien ya viene con los registros cambiados.
-B 0x51d9 EL CARRO RODANDO: el bit 0 de su estado dice hacia donde va -+1 o -1- y el contador de cuadros elige el patron de la rueda, de modo que parezca que gira. Al final deja los dos sprites que forman el carro, uno dieciseis pixeles debajo del otro.
-B 0x5285 EL CHOQUE CON EL PANADERO: solo se mira cuando (0xE00B) vale 7. Si el carro esta en su ultimo paso, se vuelca; si no, sigue corriendo y se repintan sus dos sprites con el color que le toque.
-B 0x52f0 CAMINO DEL HORNO: gasta el plazo y, al agotarse, vuelca el carro. Mientras dura, cada 0x40 cuadros lo sube ocho pixeles y busca su hueco en la lista de ocho de 0xE063 para dejarlo apuntado en 0xE12A.
-B 0x538c EL CARRO YA VOLCADO: uno de cada cuatro cuadros gasta el plazo, y con lo que queda saca de la tabla de 0x53CE el patron que le toca. Segun la fase, el carro volcado se dibuja con un sprite o con los dos.
+B 0x514c LAS DIEZ RUTINAS DE ESTADO DEL MAPACHE. El recorrido de 0x5117 pasa por los tres mapaches y, de cada uno, coge los cinco bits de su estado (`and 03eh`, que ya viene multiplicado por dos) y se salta a la entrada que toque de la tabla de 0x5138. Son diez, de la 0 a la 9, y se despachan con `jp (hl)`: por eso el trazado no llegaba a ninguna hasta declarar la tabla. Las tres primeras trabajan con el juego alternativo de registros -HL' apunta a la ficha del mapache en 0xE098 y DE a su estado en 0xE110-, que es lo que explica los `exx` sueltos del principio de cada una.
+B 0x51ca EL PLAZO COMPARTIDO: gasta un cuadro del plazo del mapache y, cuando llega a cero, le deja el estado 4. Tres estados distintos (3, 4 y 5) empiezan llamando aqui, asi que el plazo esta escrito UNA vez. La puerta de 0x51CB es la misma sin el `exx` de delante, para quien ya viene con los registros cambiados.
+B 0x51d9 EL MAPACHE ANDANDO: el bit 0 de su estado dice hacia donde va -+1 o -1- y el contador de cuadros elige el paso de la animacion: 0, 8 o 16 patrones desde 0x78 hacia la izquierda, y 0x3C mas alla hacia la derecha. Al final deja los dos sprites que forman el mapache, el segundo dieciseis pixeles A LA DERECHA y con el patron cuatro mas alla. Dibujado desde la ROM (tools/figuras.py) y cotejado contra openMSX.
+B 0x5285 EL CHOQUE CON EL PANADERO: solo se mira cuando (0xE00B) vale 7. Si el mapache esta en su ultimo paso, se vuelca; si no, sigue corriendo y se repintan sus dos sprites con el color que le toque.
+B 0x52f0 CAMINO DEL HORNO: gasta el plazo y, al agotarse, vuelca el mapache. Mientras dura, cada 0x40 cuadros lo sube ocho pixeles y busca su hueco en la lista de ocho de 0xE063 para dejarlo apuntado en 0xE12A.
+B 0x538c EL MAPACHE YA VOLCADO: uno de cada cuatro cuadros gasta el plazo, y con lo que queda saca de la tabla de 0x53CE el patron que le toca. Segun la fase, el mapache volcado se dibuja con un sprite o con los dos.
 C 0x514c al juego alternativo: HL' es la ficha y DE el estado
 C 0x514d la pareja de 0xE079
 C 0x5152 solo el valor 7
@@ -2289,13 +2289,13 @@ C 0x5157 y de 0x40 en adelante, no se hace nada
 C 0x515b el segundo byte de la ficha es el plazo
 C 0x515c un cuadro menos
 C 0x515d todavia le queda: nada que hacer
-C 0x515f cual de los tres carros es
+C 0x515f cual de los tres mapaches es
 C 0x5160 0x10 es el primero
 C 0x5166 el bit 1 del indice, cambiado
 C 0x5169 los estados viven en la pagina 0xE1
 C 0x516b el numero de fase
 C 0x516e de la cuatro en adelante, por el otro camino
-C 0x5175 al otro carro se le deja el estado 2
+C 0x5175 al otro mapache se le deja el estado 2
 C 0x5177 y si el bit 7 estaba puesto, se sale
 C 0x517c el indice, desde 0x10
 C 0x517e la mitad
@@ -2328,13 +2328,13 @@ C 0x51f5 y si va al reves
 C 0x51f9 0x3C mas alla: los patrones del otro sentido
 C 0x51fe la columna, corrida
 C 0x5201 el patron
-C 0x5205 dieciseis pixeles mas abajo: el segundo sprite
+C 0x5205 dieciseis pixeles a la derecha: el segundo sprite
 C 0x520a y su patron, cuatro mas alla
 C 0x520e gasta el plazo
 C 0x5211 si todavia le queda, nada
 C 0x5213 y al agotarse, se da la vuelta
 C 0x5217 gasta el plazo
-C 0x521d el arco del carro, un byte antes
+C 0x521d el arco del mapache, un byte antes
 C 0x5225 el desplazamiento, a la fila
 C 0x5229 y cuatro bytes mas alla, el segundo sprite
 C 0x522e el numero de fase
@@ -2384,7 +2384,7 @@ C 0x52ce la fila
 C 0x52d0 y la columna
 C 0x52d3 el atributo siguiente
 C 0x52db y el color del segundo
-C 0x52de el estado del carro
+C 0x52de el estado del mapache
 C 0x52e2 sin acarreo, hacia arriba
 C 0x52e6 la fila
 C 0x52e9 y de vuelta
@@ -2425,7 +2425,7 @@ C 0x5343 saltandose el primer byte
 C 0x5347 a cero
 C 0x534a el segundo
 C 0x534d y el tercero
-C 0x534f los sprites del carro
+C 0x534f los sprites del mapache
 C 0x5352 y su bloque de estado
 C 0x5358 los cinco bits
 C 0x535c ese es el que se busca
@@ -2803,10 +2803,10 @@ C 0x50f6 el byte de delante
 C 0x50f9 y los otros dos
 C 0x5100 el byte de delante
 C 0x511f los tres se guardan: el despacho los gasta enteros
-C 0x5122 el estado de este carro
-C 0x5125 al juego alternativo, donde los estados del carro tienen sus punteros
+C 0x5122 el estado de este mapache
+C 0x5125 al juego alternativo, donde los estados del mapache tienen sus punteros
 C 0x512c los tres, de vuelta
-C 0x512f y al carro siguiente
+C 0x512f y al mapache siguiente
 C 0x52f6 en los otros siete valores del reloj no se mueve
 C 0x52f7 el byte del plazo
 C 0x52fa y los punteros, como estaban
@@ -2816,9 +2816,9 @@ C 0x5307 en los otros 63 cuadros no sube
 C 0x5309 la ficha se guarda
 C 0x530a la coordenada de arriba
 C 0x530e ocho pixeles mas
-C 0x5310 cuatro bytes atras: el otro sprite del carro
+C 0x5310 cuatro bytes atras: el otro sprite del mapache
 C 0x5316 y el mismo empujon
-C 0x531d el carro que se busca
+C 0x531d el mapache que se busca
 C 0x5321 encontrado
 C 0x5324 tres bytes por entrada
 C 0x5328 y si no esta, no se apunta nada

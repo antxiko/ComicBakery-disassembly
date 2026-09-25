@@ -38,7 +38,9 @@ LO QUE SALE
     logotipo.png  el KONAMI que baja por la pantalla antes del titulo
     tiles.png     la hoja de patrones tal como queda en la VRAM
     fuente.png    los dibujos de texto, con su reparto
-    mapa.png      las 92 columnas seguidas: la panaderia entera
+    panaderia-fases-1-2-4.png, panaderia-fases-3-5-7.png
+                  las 92 columnas seguidas: la panaderia entera, con los
+                  bloques de cada juego de fases
     sprites.png   los patrones de sprite de 0x1800
 
 Uso: graficos.py <rom> <org> <salida>
@@ -199,6 +201,73 @@ def monta_un_tercio(v, rom, de0, fase=0):
     descomprime(v, rom, 0x6D26, destino=pat + 0x680)    # 0x6129
     descomprime(v, rom, elige_por_la_fase(fase, 0x657B, 0x6521),
                 destino=pat + 0x398)                    # 0x6135 -> 0x615E
+
+
+def vram_de_la_partida(rom, fase):
+    """La pantalla de la escena (0x6051) y, encima, lo grafico del montaje de
+    la fase (0x49BB..0x49E7), con el bloque que elige cada rutina segun
+    (0xE051). Tres criterios distintos, cada uno como lo escribe el codigo:
+    A, C, D, E, F y la pareja de 0x619A con elige_por_la_fase; G (0x61AD)
+    mira el bit 0 de la fase misma, no el de fase-1."""
+    # la pantalla de 0x6051 se monta UNA vez, en la escena 0 (0x4140), con la
+    # RAM recien puesta a cero por INIT: o sea, con la fase 0. Al empezar cada
+    # fase solo se recargan los bloques de aqui abajo.
+    v = vram_de_la_escena(rom, 0)
+    e = lambda si, no: elige_por_la_fase(fase, si, no)
+    descomprime(v, rom, e(0x6AC7, 0x6AB4), 0x0B98)       # 0x49BE  A
+    descomprime(v, rom, e(0x6ADD, 0x6ABA), 0x13E8)       # 0x49C4  C
+    for de in (0x0C00, 0x1400):                          # 0x49CA, 0x49D0
+        descomprime(v, rom, e(0x6BE6, 0x6B34), de)
+    g = 0x6B14 if (fase and not fase & 1) else 0x6AF4    # 0x61B0
+    descomprime(v, rom, g, 0x04B0)                       # 0x49D3  G
+    rellena(v, 0x1080, 0x170, 0xF1)                      # 0x49D6
+    descomprime(v, rom, e(0x6517, 0x650D), 0x13D0)       # 0x49DB  F
+    descomprime(v, rom, e(0x657B, 0x6521), 0x2B98)       # 0x49E1  D
+    descomprime(v, rom, e(0x65CB, 0x6566), 0x33E8)       # 0x49E7  E
+    patrones_de_sprite(v, rom)
+    return v
+
+
+def refleja_una_franja(v, ori, des):
+    """0x443F: un sprite de 16x16 del reves. Lee los 32 bytes de ORI, le da la
+    vuelta a cada uno (0x445E) y los escribe en el sprite que acaba en DES:
+    la mitad izquierda del original va a la derecha (DES..) y la derecha a la
+    izquierda (DES-0x10..). DES llega apuntando a la mitad derecha."""
+    for mitad in (des, des - 0x10):
+        for k in range(16):
+            x = v.b[ori & 0x3FFF]
+            v.b[(mitad + k) & 0x3FFF] = int("{:08b}".format(x)[::-1], 2)
+            ori += 1
+    return ori
+
+
+def copia_franjas(v, ori, des, c):
+    """0x441D: C sprites seguidos, cada uno reflejado en el siguiente hueco."""
+    for _ in range(c):
+        ori = refleja_una_franja(v, ori, des)
+        des += 0x20
+
+
+def copia_franjas_alternas(v, ori, des, c):
+    """0x4429: C parejas. Cada pareja se refleja CRUZADA -el primero en el
+    segundo hueco y el segundo en el primero-, que es como se le da la vuelta
+    a una figura de dos sprites de ancho."""
+    for _ in range(c):
+        ori = refleja_una_franja(v, ori, des)
+        ori = refleja_una_franja(v, ori, des - 0x20)
+        des += 0x40
+
+
+def patrones_de_sprite(v, rom):
+    """0x70D6: los tres bloques de patrones de sprite y sus reflejos."""
+    descomprime(v, rom, 0x715C, 0x1800)          # 0x70D6
+    descomprime(v, rom, 0x71D1, 0x18A0)          # 0x70DF
+    descomprime(v, rom, 0x72F3)                  # 0x70E8, con su destino
+    copia_franjas(v, 0x1860, 0x1890, 1)          # 0x70EE
+    copia_franjas(v, 0x18C0, 0x1A50, 12)         # 0x70F9
+    copia_franjas_alternas(v, 0x1BC0, 0x1DD0, 5)  # 0x7104
+    copia_franjas(v, 0x1D00, 0x1EF0, 4)          # 0x710F
+    return v
 
 
 def vram_de_la_escena(rom, fase=0):
@@ -362,6 +431,12 @@ def rango(v, t0, n, fn, tercio=0, cols=10, esc=4):
     png(w, h, px, fn)
 
 
+# La fila de pantalla en la que empieza la panaderia: el bufer de 0xE1A0 va
+# a 0x39A0, que es la fila 13. Medido en los volcados de openMSX
+# (work/partida): la ventana de 32 columnas casa con el mapa ahi y no en otra.
+FILA_DE_LA_PANADERIA = 13
+
+
 def mapa(v, rom, fn, esc=2):
     """Las 92 columnas de diez celdas, una al lado de otra.
 
@@ -375,7 +450,7 @@ def mapa(v, rom, fn, esc=2):
         base = MAPA - ORG + x * ALTO
         for y in range(ALTO):
             t = rom[base + y]
-            pa, co = celda(v, t, (y + 14) // 8 if False else min(2, (y + 14) // 8))
+            pa, co = celda(v, t, (y + FILA_DE_LA_PANADERIA) // 8)
             pinta_celda(px, w, x * 8 * esc, y * 8 * esc, pa, co, esc)
     png(w, h, px, fn)
 
@@ -456,8 +531,17 @@ def main():
     hoja(v, 0, os.path.join(sal, "tiles.png"))
     hoja(v, 2, os.path.join(sal, "tiles-tercio3.png"))
     rango(v, 0x10, 43, os.path.join(sal, "fuente.png"))
-    mapa(v, rom, os.path.join(sal, "mapa.png"))
-    sprites(v, SPRITES, os.path.join(sal, "sprites.png"))
+    # LA PANADERIA DE CADA FASE: la misma de 0x7604, pero el montaje de la
+    # fase carga bloques distintos segun (0xE051) -ver vram_de_la_partida-.
+    # Con el contador a 0, 1, 3, 5... sale una; con 2, 4, 6..., la otra.
+    mapa(vram_de_la_partida(rom, 0), rom,
+         os.path.join(sal, "panaderia-fases-1-2-4.png"))
+    mapa(vram_de_la_partida(rom, 2), rom,
+         os.path.join(sal, "panaderia-fases-3-5-7.png"))
+    # los 64 patrones de sprite, que monta 0x70D6 y no la pantalla de la
+    # escena: sin esto la hoja salia en negro
+    sprites(vram_de_la_partida(rom, 0), SPRITES,
+            os.path.join(sal, "sprites.png"), n=64)
 
     for f in sorted(os.listdir(sal)):
         print("  ", os.path.join(sal, f))
