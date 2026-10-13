@@ -81,6 +81,7 @@ imagenes: $(ROM)
 	@mkdir -p docs/imagenes
 	python3 tools/graficos.py $(ROM) $(ORG) docs/imagenes
 	python3 tools/figuras.py $(ROM) $(ORG) docs/imagenes
+	$(PYMUS) tools/tienda.py $(ROM) docs/imagenes
 
 # LAS FIGURAS Y LA PANADERIA contra openMSX. Los volcados los hace
 # tools/omsx_partida.tcl, una fase por arranque (el contador va en work/fase.txt).
@@ -103,7 +104,7 @@ clean:
 	rm -rf $(WORK)/comicbakery.trace.json $(WORK)/comicbakery.blocks
 
 
-PYMUS ?= python3     # el que tenga numpy y lameenc
+PYMUS ?= python3     # el que tenga numpy, lameenc y PIL (musica y tienda.py)
 # La musica: el motor del cartucho ejecutado (tools/musica.py) a MP3
 musica: $(ROM)
 	$(PYMUS) tools/musica.py todas docs/audio

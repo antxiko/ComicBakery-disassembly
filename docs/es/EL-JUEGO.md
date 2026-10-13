@@ -47,6 +47,42 @@ panadería cambia de máquinas:
 
 ![La panadería de las fases 3, 5, 7...](../imagenes/panaderia-fases-3-5-7.png)
 
+## La tienda, al final de cada jornada
+
+Cuando se acaba la jornada, el panadero se va de la planta y se monta la
+**BAKERY SHOP** (`0x5AD6`), con cuatro niños sentados al mostrador. El
+panadero empuja el carro con los panes hechos al compás de la música del fin
+de fase (la 0x96): el carro avanza hasta que la partitura llega a la marca
+`0xD4` (`0x5BAA`). Entonces cada niño recibe un pan (`0x5C6F`) y se cobra un
+premio de **600 × panes** (`0x5CCF`). En el tejado asoma un personaje con un
+globo que cambia según los panes (`0x5D22`):
+
+| panes | globo |
+|---|---|
+| 4 | ほっ |
+| 5-6 | HEY |
+| 7-8 | NICE |
+| 9 o más | FINE |
+
+Con menos de cuatro, alguno se queda sin pan: el globo dice cuántos faltan
+(`4 − panes`; «1つたりない» es «falta uno») y **se pierde una vida** (`0x5D0E`,
+escena 12); si no quedan vidas, se acaba la partida (`0x42A9`). Medido: con
+tres panes se pasa a la fase siguiente con una vida menos (de 2 a 1), y con
+diez, con las mismas.
+
+A diferencia de las demás imágenes de esta página, esta escena **sale
+ejecutando el cartucho**, como la música: `tools/tienda.py` lo arranca en frío
+con z80run, le da a cada cuadro lo mismo que la interrupción (`0x406E`) y
+fotografía la VRAM con el mismo renderizador cotejado. Lo único que se pone a
+mano es lo que haría el jugador: pulsar en el menú, acabar la jornada
+(`0xE00D`) y cuántos panes ha hecho (`0xE060`).
+
+![La tienda con diez panes](../imagenes/tienda.gif)
+
+![La tienda con tres panes: falta uno](../imagenes/tienda-falta.gif)
+
+![El globo con 3, 4, 5, 6 panes (arriba) y 7, 8, 9, 10 (abajo)](../imagenes/tienda-globos.png)
+
 ## Las pantallas de menú
 
 Montadas desde la ROM y cotejadas contra openMSX a **0 bytes**.

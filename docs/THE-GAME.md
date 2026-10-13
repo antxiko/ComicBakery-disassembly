@@ -47,6 +47,42 @@ bakery changes machines:
 
 ![The bakery on stages 3, 5, 7...](imagenes/panaderia-fases-3-5-7.png)
 
+## The shop, at the end of each working day
+
+When the day is over, the baker leaves the floor and the **BAKERY SHOP** is
+set up (`0x5AD6`), with four children sitting at the counter. The baker pushes
+the cart with the loaves made to the beat of the end-of-stage tune (0x96): the
+cart moves on until the score reaches the `0xD4` mark (`0x5BAA`). Then each
+child gets a loaf (`0x5C6F`) and a bonus of **600 × loaves** is paid
+(`0x5CCF`). On the roof a character pops up with a speech balloon that
+depends on the loaves (`0x5D22`):
+
+| loaves | balloon |
+|---|---|
+| 4 | ほっ ("phew") |
+| 5-6 | HEY |
+| 7-8 | NICE |
+| 9 or more | FINE |
+
+With fewer than four, some child goes without: the balloon says how many are
+missing (`4 − loaves`; "1つたりない" is "one short") and **a life is lost**
+(`0x5D0E`, scene 12); with no lives left, the game is over (`0x42A9`).
+Measured: with three loaves the next stage starts with one life less (2 to
+1), and with ten, with the same.
+
+Unlike the other pictures on this page, this scene **comes from running the
+cartridge**, like the music: `tools/tienda.py` cold-starts it with z80run,
+gives each frame what the interrupt does (`0x406E`) and takes the VRAM through
+the same checked renderer. The only things set by hand are what the player
+would do: press in the menu, end the day (`0xE00D`) and how many loaves were
+made (`0xE060`).
+
+![The shop with ten loaves](imagenes/tienda.gif)
+
+![The shop with three loaves: one short](imagenes/tienda-falta.gif)
+
+![The balloon with 3, 4, 5, 6 loaves (top) and 7, 8, 9, 10 (bottom)](imagenes/tienda-globos.png)
+
 ## The menu screens
 
 Built from the ROM and checked against openMSX down to **0 bytes**.

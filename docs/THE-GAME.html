@@ -98,6 +98,14 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <table><tr><th>stages</th><th>machines</th></tr><tr><td>1, 2, 4, 6, 8...</td><td>green</td></tr><tr><td>3, 5, 7, 9...</td><td>blue</td></tr></table>
 <p><img src="imagenes/panaderia-fases-1-2-4.png" alt="The bakery on stages 1, 2, 4..."></p>
 <p><img src="imagenes/panaderia-fases-3-5-7.png" alt="The bakery on stages 3, 5, 7..."></p>
+<h2 id="the-shop-at-the-end-of-each-working-day">The shop, at the end of each working day</h2>
+<p>When the day is over, the baker leaves the floor and the <b>BAKERY SHOP</b> is set up (<code>0x5AD6</code>), with four children sitting at the counter. The baker pushes the cart with the loaves made to the beat of the end-of-stage tune (0x96): the cart moves on until the score reaches the <code>0xD4</code> mark (<code>0x5BAA</code>). Then each child gets a loaf (<code>0x5C6F</code>) and a bonus of <b>600 × loaves</b> is paid (<code>0x5CCF</code>). On the roof a character pops up with a speech balloon that depends on the loaves (<code>0x5D22</code>):</p>
+<table><tr><th>loaves</th><th>balloon</th></tr><tr><td>4</td><td>ほっ (&quot;phew&quot;)</td></tr><tr><td>5-6</td><td>HEY</td></tr><tr><td>7-8</td><td>NICE</td></tr><tr><td>9 or more</td><td>FINE</td></tr></table>
+<p>With fewer than four, some child goes without: the balloon says how many are missing (<code>4 − loaves</code>; &quot;1つたりない&quot; is &quot;one short&quot;) and <b>a life is lost</b> (<code>0x5D0E</code>, scene 12); with no lives left, the game is over (<code>0x42A9</code>). Measured: with three loaves the next stage starts with one life less (2 to 1), and with ten, with the same.</p>
+<p>Unlike the other pictures on this page, this scene <b>comes from running the cartridge</b>, like the music: <code>tools/tienda.py</code> cold-starts it with z80run, gives each frame what the interrupt does (<code>0x406E</code>) and takes the VRAM through the same checked renderer. The only things set by hand are what the player would do: press in the menu, end the day (<code>0xE00D</code>) and how many loaves were made (<code>0xE060</code>).</p>
+<p><img src="imagenes/tienda.gif" alt="The shop with ten loaves"></p>
+<p><img src="imagenes/tienda-falta.gif" alt="The shop with three loaves: one short"></p>
+<p><img src="imagenes/tienda-globos.png" alt="The balloon with 3, 4, 5, 6 loaves (top) and 7, 8, 9, 10 (bottom)"></p>
 <h2 id="the-menu-screens">The menu screens</h2>
 <p>Built from the ROM and checked against openMSX down to <b>0 bytes</b>.</p>
 <p><img src="imagenes/pantalla-presentacion.png" alt="The company screen"></p>

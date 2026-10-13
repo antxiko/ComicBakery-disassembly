@@ -98,6 +98,14 @@ audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 <table><tr><th>fases</th><th>máquinas</th></tr><tr><td>1, 2, 4, 6, 8...</td><td>verdes</td></tr><tr><td>3, 5, 7, 9...</td><td>azules</td></tr></table>
 <p><img src="../imagenes/panaderia-fases-1-2-4.png" alt="La panadería de las fases 1, 2, 4..."></p>
 <p><img src="../imagenes/panaderia-fases-3-5-7.png" alt="La panadería de las fases 3, 5, 7..."></p>
+<h2 id="la-tienda-al-final-de-cada-jornada">La tienda, al final de cada jornada</h2>
+<p>Cuando se acaba la jornada, el panadero se va de la planta y se monta la <b>BAKERY SHOP</b> (<code>0x5AD6</code>), con cuatro niños sentados al mostrador. El panadero empuja el carro con los panes hechos al compás de la música del fin de fase (la 0x96): el carro avanza hasta que la partitura llega a la marca <code>0xD4</code> (<code>0x5BAA</code>). Entonces cada niño recibe un pan (<code>0x5C6F</code>) y se cobra un premio de <b>600 × panes</b> (<code>0x5CCF</code>). En el tejado asoma un personaje con un globo que cambia según los panes (<code>0x5D22</code>):</p>
+<table><tr><th>panes</th><th>globo</th></tr><tr><td>4</td><td>ほっ</td></tr><tr><td>5-6</td><td>HEY</td></tr><tr><td>7-8</td><td>NICE</td></tr><tr><td>9 o más</td><td>FINE</td></tr></table>
+<p>Con menos de cuatro, alguno se queda sin pan: el globo dice cuántos faltan (<code>4 − panes</code>; «1つたりない» es «falta uno») y <b>se pierde una vida</b> (<code>0x5D0E</code>, escena 12); si no quedan vidas, se acaba la partida (<code>0x42A9</code>). Medido: con tres panes se pasa a la fase siguiente con una vida menos (de 2 a 1), y con diez, con las mismas.</p>
+<p>A diferencia de las demás imágenes de esta página, esta escena <b>sale ejecutando el cartucho</b>, como la música: <code>tools/tienda.py</code> lo arranca en frío con z80run, le da a cada cuadro lo mismo que la interrupción (<code>0x406E</code>) y fotografía la VRAM con el mismo renderizador cotejado. Lo único que se pone a mano es lo que haría el jugador: pulsar en el menú, acabar la jornada (<code>0xE00D</code>) y cuántos panes ha hecho (<code>0xE060</code>).</p>
+<p><img src="../imagenes/tienda.gif" alt="La tienda con diez panes"></p>
+<p><img src="../imagenes/tienda-falta.gif" alt="La tienda con tres panes: falta uno"></p>
+<p><img src="../imagenes/tienda-globos.png" alt="El globo con 3, 4, 5, 6 panes (arriba) y 7, 8, 9, 10 (abajo)"></p>
 <h2 id="las-pantallas-de-menu">Las pantallas de menú</h2>
 <p>Montadas desde la ROM y cotejadas contra openMSX a <b>0 bytes</b>.</p>
 <p><img src="../imagenes/pantalla-presentacion.png" alt="La pantalla de la casa"></p>
