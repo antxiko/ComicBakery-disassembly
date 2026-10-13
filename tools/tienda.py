@@ -164,8 +164,10 @@ def imagen(px, esc=2):
 
 def gif(cuadros, fn, esc=2):
     """Un cuadro de GIF por cada cambio; la duracion, los cuadros de 1/60 s
-    que dura, redondeada en centesimas sin perder el acumulado."""
-    trozos = []
+    que dura, redondeada en centesimas sin perder el acumulado. Delante va el
+    ULTIMO cuadro, el del globo, dos segundos: es el que resume la escena y el
+    que se ve donde el GIF no se anima."""
+    trozos = [[cuadros[-1], 120]]
     for px in cuadros:
         if trozos and trozos[-1][0] == px:
             trozos[-1][1] += 1
@@ -192,13 +194,19 @@ def main():
     print("tienda.gif", gif(c10, os.path.join(sal, "tienda.gif")), "cuadros")
     _, c3 = graba_la_escena(rom, 3)
     print("tienda-falta.gif", gif(c3, os.path.join(sal, "tienda-falta.gif")))
-    from PIL import Image
-    hoja = Image.new("RGB", (128 * 4, 32 * 2))
+    from PIL import Image, ImageDraw
+    # el globo y el personaje del tejado: x 52-152, y 16-40 (el marcador
+    # acaba en la fila 15 y el tejado empieza en la 40); debajo, los panes
+    W, H, PIE = 100, 24, 10
+    hoja = Image.new("RGB", (W * 4, (H + PIE) * 2))
+    dibujo = ImageDraw.Draw(hoja)
     for i, n in enumerate((3, 4, 5, 6, 7, 8, 9, 10)):
         _, c = graba_la_escena(rom, n)
-        recorte = imagen(c[-1], 1).crop((40, 8, 168, 40))
-        hoja.paste(recorte, ((i % 4) * 128, (i // 4) * 32))
-    hoja.resize((hoja.width * 2, hoja.height * 2), Image.NEAREST).save(
+        x, y = (i % 4) * W, (i // 4) * (H + PIE)
+        hoja.paste(imagen(c[-1], 1).crop((52, 16, 52 + W, 16 + H)), (x, y))
+        dibujo.text((x + W // 2 - 3 * len(str(n)), y + H), str(n),
+                    fill=(255, 255, 255))
+    hoja.resize((hoja.width * 3, hoja.height * 3), Image.NEAREST).save(
         os.path.join(sal, "tienda-globos.png"))
 
 
