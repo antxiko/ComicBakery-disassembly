@@ -13,7 +13,7 @@
 # Deja en work/partida/ faseN_cK.vram (16 KB) y faseN_cK.ram (0xE000..0xE3FF),
 # y el registro en work/partida/log.txt.
 
-set ::RAIZ {C:/Users/Antxiko/Documents/DES_ASM/COMICBAKERY_DISAM}
+set ::RAIZ {C:/Users/Antxiko/Documents/DES_ASM/desensamblados/COMICBAKERY_DISAM}
 set ::FASE 0
 catch {
     set f [open $::RAIZ/work/fase.txt r]
