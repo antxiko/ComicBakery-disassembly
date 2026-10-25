@@ -44,3 +44,30 @@ that moves or is drawn, and the clock at the end.
 - `tools/figuras.py`: the baker and the raccoons.
 - `tools/coteja_partida.py` and `tools/omsx_partida.tcl`: the check against
   openMSX.
+
+## Code shared with other Konami cartridges
+
+This disassembly has been compared, instruction by instruction, with
+every other Konami one in the series. A block counts when the same
+instructions, at least six of them from a label to its `ret` or its
+unconditional jump, are in both cartridges; the addresses are left
+aside, because they change from one cartridge to the next. Of the
+other 57, **49** have at least one block in common with this one;
+these are the ones that share the most:
+
+| Cartridge | Blocks | Instructions | For example (here = there) |
+|---|---:|---:|---|
+| [Circus Charlie](https://antxiko.github.io/CircusCharlie-disassembly/) | 27 | 392 | `atiende_el_menu` (0x4831) |
+| [Magical Tree](https://antxiko.github.io/MagicalTree-disassembly/) | 21 | 351 | `atiende_el_menu` (0x4831) |
+| [Cabbage Patch Kids](https://antxiko.github.io/CabbagePatchKids-disassembly/) | 20 | 206 | `lee_el_teclado` (0x47E8) = `LEE_EL_TECLADO` |
+| [Konami’s Mahjong Dojo](https://antxiko.github.io/KonamisMahjongDojo-disassembly/) | 14 | 141 | `arranca_la_voz` (0x79E2) = `carga_los_canales` |
+| [Hyper Sports 1](https://antxiko.github.io/HyperSports1-disassembly/) | 12 | 174 | `atiende_el_menu` (0x4831) = `MANEJADOR_DEMO` |
+| [Yie Ar Kung-Fu](https://antxiko.github.io/YieArKungFu-disassembly/) | 12 | 125 | `lee_el_teclado` (0x47E8) |
+| [Konami’s Game Master 2](https://antxiko.github.io/GameMaster2-disassembly/) | 9 | 78 | `refleja_una_franja` (0x443F) = `espejo_16` |
+| [Super Cobra](https://antxiko.github.io/SuperCobra-disassembly/) | 8 | 97 | `parpadea_el_turno` (0x46A3) = `PARPADEA_EL_JUGADOR` |
+| [Sky Jaguar](https://antxiko.github.io/SkyJaguar-disassembly/) | 7 | 85 | `lee_el_teclado` (0x47E8) = `LEE_TECLADO` |
+| [Hyper Rally](https://antxiko.github.io/HyperRally-disassembly/) | 6 | 52 | `mira_si_es_record` (0x4599) = `ACTUALIZA_TOPE` |
+
+The whole matrix, the 58 cartridges against each other, is on
+[The routines](https://antxiko.github.io/MSX-disassembly-database/THE-ROUTINES.html) in the series database, along
+with the method and the program that measures it.
