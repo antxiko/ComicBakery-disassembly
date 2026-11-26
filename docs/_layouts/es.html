@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>El juego — Comic Bakery (Konami, 1984)</title>
+<title>{{ page.title }} — Comic Bakery (Konami, 1984)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -82,32 +82,6 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 .galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
 audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 </style>
-<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html" style=color:var(--tinta)>El juego</a><a href="EL-CARTUCHO.html">El cartucho</a><a href="EL-CODIGO.html">El código</a><a href="LA-MUSICA.html">La música</a><a href="HALLAZGOS.html">Hallazgos</a><a href="EN-EL-EMULADOR.html">En el emulador</a><a href="PREGUNTAS-ABIERTAS.html">Preguntas abiertas</a><a href="../THE-GAME.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
-<h1 id="el-juego">El juego</h1>
-<p><img src="../imagenes/rotulo.png" alt="El rótulo"></p>
-<p>El panadero guarda la panadería de los <b>mapaches</b> durante una jornada de <b>ocho minutos</b> de reloj (<code>0x4614</code>). Anda por la planta, salta con los dos botones y dispara; un mapache que lo toca le quita una vida. Al acabar la jornada, el cartucho cuenta los panes (<code>0x5B5E</code>).</p>
-<p>Las imágenes de abajo <b>no son capturas ni el cartucho ejecutándose</b>: son las tablas de la ROM montadas como las monta el juego —las pantallas y la panadería con su cadena de montaje, el panadero y los mapaches con sus tablas de poses y pasos—. Cotejadas contra openMSX en dieciséis volcados de partida: <b>0 bytes distintos</b> en las tablas de color, patrones y patrones de sprite.</p>
-<h2 id="el-panadero">El panadero</h2>
-<p>Cuatro sprites (<code>0x4C51</code>), con los patrones de una de las catorce poses de <code>0x7124</code> y la fila y el color de la plantilla de <code>0x7096</code>: el segundo va 0x10 por debajo del primero, el tercero 8 y el cuarto 0x20.</p>
-<p><img src="../imagenes/jugador.png" alt="El panadero"></p>
-<h2 id="los-mapaches">Los mapaches</h2>
-<p>Dos sprites en fila (<code>0x51D9</code>), el segundo dieciséis píxeles a la derecha y con el patrón cuatro más allá. Andando hacia la izquierda los patrones salen desde <code>0x78</code>, y hacia la derecha 0x3C más allá; el paso lo elige el contador de cuadros y solo da 0, 8 o 16. Son tres, y los distingue el color de <code>0x51B2</code>: gris, amarillo y rojo.</p>
-<p><img src="../imagenes/enemigos.png" alt="Los mapaches"></p>
-<h2 id="la-panaderia-de-cada-fase">La panadería de cada fase</h2>
-<p>La panadería es una sola: las <b>92 columnas de diez celdas</b> de <code>0x7604</code>. La pantalla enseña 32, desde la fila 13. Pero el montaje de la fase (<code>0x49BB</code> a <code>0x49E7</code>) elige sus bloques gráficos con el contador de <code>0xE051</code>, y la panadería cambia de máquinas:</p>
-<table><tr><th>fases</th><th>máquinas</th></tr><tr><td>1, 2, 4, 6, 8...</td><td>verdes</td></tr><tr><td>3, 5, 7, 9...</td><td>azules</td></tr></table>
-<p><img src="../imagenes/panaderia-fases-1-2-4.png" alt="La panadería de las fases 1, 2, 4..."></p>
-<p><img src="../imagenes/panaderia-fases-3-5-7.png" alt="La panadería de las fases 3, 5, 7..."></p>
-<h2 id="la-tienda-al-final-de-cada-jornada">La tienda, al final de cada jornada</h2>
-<p>Cuando se acaba la jornada, el panadero se va de la planta y se monta la <b>BAKERY SHOP</b> (<code>0x5AD6</code>), con cuatro niños sentados al mostrador. El panadero empuja el carro con los panes hechos al compás de la música del fin de fase (la 0x96): el carro avanza hasta que la partitura llega a la marca <code>0xD4</code> (<code>0x5BAA</code>). Entonces cada niño recibe un pan (<code>0x5C6F</code>) y se cobra un premio de <b>600 × panes</b> (<code>0x5CCF</code>). En el tejado asoma un personaje con un globo que cambia según los panes (<code>0x5D22</code>):</p>
-<table><tr><th>panes</th><th>globo</th></tr><tr><td>4</td><td>ほっ</td></tr><tr><td>5-6</td><td>HEY</td></tr><tr><td>7-8</td><td>NICE</td></tr><tr><td>9 o más</td><td>FINE</td></tr></table>
-<p>Con menos de cuatro, alguno se queda sin pan: el globo dice cuántos faltan (<code>4 − panes</code>; «1つたりない» es «falta uno») y <b>se pierde una vida</b> (<code>0x5D0E</code>, escena 12); si no quedan vidas, se acaba la partida (<code>0x42A9</code>). Medido: con tres panes se pasa a la fase siguiente con una vida menos (de 2 a 1), y con diez, con las mismas.</p>
-<p>A diferencia de las demás imágenes de esta página, esta escena <b>sale ejecutando el cartucho</b>, como la música: <code>tools/tienda.py</code> lo arranca en frío con z80run, le da a cada cuadro lo mismo que la interrupción (<code>0x406E</code>) y fotografía la VRAM con el mismo renderizador cotejado. Lo único que se pone a mano es lo que haría el jugador: pulsar en el menú, acabar la jornada (<code>0xE00D</code>) y cuántos panes ha hecho (<code>0xE060</code>).</p>
-<p><img src="../imagenes/tienda.gif" alt="La tienda con diez panes"></p>
-<p><img src="../imagenes/tienda-falta.gif" alt="La tienda con tres panes: falta uno"></p>
-<p><img src="../imagenes/tienda-globos.png" alt="El globo con 3, 4, 5, 6 panes (arriba) y 7, 8, 9, 10 (abajo)"></p>
-<h2 id="las-pantallas-de-menu">Las pantallas de menú</h2>
-<p>Montadas desde la ROM y cotejadas contra openMSX a <b>0 bytes</b>.</p>
-<p><img src="../imagenes/pantalla-presentacion.png" alt="La pantalla de la casa"></p>
-<p><img src="../imagenes/pantalla-titulo.png" alt="La pantalla de título"></p>
+<div class="w"><nav class="top"><a href="index.html"{% if page.name == "index.md" %} style=color:var(--tinta){% endif %}>Portada</a><span style="opacity:.35">|</span><a href="EL-JUEGO.html"{% if page.name == "EL-JUEGO.md" %} style=color:var(--tinta){% endif %}>El juego</a><a href="LAS-IMAGENES.html"{% if page.name == "LAS-IMAGENES.md" %} style=color:var(--tinta){% endif %}>Lo que el cartucho dibuja</a><a href="LA-MUSICA.html"{% if page.name == "LA-MUSICA.md" %} style=color:var(--tinta){% endif %}>La m&#250;sica</a><span style="opacity:.35">|</span><a href="CURIOSIDADES.html"{% if page.name == "CURIOSIDADES.md" %} style=color:var(--tinta){% endif %}>Curiosidades</a><span style="opacity:.35">|</span><a href="POR-DENTRO.html"{% if page.name == "POR-DENTRO.md" %} style=color:var(--tinta){% endif %}>Por dentro</a><a href="../{% case page.name %}{% when "EL-JUEGO.md" %}THE-GAME.html{% when "LAS-IMAGENES.md" %}THE-PICTURES.html{% when "LA-MUSICA.md" %}THE-MUSIC.html{% when "CURIOSIDADES.md" %}CURIOSITIES.html{% when "POR-DENTRO.md" %}UNDER-THE-HOOD.html{% else %}index.html{% endcase %}" style="margin-left:auto;color:var(--oro)">English</a></nav>
+{{ content }}
 <footer><p><em>Comic Bakery</em> lo publico Konami para MSX en 1984; su numero de catalogo es RC-714 y son 16 KB. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservacion, estudio y documentacion, y la imagen del cartucho no se distribuye.</p></footer></div>

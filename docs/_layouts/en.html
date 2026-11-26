@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The game — Comic Bakery (Konami, 1984)</title>
+<title>{{ page.title }} — Comic Bakery (Konami, 1984)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -82,32 +82,6 @@ footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--linea);
 .galeria figcaption{color:var(--suave);font-size:13px;margin-top:.5rem}
 audio{display:block;width:100%;max-width:640px;margin:.75rem 0 1.5rem}
 </style>
-<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html" style=color:var(--tinta)>The game</a><a href="THE-CARTRIDGE.html">The cartridge</a><a href="THE-CODE.html">The code</a><a href="THE-MUSIC.html">The music</a><a href="FINDINGS.html">Findings</a><a href="IN-THE-EMULATOR.html">In the emulator</a><a href="OPEN-QUESTIONS.html">Open questions</a><a href="es/EL-JUEGO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
-<h1 id="the-game">The game</h1>
-<p><img src="imagenes/rotulo.png" alt="The title"></p>
-<p>The baker guards the bakery from the <b>raccoons</b> during an <b>eight-minute</b> working day by the clock (<code>0x4614</code>). The baker walks along the floor, jumps with both buttons and shoots; a raccoon that touches the baker costs a life. When the day is over, the cartridge counts the loaves (<code>0x5B5E</code>).</p>
-<p>The pictures below <b>are neither captures nor the cartridge running</b>: they are the ROM&#x27;s tables put together the way the game does it —the screens and the bakery with its set-up chain, the baker and the raccoons with their pose and step tables—. Checked against openMSX in sixteen game dumps: <b>0 bytes different</b> in the colour, pattern and sprite pattern tables.</p>
-<h2 id="the-baker">The baker</h2>
-<p>Four sprites (<code>0x4C51</code>), with the patterns of one of the fourteen poses at <code>0x7124</code> and the row and colour of the template at <code>0x7096</code>: the second is 0x10 below the first, the third 8 and the fourth 0x20.</p>
-<p><img src="imagenes/jugador.png" alt="The baker"></p>
-<h2 id="the-raccoons">The raccoons</h2>
-<p>Two sprites in a row (<code>0x51D9</code>), the second sixteen pixels to the right and with the pattern four further on. Walking left the patterns start at <code>0x78</code>, and walking right 0x3C further on; the step is picked by the frame counter and only ever gives 0, 8 or 16. There are three, told apart by the colour at <code>0x51B2</code>: grey, yellow and red.</p>
-<p><img src="imagenes/enemigos.png" alt="The raccoons"></p>
-<h2 id="each-stage-s-bakery">Each stage&#x27;s bakery</h2>
-<p>There is one bakery: the <b>92 columns of ten cells</b> at <code>0x7604</code>. The screen shows 32 of them, from row 13 down. But the stage set-up (<code>0x49BB</code> to <code>0x49E7</code>) picks its graphics blocks with the counter at <code>0xE051</code>, and the bakery changes machines:</p>
-<table><tr><th>stages</th><th>machines</th></tr><tr><td>1, 2, 4, 6, 8...</td><td>green</td></tr><tr><td>3, 5, 7, 9...</td><td>blue</td></tr></table>
-<p><img src="imagenes/panaderia-fases-1-2-4.png" alt="The bakery on stages 1, 2, 4..."></p>
-<p><img src="imagenes/panaderia-fases-3-5-7.png" alt="The bakery on stages 3, 5, 7..."></p>
-<h2 id="the-shop-at-the-end-of-each-working-day">The shop, at the end of each working day</h2>
-<p>When the day is over, the baker leaves the floor and the <b>BAKERY SHOP</b> is set up (<code>0x5AD6</code>), with four children sitting at the counter. The baker pushes the cart with the loaves made to the beat of the end-of-stage tune (0x96): the cart moves on until the score reaches the <code>0xD4</code> mark (<code>0x5BAA</code>). Then each child gets a loaf (<code>0x5C6F</code>) and a bonus of <b>600 × loaves</b> is paid (<code>0x5CCF</code>). On the roof a character pops up with a speech balloon that depends on the loaves (<code>0x5D22</code>):</p>
-<table><tr><th>loaves</th><th>balloon</th></tr><tr><td>4</td><td>ほっ (&quot;phew&quot;)</td></tr><tr><td>5-6</td><td>HEY</td></tr><tr><td>7-8</td><td>NICE</td></tr><tr><td>9 or more</td><td>FINE</td></tr></table>
-<p>With fewer than four, some child goes without: the balloon says how many are missing (<code>4 − loaves</code>; &quot;1つたりない&quot; is &quot;one short&quot;) and <b>a life is lost</b> (<code>0x5D0E</code>, scene 12); with no lives left, the game is over (<code>0x42A9</code>). Measured: with three loaves the next stage starts with one life less (2 to 1), and with ten, with the same.</p>
-<p>Unlike the other pictures on this page, this scene <b>comes from running the cartridge</b>, like the music: <code>tools/tienda.py</code> cold-starts it with z80run, gives each frame what the interrupt does (<code>0x406E</code>) and takes the VRAM through the same checked renderer. The only things set by hand are what the player would do: press in the menu, end the day (<code>0xE00D</code>) and how many loaves were made (<code>0xE060</code>).</p>
-<p><img src="imagenes/tienda.gif" alt="The shop with ten loaves"></p>
-<p><img src="imagenes/tienda-falta.gif" alt="The shop with three loaves: one short"></p>
-<p><img src="imagenes/tienda-globos.png" alt="The balloon with 3, 4, 5, 6 loaves (top) and 7, 8, 9, 10 (bottom)"></p>
-<h2 id="the-menu-screens">The menu screens</h2>
-<p>Built from the ROM and checked against openMSX down to <b>0 bytes</b>.</p>
-<p><img src="imagenes/pantalla-presentacion.png" alt="The company screen"></p>
-<p><img src="imagenes/pantalla-titulo.png" alt="The title screen"></p>
+<div class="w"><nav class="top"><a href="index.html"{% if page.name == "index.md" %} style=color:var(--tinta){% endif %}>Home</a><span style="opacity:.35">|</span><a href="THE-GAME.html"{% if page.name == "THE-GAME.md" %} style=color:var(--tinta){% endif %}>The game</a><a href="THE-PICTURES.html"{% if page.name == "THE-PICTURES.md" %} style=color:var(--tinta){% endif %}>What the cartridge draws</a><a href="THE-MUSIC.html"{% if page.name == "THE-MUSIC.md" %} style=color:var(--tinta){% endif %}>The music</a><span style="opacity:.35">|</span><a href="CURIOSITIES.html"{% if page.name == "CURIOSITIES.md" %} style=color:var(--tinta){% endif %}>Curiosities</a><span style="opacity:.35">|</span><a href="UNDER-THE-HOOD.html"{% if page.name == "UNDER-THE-HOOD.md" %} style=color:var(--tinta){% endif %}>Under the hood</a><a href="es/{% case page.name %}{% when "THE-GAME.md" %}EL-JUEGO.html{% when "THE-PICTURES.md" %}LAS-IMAGENES.html{% when "THE-MUSIC.md" %}LA-MUSICA.html{% when "CURIOSITIES.md" %}CURIOSIDADES.html{% when "UNDER-THE-HOOD.md" %}POR-DENTRO.html{% else %}index.html{% endcase %}" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+{{ content }}
 <footer><p><em>Comic Bakery</em> was published by Konami for the MSX in 1984; its catalogue number is RC-714 and it is 16 KB. All rights in the game remain with their holders. This is preservation, study and documentation work, and the cartridge image is not distributed.</p></footer></div>

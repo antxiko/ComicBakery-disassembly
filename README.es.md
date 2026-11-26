@@ -14,5 +14,5 @@ distintos** en las tablas de color, patrones y sprites.
 La ROM no se distribuye.
 
 - Web: https://antxiko.github.io/ComicBakery-disassembly/es/
-- Para empezar: [docs/es/EMPEZAR.md](docs/es/EMPEZAR.md)
+- Para empezar: [docs/es/POR-DENTRO.md](docs/es/POR-DENTRO.md)
 - Aviso legal: [AVISO-LEGAL.md](AVISO-LEGAL.md)
